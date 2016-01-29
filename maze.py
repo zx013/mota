@@ -24,7 +24,9 @@ class MazeBase:
 	stairs = 5
 	other = 100
 
-	ground_temp = 2
+	ground_bar_temp = 7
+	ground_block_temp = 8
+	
 
 	stairs_start = 1
 	stairs_end = 2
@@ -69,24 +71,24 @@ class Maze:
 		z, x, y = pos
 		self.maze[z][x][y]['value'] = value
 
-	def get_around(self, pos):
+	def get_around(self, pos, num):
 		around = []
 		z, x, y = pos
-		if x > 0:
-			around.append((z, x - 1, y))
-		if x < MazeBase.rows + 1:
-			around.append((z, x + 1, y))
-		if y > 0:
-			around.append((z, x, y - 1))
-		if y < MazeBase.cols + 1:
-			around.append((z, x, y + 1))
+		if x > num - 1:
+			around.append((z, x - num, y))
+		if x < MazeBase.rows + 2 - num:
+			around.append((z, x + num, y))
+		if y > num - 1:
+			around.append((z, x, y - num))
+		if y < MazeBase.cols + 2 - num:
+			around.append((z, x, y + num))
 		return around
-	
+
 	def get_count(self, pos):
 		if self.get_type(pos) == 1:
 			return 0
 		count = 0
-		around = self.get_around(pos)
+		around = self.get_around(pos, 1)
 		for pos in around:
 			if self.get_type(pos) != 1:
 				count += 1
@@ -204,7 +206,7 @@ class Maze:
 	def create_way(self, floor):
 		start_pos = self.info[floor]['stairs_start']
 		end_pos = self.info[floor]['stairs_end']
-		self.link_pos(floor, start_pos, end_pos, MazeBase.ground_temp)
+		self.link_pos(floor, start_pos, end_pos, MazeBase.ground_block_temp)
 
 	def create(self, floor):
 		self.create_floor(floor)
@@ -212,48 +214,45 @@ class Maze:
 		self.create_way(floor)
 
 
-	def get_draw_enable(self, floor):
-		draw_enable = []
-		for i in range(1, MazeBase.rows + 1):
-			for j in range(1, MazeBase.cols + 1):
-				pos = (floor, i, j)
-				if self.get_count(pos) == 4:
-					draw_enable.append(pos)
-		return draw_enable
-	
-	def draw_line(self, pos):
-		z, x, y = pos
-		operate = random.choice((-1, 1))
-		if random.randint(0, 1):
-			new_x = x
-			while True:
-				new_x = new_x + operate
-				if self.get_count((z, new_x, y)) < 3:
-					break
-				if self.get_count((z, new_x + operate, y)) < 3:
-					break
-				self.maze[z][new_x][y]['type'] = 1
-		else:
-			new_y = y
-			while True:
-				new_y = new_y + operate
-				if self.get_count((z, x, new_y)) < 3:
-					break
-				if self.get_count((z, x, new_y + operate)) < 3:
-					break
-				self.maze[z][x][new_y]['type'] = 1
-	
-	def draw(self, floor):
-		for i in range(1000):
-			draw_enable = self.get_draw_enable(floor)
-			if not draw_enable:
+#填充m*n的方格
+#处理多层的墙
+#建立通道
+
+	def block_fill(self, floor, width, height):
+		fill_pos = []
+		for x in range(1, MazeBase.rows + 2 - height):
+			for y in range(1, MazeBase.cols + 2 - width):
+				fill_pos.append((floor, x, y))
+		fill_pos = random.sample(fill_pos, len(fill_pos))
+		for pos in fill_pos:
+			z, x, y = pos
+			for i in range(x, x + height):
+				for j in range(y, y + width):
+					if self.get_type((floor, i, j)) != 0:
+						break
+				else:
+					continue
 				break
-			draw_pos = random.choice(draw_enable)
-			self.draw_line(draw_pos)
+			else:
+				for i in range(x - 1, x + height + 1):
+					for j in range(y - 1, y + width + 1):
+						if x <= i < x + height and y <= j < y + width:
+							if height == 1 or width == 1:
+								fill_type = MazeBase.ground_bar_temp
+							else:
+								fill_type = MazeBase.ground_block_temp
+						else:
+							fill_type = MazeBase.wall
+						self.set_type((floor, i, j), fill_type)
+				break
 
-	def maze_block(self, ):
+
+	#| 0 0 | 0 | 0 1 1 0 | 0 1 1 0
+	#| 1 1 | 1 | 0 1 1 0 |
+	#| 1 1 | 1 |
+	#| 0 0 | 0 |
+	def block_check(self, floor):
 		pass
-
 
 
 	def show(self, format):
@@ -261,20 +260,39 @@ class Maze:
 			for i in range(MazeBase.rows + 2):
 				for j in range(MazeBase.cols + 2):
 					ret = format(self.maze, (k, i, j))
-					if ret == 0:
+					if ret in [MazeBase.ground, MazeBase.ground_bar_temp, MazeBase.ground_block_temp]:
 						print ' ',
 					else:
 						print ret,
 				print
 			print
 
+'''
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+1     1 1 1 1 1       1     1
+1     1       1       1     1
+1     1       1 1 1 1 1     1
+1 1 1 1 1 1 1 1 1 1 1 1 1   1
+1 1       1     1       1   1
+1 1       1     1       1   1
+1 1 1 1 1 1 1   1 1 1 1 1   1
+1   1       1   1       1   1
+1   1       1   1       1   1
+1   1 1 1 1 1 1 1 1 1 1 1   1
+1 1 1 1 1 1       1 1 1 1 1 1
+1 1       1       1 1       1
+1 1       1 1 1 1 1 1       1
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+'''
 
 tree_node = {'floor': 0, 'empty': False, 'info': {'type': 0, 'pos': (0, 0), 'area': [], 'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}}, 'way': {'forward': {}, 'backward': {}}}
 
 
 if __name__ == '__main__':
 	maze = Maze()
-	#maze.draw(0)
-	maze.create(0)
+	#maze.create(0)
+	for i in range(8):
+		r = random.randint(1, 4)
+		maze.block_fill(0, r, 5 - r)
 	maze.show(lambda self, pos: maze.get_type(pos))
-	#maze_show(get_count)
+	#maze.show(maze.get_count, 2)
