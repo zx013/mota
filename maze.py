@@ -5,6 +5,12 @@ import random
 #选择区域
 #分支区域
 
+def add_pos(pos1, pos2):
+	z1, x1, y1 = pos1
+	x2, y2 = pos2
+	pos = z1, x1 + x2, y1 + y2
+	return pos
+
 class MazeBase:
 	floor = 1
 	rows = 13
@@ -123,7 +129,7 @@ class Maze:
 		self.set_value(end_pos, MazeBase.stairs_end)
 		self.info[floor]['stairs_end'] = end_pos
 
-	def get_line(self, floor, pos1, pos2):
+	def get_line(self, pos1, pos2, check):
 		link = []
 		floor1, x1, y1 = pos1
 		floor2, x2, y2 = pos2
@@ -131,15 +137,21 @@ class Maze:
 			return False, link
 		if x1 == x2:
 			for y in range(*sorted((y1, y2)))[1:]:
-				pos = (floor, x1, y)
+				pos = (floor1, x1, y)
 				if self.get_type(pos):
-					return False, link
+					if check:
+						return False, link
+					else:
+						continue
 				link.append(pos)
 		elif y1 == y2:
 			for x in range(*sorted((x1, x2)))[1:]:
-				pos = (floor, x, y1)
+				pos = (floor1, x, y1)
 				if self.get_type(pos):
-					return False, link
+					if check:
+						return False, link
+					else:
+						continue
 				link.append(pos)
 		return True, link
 
@@ -147,20 +159,37 @@ class Maze:
 		link = []
 		floor1, x1, y1 = pos1
 		floor2, x2, y2 = pos2
-		pos_list = ((floor, x1, y2), (floor, x2, y1))
-		if random.choice((False, True)):
-			pos_list = pos_list[::-1]
-		for pos in pos_list:
-			result, link1 = self.get_line(floor, pos1, pos)
+		pos3 = (floor, x1, y2)
+		pos4 = (floor, x2, y1)
+		result, link1 = self.get_line(pos1, pos3, False)
+		result, link2 = self.get_line(pos1, pos4, False)
+		link1.append(pos3)
+		link2.append(pos1)
+		pos_list = link1 + link2
+		pos_list = random.sample(pos_list, len(pos_list))
+		for pos_turn1 in pos_list:
+			if pos_turn1 in link1:
+				pos_turn2 = (floor, x2, pos_turn1[2])
+			elif pos_turn1 in link2:
+				pos_turn2 = (floor, pos_turn1[1], y2)
+
+			result, link_turn1 = self.get_line(pos1, pos_turn1, True)
 			if not result:
 				continue
-			result, link2 = self.get_line(floor, pos, pos2)
+			result, link_turn2 = self.get_line(pos_turn1, pos_turn2, True)
 			if not result:
 				continue
-			link += link1
-			if pos not in (pos1, pos2):
-				link.append(pos)
-			link += link2
+			result, link_turn3 = self.get_line(pos_turn2, pos2, True)
+			if not result:
+				continue
+
+			link += link_turn1
+			if pos_turn1 not in (pos1, pos2):
+				link.append(pos_turn1)
+			link += link_turn2
+			if pos_turn2 not in (pos1, pos2):
+				link.append(pos_turn2)
+			link += link_turn3
 			return True, link
 		return False, link
 
@@ -168,6 +197,7 @@ class Maze:
 		result, link = self.get_link(floor, pos1, pos2)
 		if not result:
 			return
+		print link
 		for pos in link:
 			self.set_type(pos, value)
 
@@ -175,7 +205,6 @@ class Maze:
 		start_pos = self.info[floor]['stairs_start']
 		end_pos = self.info[floor]['stairs_end']
 		self.link_pos(floor, start_pos, end_pos, MazeBase.ground_temp)
-		
 
 	def create(self, floor):
 		self.create_floor(floor)
