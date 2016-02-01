@@ -26,6 +26,9 @@ class MazeBase:
 
 	ground_bar_temp = 7
 	ground_block_temp = 8
+	ground_replace_temp = 9
+	
+	ground_list = [ground, ground_bar_temp, ground_block_temp, ground_replace_temp]
 	
 
 	stairs_start = 1
@@ -53,9 +56,19 @@ class Maze:
 		#maze[0][2][2]['type'] = 1
 		#maze[0][3][3]['type'] = 1
 
+	def inside(self, pos):
+		z, x, y = pos
+		if 0 <= x <= MazeBase.rows + 1:
+			if 0 <= y <= MazeBase.cols + 1:
+				return True
+		return False
+
 	def get_type(self, pos):
 		z, x, y = pos
-		value = self.maze[z][x][y]['type']
+		if self.inside(pos):
+			value = self.maze[z][x][y]['type']
+		else:
+			value = MazeBase.ground
 		return value
 
 	def get_value(self, pos):
@@ -84,15 +97,37 @@ class Maze:
 			around.append((z, x, y + num))
 		return around
 
+	def get_around_ground(self, pos):
+		ground = []
+		for pos in self.get_around(pos, 1):
+			if self.get_type(pos) != MazeBase.wall:
+				ground.append(pos)
+		return ground
+
+	def get_around_wall(self, pos):
+		wall = []
+		for pos in self.get_around(pos, 1):
+			if self.get_type(pos) == MazeBase.wall:
+				wall.append(pos)
+		return wall
+
 	def get_count(self, pos):
-		if self.get_type(pos) == 1:
-			return 0
-		count = 0
-		around = self.get_around(pos, 1)
-		for pos in around:
-			if self.get_type(pos) != 1:
-				count += 1
+		count = {}
+		for pos in self.get_around(pos, 1):
+			pos_type = self.get_type(pos)
+			count.setdefault(pos_type, 0)
+			count[pos_type] += 1
 		return count
+
+	#检查对边是否相等
+	def check_around(self, pos):
+		around = self.get_around(pos, 1)
+		if len(around) < 4:
+			return False
+		around_type = map(self.get_type, around)
+		if around_type[0] == around_type[1] or around_type[2] == around_type[3]:
+			return True
+		return False
 
 #生成起止点
 #生成最短路径
@@ -224,8 +259,7 @@ class Maze:
 			for y in range(1, MazeBase.cols + 2 - width):
 				fill_pos.append((floor, x, y))
 		fill_pos = random.sample(fill_pos, len(fill_pos))
-		for pos in fill_pos:
-			z, x, y = pos
+		for z, x, y in fill_pos:
 			for i in range(x, x + height):
 				for j in range(y, y + width):
 					if self.get_type((floor, i, j)) != 0:
@@ -246,20 +280,65 @@ class Maze:
 						self.set_type((floor, i, j), fill_type)
 				break
 
+	def check_special(self, type_list):
+		type1, type2, type3, type4 = type_list
+		if type1 in MazeBase.ground_list and type2 == MazeBase.wall and type3 == MazeBase.wall and type4 in MazeBase.ground_list:
+			return True
+		return False
+
+	def get_special(self, pos):
+		z, x, y = pos
+		for special in (
+			((z, x + 2, y), (z, x + 1, y), (z, x, y), (z, x - 1, y)),
+			((z, x + 1, y), (z, x, y), (z, x - 1, y), (z, x - 2, y)),
+			((z, x, y + 2), (z, x, y + 1), (z, x, y), (z, x, y - 1)),
+			((z, x, y + 1), (z, x, y), (z, x, y - 1), (z, x, y - 2))):
+			if self.check_special(map(self.get_type, special)):
+				return special
+		return ()
+
+	def set_special(self, pos):
+		pass
 
 	#| 0 0 | 0 | 0 1 1 0 | 0 1 1 0
 	#| 1 1 | 1 | 0 1 1 0 |
 	#| 1 1 | 1 |
 	#| 0 0 | 0 |
 	def block_check(self, floor):
-		pass
+		check_pos = []
+		for x in range(1, MazeBase.rows + 1):
+			for y in range(1, MazeBase.cols + 1):
+				check_pos.append((floor, x, y))
+		check_pos = random.sample(check_pos, len(check_pos))
+		for pos in check_pos:
+			if self.get_type(pos) != MazeBase.wall:
+				continue
+			if not self.get_special(pos):
+				continue
+			self.set_type(pos, MazeBase.ground_replace_temp)
+			#count = self.get_count(pos)
+			#if count.get(MazeBase.wall, 0) + count.get(MazeBase.ground_replace_temp, 0) != 3:
+			#	continue
+			#print pos, self.get_around(pos, 1)
+			#for pos_wall in self.get_around_wall(pos):
+			#	count = self.get_count(pos)
+			#	if count.get(MazeBase.wall, 0) + count.get(MazeBase.ground_replace_temp, 0) <= 2:
+			#		break
+			#else:
+				#for pos_ground in self.get_around_ground(pos):
+				#	if self.get_type(pos_ground) in [MazeBase.ground_bar_temp, MazeBase.ground_replace_temp]:
+				#		break
+				#else:
+				#	continue
+			#	self.set_type(pos, MazeBase.ground_replace_temp)
+			#	print pos
 
 
 	def show(self, format):
 		for k in range(MazeBase.floor):
 			for i in range(MazeBase.rows + 2):
 				for j in range(MazeBase.cols + 2):
-					ret = format(self.maze, (k, i, j))
+					ret = format((k, i, j))
 					if ret in [MazeBase.ground, MazeBase.ground_bar_temp, MazeBase.ground_block_temp]:
 						print ' ',
 					else:
@@ -283,6 +362,23 @@ class Maze:
 1 1       1       1 1       1
 1 1       1 1 1 1 1 1       1
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+1   1                       1
+1   1                       1
+1   1       1 1 1           1
+1   1       1   1 1 1 1     1
+1 1 1       1   1     1     1
+1   1 1 1 1 1   1     1     1
+1   1     1 1   1     1     1
+1   1     1 1 1 1 1 1 1 1 1 1
+1   1     1   1 1 1       1 1
+1 1 1 1 1 1   1   1       1 1
+1 1 1 1 1 1   1   1 1 1 1 1 1
+1 1       1   1   1         1
+1 1       1   1   1         1
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+
 '''
 
 tree_node = {'floor': 0, 'empty': False, 'info': {'type': 0, 'pos': (0, 0), 'area': [], 'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}}, 'way': {'forward': {}, 'backward': {}}}
@@ -294,5 +390,7 @@ if __name__ == '__main__':
 	for i in range(8):
 		r = random.randint(1, 4)
 		maze.block_fill(0, r, 5 - r)
-	maze.show(lambda self, pos: maze.get_type(pos))
-	#maze.show(maze.get_count, 2)
+	maze.show(lambda pos: maze.get_type(pos))
+	maze.block_check(0)
+	maze.show(lambda pos: maze.get_type(pos))
+	#maze.show(maze.get_wall)
