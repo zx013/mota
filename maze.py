@@ -56,6 +56,11 @@ class Maze:
 		#maze[0][2][2]['type'] = 1
 		#maze[0][3][3]['type'] = 1
 
+	def move_pos(self, pos, move):
+		z, x, y = pos
+		move_x, move_y = move
+		return (z, x + move_x, y + move_y)
+
 	def inside(self, pos):
 		z, x, y = pos
 		if 0 <= x <= MazeBase.rows + 1:
@@ -97,20 +102,6 @@ class Maze:
 			around.append((z, x, y + num))
 		return around
 
-	def get_around_ground(self, pos):
-		ground = []
-		for pos in self.get_around(pos, 1):
-			if self.get_type(pos) != MazeBase.wall:
-				ground.append(pos)
-		return ground
-
-	def get_around_wall(self, pos):
-		wall = []
-		for pos in self.get_around(pos, 1):
-			if self.get_type(pos) == MazeBase.wall:
-				wall.append(pos)
-		return wall
-
 	def get_count(self, pos):
 		count = {}
 		for pos in self.get_around(pos, 1):
@@ -118,16 +109,6 @@ class Maze:
 			count.setdefault(pos_type, 0)
 			count[pos_type] += 1
 		return count
-
-	#检查对边是否相等
-	def check_around(self, pos):
-		around = self.get_around(pos, 1)
-		if len(around) < 4:
-			return False
-		around_type = map(self.get_type, around)
-		if around_type[0] == around_type[1] or around_type[2] == around_type[3]:
-			return True
-		return False
 
 #生成起止点
 #生成最短路径
@@ -280,25 +261,67 @@ class Maze:
 						self.set_type((floor, i, j), fill_type)
 				break
 
-	def check_special(self, type_list):
-		type1, type2, type3, type4 = type_list
+	def is_special(self, special):
+		type1, type2, type3, type4 = map(self.get_type, special)
 		if type1 in MazeBase.ground_list and type2 == MazeBase.wall and type3 == MazeBase.wall and type4 in MazeBase.ground_list:
 			return True
+		#if type1 in MazeBase.ground_list and type2 in [MazeBase.wall, MazeBase.ground_replace_temp] and type3 in [MazeBase.wall, MazeBase.ground_replace_temp] and type4 in MazeBase.ground_list:
+		#	return True
 		return False
 
 	def get_special(self, pos):
 		z, x, y = pos
-		for special in (
-			((z, x + 2, y), (z, x + 1, y), (z, x, y), (z, x - 1, y)),
-			((z, x + 1, y), (z, x, y), (z, x - 1, y), (z, x - 2, y)),
-			((z, x, y + 2), (z, x, y + 1), (z, x, y), (z, x, y - 1)),
-			((z, x, y + 1), (z, x, y), (z, x, y - 1), (z, x, y - 2))):
-			if self.check_special(map(self.get_type, special)):
+		special_list = (((z, x + 2, y), (z, x + 1, y), (z, x, y), (z, x - 1, y)),
+		((z, x + 1, y), (z, x, y), (z, x - 1, y), (z, x - 2, y)),
+		((z, x, y + 2), (z, x, y + 1), (z, x, y), (z, x, y - 1)),
+		((z, x, y + 1), (z, x, y), (z, x, y - 1), (z, x, y - 2)))
+		return special_list
+
+	def check_special(self, pos):
+		for special in self.get_special(pos):
+			if self.is_special(special):
 				return special
 		return ()
 
-	def set_special(self, pos):
-		pass
+	#往move_type方向获取可能的special
+	def move_special(self, special, move_type):
+		special_list = []
+		move_value = 1
+		while True:
+			move = [move_type[0] * move_value, move_type[1] * move_value]
+			temp_special = []
+			for pos in special:
+				temp_special.append(self.move_pos(pos, move))
+			if self.is_special(temp_special):
+				special_list.append(temp_special)
+			else:
+				break
+			move_value += 1
+		return special_list
+
+	def get_move_special(self, special):
+		special_list = [special]
+		if special[0][1] == special[1][1] == special[2][1] == special[3][1]: #x相等
+			special_list += self.move_special(special, (1, 0))
+			special_list += self.move_special(special, (-1, 0))
+		elif special[0][2] == special[1][2] == special[2][2] == special[3][2]:
+			special_list += self.move_special(special, (0, 1))
+			special_list += self.move_special(special, (0, -1))
+		return special_list
+			
+	def set_special(self, special):
+		special_list = self.get_move_special(special)
+		pos0, pos1, pos2, pos3 = special
+		if not self.inside(pos0):
+			choose = 2
+		elif not self.inside(pos3):
+			choose = 1
+		else:
+			choose = random.choice((1, 2))
+		for temp_special in special_list:
+			pos = temp_special[choose]
+			self.set_type(pos, MazeBase.ground_replace_temp)
+			
 
 	#| 0 0 | 0 | 0 1 1 0 | 0 1 1 0
 	#| 1 1 | 1 | 0 1 1 0 |
@@ -313,25 +336,10 @@ class Maze:
 		for pos in check_pos:
 			if self.get_type(pos) != MazeBase.wall:
 				continue
-			if not self.get_special(pos):
+			special = self.check_special(pos)
+			if not special:
 				continue
-			self.set_type(pos, MazeBase.ground_replace_temp)
-			#count = self.get_count(pos)
-			#if count.get(MazeBase.wall, 0) + count.get(MazeBase.ground_replace_temp, 0) != 3:
-			#	continue
-			#print pos, self.get_around(pos, 1)
-			#for pos_wall in self.get_around_wall(pos):
-			#	count = self.get_count(pos)
-			#	if count.get(MazeBase.wall, 0) + count.get(MazeBase.ground_replace_temp, 0) <= 2:
-			#		break
-			#else:
-				#for pos_ground in self.get_around_ground(pos):
-				#	if self.get_type(pos_ground) in [MazeBase.ground_bar_temp, MazeBase.ground_replace_temp]:
-				#		break
-				#else:
-				#	continue
-			#	self.set_type(pos, MazeBase.ground_replace_temp)
-			#	print pos
+			self.set_special(special)
 
 
 	def show(self, format):
