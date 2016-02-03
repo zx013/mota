@@ -298,12 +298,15 @@ class Maze:
 	#2*2的方块
 
 	def is_solid(self, solid):
-		pass
+		for pos in solid:
+			if self.get_type(pos) != MazeBase.wall:
+				return False
+		return True
 		
 	def get_solid(self, pos):
 		z, x, y = pos
 		solid_list = (((z, x, y), (z, x + 1, y), (z, x + 2, y), (z, x, y + 1), (z, x + 1, y + 1), (z, x + 2, y + 1)),
-			((z, x, y), (z, x + 1, y), (z, x, y + 1), (z, x + 1, y + 1), (z, x, y + 2), (z, x + 1, y + 2)))
+			((z, x, y), (z, x, y + 1), (z, x, y + 2), (z, x + 1, y), (z, x + 1, y + 1), (z, x + 1, y + 2)))
 		return solid_list
 
 	def check_solid(self, pos):
@@ -311,12 +314,29 @@ class Maze:
 			if self.is_solid(solid):
 				return solid
 
+	def set_solid(self, solid):
+		#中间两个点
+		pos_list = [solid[1], solid[4]]
+		#pos_list = random.sample(pos_list, len(pos_list))
+		pos_list = [pos for pos in pos_list if self.get_count(pos).get(MazeBase.ground, 0) >= 1]
+		if len(pos_list) > 0:
+			pos = random.choice(pos_list)
+			self.set_type(pos, MazeBase.ground)
+			return True
+		return False
+
 	def block_adjust(self, floor):
+		check = False
 		pos_list = self.get_pos_list(floor, (1, MazeBase.rows), (1, MazeBase.cols))
 		for pos in pos_list:
 			if self.get_type(pos) != MazeBase.wall:
 				continue
-			self.check_solid(pos)
+			solid = self.check_solid(pos)
+			if not solid:
+				continue
+			if self.set_solid(solid):
+				check = True
+		return check
 
 
 	def create(self):
@@ -327,6 +347,8 @@ class Maze:
 		while not maze.block_check(0):
 			pass
 		self.block_connect(0)
+		while self.block_adjust(0):
+			pass
 		self.show(lambda pos: self.get_type(pos))
 
 	def show(self, format):
