@@ -313,6 +313,7 @@ class Maze:
 		for solid in self.get_solid(pos):
 			if self.is_solid(solid):
 				return solid
+		return ()
 
 	def set_solid(self, solid):
 		#中间两个点
@@ -325,7 +326,27 @@ class Maze:
 			return True
 		return False
 
-	def block_adjust(self, floor):
+	def is_square(self, square):
+		for pos in square:
+			if self.get_type(pos) != MazeBase.wall:
+				return False
+		return True
+		
+	def get_square(self, pos):
+		z, x, y = pos
+		square = ((z, x, y), (z, x + 1, y), (z, x, y + 1), (z, x + 1, y + 1))
+		return square
+
+	def check_square(self, pos):
+		square = self.get_square(pos)
+		if self.is_square(square):
+			return square
+		return ()
+
+	def set_square(self, square):
+		return False
+
+	def adjust_solid(self, floor):
 		check = False
 		pos_list = self.get_pos_list(floor, (1, MazeBase.rows), (1, MazeBase.cols))
 		for pos in pos_list:
@@ -338,6 +359,26 @@ class Maze:
 				check = True
 		return check
 
+	def adjust_square(self, floor):
+		check = False
+		pos_list = self.get_pos_list(floor, (1, MazeBase.rows), (1, MazeBase.cols))
+		for pos in pos_list:
+			if self.get_type(pos) != MazeBase.wall:
+				continue
+			square = self.check_square(pos)
+			if not square:
+				continue
+			print square
+			if self.set_square(square):
+				check = True
+		return check
+
+	def block_adjust(self, floor):
+		while self.adjust_solid(floor):
+			pass
+		while self.adjust_square(floor):
+			pass
+
 
 	def create(self):
 		for i in range(100):
@@ -347,8 +388,7 @@ class Maze:
 		while not maze.block_check(0):
 			pass
 		self.block_connect(0)
-		while self.block_adjust(0):
-			pass
+		self.block_adjust(0)
 		self.show(lambda pos: self.get_type(pos))
 
 	def show(self, format):
