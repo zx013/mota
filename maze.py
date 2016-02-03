@@ -326,6 +326,17 @@ class Maze:
 			return True
 		return False
 
+
+	#正方形四个角的判定
+	#去除后会将墙隔断的区域
+	#隔断判断：去除的墙为A，A在正方块内相邻的为B, C，A在正方形外相邻的为D，若B, D呈斜对角，且去除A后B, D的另一边没有墙时，称去除A后隔断B, D
+	#去除后会增加一个分支
+	#	延长路径
+	#去除后会将地面区域扩大
+	#	2*2->2*3
+	#	路径->2*2
+	#全部不符合的，尝试移动墙壁
+	#即将墙去除后产生隔断，在隔断的另一边添加一面墙，如果不影响连通性，则进行该处理（递归时可能产生死循环）
 	def is_square(self, square):
 		for pos in square:
 			if self.get_type(pos) != MazeBase.wall:
@@ -342,8 +353,32 @@ class Maze:
 		if self.is_square(square):
 			return square
 		return ()
+		
 
+	def get_separate(self, square):
+		separate_list = []
+		for pos in square:
+			#相邻的墙，集合形式
+			around = {around_pos for around_pos in self.get_around(pos, 1) if self.get_type(around_pos) == MazeBase.wall}
+			if len(around) == 4: #四面都是墙
+				continue
+			beside_in = around & set(square) #正方形内相邻的点
+			beside_out = around - beside_in #正方形外相邻的点
+			if len(beside_out) == 0: #没有外相邻的点，则不会隔断
+				continue
+			#如果有外相邻点且不隔断，则为2*3的方块
+			separate_list.append(pos)
+		return separate_list
+
+	def check_separate(self, square):
+		 separate_list = self.get_separate(square)
+		 if len(separate_list) != 4:
+		 	print separate_list
+		 else:
+		 	print separate_list
+	
 	def set_square(self, square):
+		self.check_separate(square)
 		return False
 
 	def adjust_solid(self, floor):
