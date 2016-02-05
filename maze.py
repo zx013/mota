@@ -5,11 +5,6 @@ import random
 #选择区域
 #分支区域
 
-def add_pos(pos1, pos2):
-	z1, x1, y1 = pos1
-	x2, y2 = pos2
-	pos = z1, x1 + x2, y1 + y2
-	return pos
 
 class MazeBase:
 	floor = 1
@@ -370,12 +365,31 @@ class Maze:
 			separate_list.append(pos)
 		return separate_list
 
+	#获取扩张前的形状
+	def get_expand(self, pos):
+		#向四个方向延伸，计算延伸的值
+		for around in self.get_around(pos, 1):
+			if self.get_type(around) == MazeBase.wall:
+				continue
+			move_type = (around[1] - pos[1], around[2] - pos[2])
+			move_value = 1
+			while True:
+				move = [move_type[0] * move_value, move_type[1] * move_value]
+				if self.get_type(self.move_pos(pos, move)) == MazeBase.wall:
+					break
+				move_value += 1
+			print move_value - 1
+		
+		
+
 	def check_separate(self, square):
 		 separate_list = self.get_separate(square)
 		 if len(separate_list) != 4:
-		 	print separate_list
+		 	expand_list = list(set(square) - set(separate_list))
+		 	for pos in expand_list:
+		 		self.get_expand(pos)
 		 else:
-		 	print separate_list
+		 	print set(separate_list)
 	
 	def set_square(self, square):
 		self.check_separate(square)
@@ -383,7 +397,7 @@ class Maze:
 
 	def adjust_solid(self, floor):
 		check = False
-		pos_list = self.get_pos_list(floor, (1, MazeBase.rows), (1, MazeBase.cols))
+		pos_list = self.get_pos_list(floor, (0, MazeBase.rows), (0, MazeBase.cols))
 		for pos in pos_list:
 			if self.get_type(pos) != MazeBase.wall:
 				continue
@@ -438,10 +452,32 @@ class Maze:
 				print
 			print
 
+	def get_show(self, show):
+		self.maze[0] = [[{'type': int(col), 'value': 0} for col in row.replace('  ', ' 0').split(' ')] for row in show.split('\n')[1:-1]]
+		
 
+maze_show = '''
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+1 1     1 1     1 1   1   1 1
+1 1 1 1 1 1 1 1 1 1   1   1 1
+1   1     1 1 1 1 1 1 1 1 1 1
+1   1 1 1 1   1 1   1 1 1 1 1
+1 1 1 1 1 1   1 1   1 1     1
+1 1     1 1 1 1 1 1 1 1 1 1 1
+1 1 1 1 1 1 1 1 1 1 1   1   1
+1 1 1 1     1 1     1   1   1
+1   1 1 1 1 1 1 1 1 1 1 1 1 1
+1   1 1 1 1     1     1     1
+1 1 1 1   1 1 1 1 1 1 1 1 1 1
+1   1 1   1   1   1   1   1 1
+1   1 1 1 1   1   1   1   1 1
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+'''
 tree_node = {'floor': 0, 'empty': False, 'info': {'type': 0, 'pos': (0, 0), 'area': [], 'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}}, 'way': {'forward': {}, 'backward': {}}}
 
 
 if __name__ == '__main__':
 	maze = Maze()
+	maze.get_show(maze_show)
+	maze.show(lambda pos: maze.get_type(pos))
 	maze.create()
