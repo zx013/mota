@@ -97,10 +97,14 @@ class Maze:
 			around.append((z, x, y + num))
 		return around
 
+	def get_around_wall(self, pos):
+		around = {around_pos for around_pos in self.get_around(pos, 1) if self.get_type(around_pos) == MazeBase.wall}
+		return around
+
 	def get_count(self, pos):
 		count = {}
-		for pos in self.get_around(pos, 1):
-			pos_type = self.get_type(pos)
+		for count_pos in self.get_around(pos, 1):
+			pos_type = self.get_type(count_pos)
 			count.setdefault(pos_type, 0)
 			count[pos_type] += 1
 		return count
@@ -223,12 +227,21 @@ class Maze:
 	def set_special(self, special):
 		special_list = self.get_move_special(special)
 		pos0, pos1, pos2, pos3 = special
+		
 		if not self.inside(pos0):
 			choose = 2
 		elif not self.inside(pos3):
 			choose = 1
 		else:
-			choose = random.choice((1, 2))
+			around1 = len(self.get_around_wall(pos1))
+			around2 = len(self.get_around_wall(pos2))
+			#周围的墙数目，选择较少的一边，可以消除大部分的隔断情况
+			if around1 > around2:
+				choose = 2
+			elif around1 < around2:
+				choose = 1
+			else:
+				choose = random.choice((1, 2))
 		for temp_special in special_list:
 			pos = temp_special[choose]
 			self.set_type(pos, MazeBase.ground)
@@ -354,7 +367,7 @@ class Maze:
 		separate_list = []
 		for pos in square:
 			#相邻的墙，集合形式
-			around = {around_pos for around_pos in self.get_around(pos, 1) if self.get_type(around_pos) == MazeBase.wall}
+			around = self.get_around_wall(pos)
 			if len(around) == 4: #四面都是墙
 				continue
 			beside_in = around & set(square) #正方形内相邻的点
@@ -368,6 +381,7 @@ class Maze:
 	#获取扩张前的形状
 	def get_expand(self, pos):
 		#向四个方向延伸，计算延伸的值
+		expand = []
 		for around in self.get_around(pos, 1):
 			if self.get_type(around) == MazeBase.wall:
 				continue
@@ -378,16 +392,18 @@ class Maze:
 				if self.get_type(self.move_pos(pos, move)) == MazeBase.wall:
 					break
 				move_value += 1
-			print move_value - 1
-		
-		
+			expand.append(move_value - 1)
+		print expand
+
 
 	def check_separate(self, square):
 		 separate_list = self.get_separate(square)
 		 if len(separate_list) != 4:
 		 	expand_list = list(set(square) - set(separate_list))
-		 	for pos in expand_list:
-		 		self.get_expand(pos)
+		 	#for pos in expand_list:
+		 	#	self.get_expand(pos)
+		 	pos = random.choice(expand_list)
+		 	self.set_type(pos, MazeBase.ground)
 		 else:
 		 	print set(separate_list)
 	
@@ -417,7 +433,7 @@ class Maze:
 			square = self.check_square(pos)
 			if not square:
 				continue
-			print square
+			#print square
 			if self.set_square(square):
 				check = True
 		return check
@@ -436,7 +452,9 @@ class Maze:
 		self.show(lambda pos: self.get_type(pos))
 		while not maze.block_check(0):
 			pass
+		self.show(lambda pos: self.get_type(pos))
 		self.block_connect(0)
+		self.show(lambda pos: self.get_type(pos))
 		self.block_adjust(0)
 		self.show(lambda pos: self.get_type(pos))
 
@@ -479,5 +497,5 @@ tree_node = {'floor': 0, 'empty': False, 'info': {'type': 0, 'pos': (0, 0), 'are
 if __name__ == '__main__':
 	maze = Maze()
 	maze.get_show(maze_show)
-	maze.show(lambda pos: maze.get_type(pos))
+	#maze.show(lambda pos: maze.get_type(pos))
 	maze.create()
