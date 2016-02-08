@@ -458,6 +458,11 @@ class Maze:
 		self.block_adjust(0)
 		self.show(lambda pos: self.get_type(pos))
 
+	#生成树状结构
+	#用2*2的方块移动，该方块能活动的最大范围为一个块状区域
+	#周围有两个ground的ground区域，同类型的方块连通的道路，为路径区域
+	#无法形成块状区域的点，周围有3个或以上的ground区域，为转折点
+
 	def show(self, format):
 		for k in range(MazeBase.floor):
 			for i in range(MazeBase.rows + 2):
