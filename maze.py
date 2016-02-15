@@ -7,6 +7,7 @@ import random
 
 
 class MazeBase:
+	error = -1
 	floor = 1
 	rows = 13
 	cols = 13
@@ -109,7 +110,6 @@ class Maze:
 			count[pos_type] += 1
 		return count
 
-
 	#将type1改变为type2
 	def change(self, floor, type1, type2):
 		for i in range(1, MazeBase.rows + 1):
@@ -119,28 +119,58 @@ class Maze:
 					self.set_type(pos, type2)
 
 
+	pool = []
+
+	def save(self, floor):
+		maze_pool.append(self.maze[floor])
+
+	def select(self, floor, cursor):
+		self.maze[floor] = maze_pool[cursor]
+
+	def restore(self):
+		maze_pool.pop(self.cursor)
+
+
 	info = {}
-	def create_floor(self, floor):
+	def init_floor(self, floor):
 		self.info[floor] = {}
 
-	def create_stairs(self, floor):
+	def init_stairs(self, floor):
 		#获取上一层的终止点，没有则随机生成
-		start_x = random.randint(1, MazeBase.rows)
-		start_y = random.randint(1, MazeBase.cols)
-		start_pos = (floor, start_x, start_y)
-		self.set_type(start_pos, MazeBase.stairs)
-		self.set_value(start_pos, MazeBase.stairs_start)
-		self.info[floor]['stairs_start'] = start_pos
-		while True:
-			end_x = random.randint(1, MazeBase.rows)
-			end_y = random.randint(1, MazeBase.cols)
+		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 1), (1, MazeBase.cols + 1))
+		pos_list = [pos for pos in pos_list if self.get_type(pos) == MazeBase.ground and len(self.get_around_wall(pos)) == 3]
+		#print pos_list
+		if len(pos_list) <= 2: #不足以摆放楼梯
+			return MazeBase.error
+
+		if floor <= 0:
+			start_pos = random.choice(pos_list)
+			self.info[floor]['stairs_start'] = start_pos
+		else:
+			start_pos = self.info[floor - 1]['stairs_end']
+			if self.get_type(start_pos) == MazeBase.ground and len(self.get_around_wall(pos)) == 3:
+				self.info[floor]['stairs_start'] = start_pos
+			else:
+				return False
+		floor, start_x, start_y = start_pos
+
+		for floor, end_x, end_y in pos_list:
+			end_pos = (floor, end_x, end_y)
 			if abs(end_x - start_x) > 1 or abs(end_y - start_y) > 1:
 				break
-		end_pos = (floor, end_x, end_y)
+		else:
+			return False
+		self.info[floor]['stairs_end'] = end_pos
+		return True
+
+	def create_stairs(self, floor):
+		start_pos = self.info[floor]['stairs_start']
+		self.set_type(start_pos, MazeBase.stairs)
+		self.set_value(start_pos, MazeBase.stairs_start)
+		
+		end_pos = self.info[floor]['stairs_end']
 		self.set_type(end_pos, MazeBase.stairs)
 		self.set_value(end_pos, MazeBase.stairs_end)
-		self.info[floor]['stairs_end'] = end_pos
-
 
 
 	def get_pos_list(self, floor, (start_x, end_x), (start_y, end_y)):
@@ -169,11 +199,20 @@ class Maze:
 				for i in range(x - 1, x + height + 1):
 					for j in range(y - 1, y + width + 1):
 						if x <= i < x + height and y <= j < y + width:
-							fill_type = MazeBase.ground
+							fill_type = MazeBase.ground_replace_temp
 						else:
 							fill_type = MazeBase.wall
 						self.set_type((floor, i, j), fill_type)
-				break
+				return True
+		return False
+
+	def block_fill(self, floor):
+		choice_type = [1, 2]
+		while choice_type:
+			r = random.choice(choice_type)
+			if not self.block_insert(floor, r, 3 - r):
+				choice_type.remove(r)
+		self.change(floor, MazeBase.ground_replace_temp, MazeBase.ground)
 
 
 	def is_special(self, special):
@@ -445,18 +484,37 @@ class Maze:
 			pass
 
 
+	def is_block(self, floor):
+		check = self.init_stairs(floor)
+		return check
+
+	def block_create(self, floor):
+		for cursor in range(len(self.pool)):
+			self.select(floor, cursor)
+			if self.is_block(floor):
+				self.restore()
+				break
+		else:
+			while True:
+				self.block_fill(floor)
+				while not self.block_check(floor):
+					pass
+				self.block_connect(floor)
+				self.block_adjust(floor)
+				check = self.is_block(floor)
+				if check == MazeBase.error: #出错不保存
+					continue
+				elif check:
+					break
+				self.save(floor)
+
 	def create(self):
-		for i in range(100):
-			r = random.randint(1, 2)
-			self.block_insert(0, r, 3 - r)
+		self.init_floor(0)
+		self.block_create(0)
+		self.create_stairs(0)
+		print len(self.pool)
 		self.show(lambda pos: self.get_type(pos))
-		while not maze.block_check(0):
-			pass
-		self.show(lambda pos: self.get_type(pos))
-		self.block_connect(0)
-		self.show(lambda pos: self.get_type(pos))
-		self.block_adjust(0)
-		self.show(lambda pos: self.get_type(pos))
+
 
 	#生成树状结构
 	#用2*2的方块移动，该方块能活动的最大范围为一个块状区域
