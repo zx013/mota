@@ -6,11 +6,17 @@ import random
 #分支区域
 
 
+def put(*args):
+	print args
+	import sys
+	sys.stdout.flush()
+
 class MazeBase:
-	error = -1
-	floor = 1
-	rows = 13
+	floor = 10
+	rows = 5
 	cols = 13
+
+	count = rows * cols / 2
 
 	ground = 0
 	wall = 1
@@ -31,9 +37,6 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	maze_inside = dict(maze_node)
-	maze_outside = dict(maze_node)
-	maze_outside['type'] = 1
 
 class Maze:
 	maze = []
@@ -43,10 +46,7 @@ class Maze:
 			for i in range(MazeBase.rows + 2):
 				rows_area = []
 				for j in range(MazeBase.cols + 2):
-					if i in [0, MazeBase.rows + 1] or j in [0, MazeBase.cols + 1]:
-						rows_area.append(dict(MazeBase.maze_outside))
-					else:
-						rows_area.append(dict(MazeBase.maze_inside))
+					rows_area.append(dict(MazeBase.maze_node))
 				floor_area.append(rows_area)
 			self.maze.append(floor_area)
 		#maze[0][2][2]['type'] = 1
@@ -119,18 +119,6 @@ class Maze:
 					self.set_type(pos, type2)
 
 
-	pool = []
-
-	def save(self, floor):
-		maze_pool.append(self.maze[floor])
-
-	def select(self, floor, cursor):
-		self.maze[floor] = maze_pool[cursor]
-
-	def restore(self):
-		maze_pool.pop(self.cursor)
-
-
 	info = {}
 	def init_floor(self, floor):
 		self.info[floor] = {}
@@ -139,18 +127,17 @@ class Maze:
 		#获取上一层的终止点，没有则随机生成
 		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 1), (1, MazeBase.cols + 1))
 		pos_list = [pos for pos in pos_list if self.get_type(pos) == MazeBase.ground and len(self.get_around_wall(pos)) == 3]
-		#print pos_list
 		if len(pos_list) <= 2: #不足以摆放楼梯
-			return MazeBase.error
+			return False
 
 		if floor <= 0:
 			start_pos = random.choice(pos_list)
 			self.info[floor]['stairs_start'] = start_pos
 		else:
-			start_pos = self.info[floor - 1]['stairs_end']
-			if self.get_type(start_pos) == MazeBase.ground and len(self.get_around_wall(pos)) == 3:
-				self.info[floor]['stairs_start'] = start_pos
-			else:
+			pos = self.info[floor - 1]['stairs_end']
+			start_pos = (pos[0] + 1, pos[1], pos[2])
+			self.info[floor]['stairs_start'] = start_pos
+			if start_pos not in pos_list:
 				return False
 		floor, start_x, start_y = start_pos
 
@@ -184,6 +171,15 @@ class Maze:
 	#填充m*n的方格
 	#处理多层的墙
 	#建立通道
+	
+	def block_init(self, floor):
+		for i in range(MazeBase.rows + 2):
+			for j in range(MazeBase.cols + 2):
+				if 0 < i < MazeBase.rows + 1 and 0 < j < MazeBase.cols + 1:
+					fill_type = MazeBase.ground
+				else:
+					fill_type = MazeBase.wall
+				self.set_type((floor, i, j), fill_type)
 
 	def block_insert(self, floor, width, height):
 		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 2 - height), (1, MazeBase.cols + 2 - width))
@@ -290,7 +286,7 @@ class Maze:
 	#| 1 1 | 1 |
 	#| 0 0 | 0 |
 	def block_check(self, floor):
-		check = False
+		check = True
 		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 1), (1, MazeBase.cols + 1))
 		for pos in pos_list:
 			if self.get_type(pos) != MazeBase.wall:
@@ -299,7 +295,7 @@ class Maze:
 			if not special:
 				continue
 			self.set_special(special)
-			check = True
+			check = False
 		return check
 
 
@@ -444,7 +440,8 @@ class Maze:
 		 	pos = random.choice(expand_list)
 		 	self.set_type(pos, MazeBase.ground)
 		 else:
-		 	print set(separate_list)
+		 	pass
+		 	#print set(separate_list)
 	
 	def set_square(self, square):
 		self.check_separate(square)
@@ -485,34 +482,30 @@ class Maze:
 
 
 	def is_block(self, floor):
-		check = self.init_stairs(floor)
-		return check
+		if not self.init_stairs(floor):
+			return False
+		return True
 
-	def block_create(self, floor):
-		for cursor in range(len(self.pool)):
-			self.select(floor, cursor)
-			if self.is_block(floor):
-				self.restore()
-				break
-		else:
+	def block_create(self): #小地图时有可能卡住
+		for floor in range(MazeBase.floor):
+			self.init_floor(floor)
 			while True:
+				self.block_init(floor)
 				self.block_fill(floor)
 				while not self.block_check(floor):
 					pass
 				self.block_connect(floor)
 				self.block_adjust(floor)
-				check = self.is_block(floor)
-				if check == MazeBase.error: #出错不保存
-					continue
-				elif check:
+				if self.is_block(floor):
 					break
-				self.save(floor)
+			self.create_stairs(floor)
+
+
+	def tree_create(self):
+		pass
 
 	def create(self):
-		self.init_floor(0)
-		self.block_create(0)
-		self.create_stairs(0)
-		print len(self.pool)
+		self.block_create()
 		self.show(lambda pos: self.get_type(pos))
 
 
