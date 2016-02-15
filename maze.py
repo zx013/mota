@@ -1,19 +1,32 @@
 #-*- coding:utf-8 -*-
 import random
+import copy
 
 def put(*args):
 	print args
 	import sys
 	sys.stdout.flush()
 
+maze_show = '''
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+1 1     1 1     1 1   1   1 1
+1 1 1 1 1 1 1 1 1 1   1   1 1
+1   1     1 1 1 1 1 1 1 1 1 1
+1   1 1 1 1   1 1   1 1 1 1 1
+1 1 1 1 1 1   1 1   1 1     1
+1 1     1 1 1 1 1 1 1 1 1 1 1
+1 1 1 1 1 1 1 1 1 1 1   1   1
+1 1 1 1     1 1     1   1   1
+1   1 1 1 1 1 1 1 1 1 1 1 1 1
+1   1 1 1 1     1     1     1
+1 1 1 1   1 1 1 1 1 1 1 1 1 1
+1   1 1   1   1   1   1   1 1
+1   1 1 1 1   1   1   1   1 1
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+'''
+
 
 class MazeBase:
-	floor = 3
-	rows = 5
-	cols = 13
-
-	count = rows * cols / 2
-
 	ground = 0
 	wall = 1
 	item = 2
@@ -22,20 +35,28 @@ class MazeBase:
 	stairs = 5
 	other = 100
 
-	ground_bar_temp = 7
-	ground_block_temp = 8
-	ground_replace_temp = 9
+	point = 7
+	area = 8
+	ground_replace = 9
 
-	ground_list = [ground, ground_bar_temp, ground_block_temp, ground_replace_temp]
+	ground_list = [ground, ground_replace]
 
 
 	stairs_start = 1
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'way': {'forward': {}, 'backward': {}}}
+	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
 class MazeSetting:
+	#层数
+	floor = 3
+	#行
+	rows = 5
+	#列
+	cols = 13
 	#楼梯对齐，禁用可大幅提高地图生成速度
 	stairs_align = True
 
@@ -43,16 +64,14 @@ class MazeSetting:
 class Maze:
 	maze = []
 	def __init__(self):
-		for k in range(MazeBase.floor):
+		for k in range(MazeSetting.floor):
 			floor_area = []
-			for i in range(MazeBase.rows + 2):
+			for i in range(MazeSetting.rows + 2):
 				rows_area = []
-				for j in range(MazeBase.cols + 2):
+				for j in range(MazeSetting.cols + 2):
 					rows_area.append(dict(MazeBase.maze_node))
 				floor_area.append(rows_area)
 			self.maze.append(floor_area)
-		#maze[0][2][2]['type'] = 1
-		#maze[0][3][3]['type'] = 1
 
 	def move_pos(self, pos, move):
 		z, x, y = pos
@@ -61,8 +80,8 @@ class Maze:
 
 	def inside(self, pos):
 		z, x, y = pos
-		if 0 <= x <= MazeBase.rows + 1:
-			if 0 <= y <= MazeBase.cols + 1:
+		if 0 <= x <= MazeSetting.rows + 1:
+			if 0 <= y <= MazeSetting.cols + 1:
 				return True
 		return False
 
@@ -92,11 +111,11 @@ class Maze:
 		z, x, y = pos
 		if x > num - 1:
 			around.append((z, x - num, y))
-		if x < MazeBase.rows + 2 - num:
+		if x < MazeSetting.rows + 2 - num:
 			around.append((z, x + num, y))
 		if y > num - 1:
 			around.append((z, x, y - num))
-		if y < MazeBase.cols + 2 - num:
+		if y < MazeSetting.cols + 2 - num:
 			around.append((z, x, y + num))
 		return around
 
@@ -114,8 +133,8 @@ class Maze:
 
 	#将type1改变为type2
 	def change(self, floor, type1, type2):
-		for i in range(1, MazeBase.rows + 1):
-			for j in range(1, MazeBase.cols + 1):
+		for i in range(1, MazeSetting.rows + 1):
+			for j in range(1, MazeSetting.cols + 1):
 				pos = (floor, i, j)
 				if self.get_type(pos) == type1:
 					self.set_type(pos, type2)
@@ -127,7 +146,7 @@ class Maze:
 
 	def init_stairs(self, floor):
 		#获取上一层的终止点，没有则随机生成
-		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 1), (1, MazeBase.cols + 1))
+		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
 		pos_list = [pos for pos in pos_list if self.get_type(pos) == MazeBase.ground and len(self.get_around_wall(pos)) == 3]
 		if len(pos_list) <= 2: #不足以摆放楼梯
 			return False
@@ -175,16 +194,16 @@ class Maze:
 	#建立通道
 
 	def block_init(self, floor):
-		for i in range(MazeBase.rows + 2):
-			for j in range(MazeBase.cols + 2):
-				if 0 < i < MazeBase.rows + 1 and 0 < j < MazeBase.cols + 1:
+		for i in range(MazeSetting.rows + 2):
+			for j in range(MazeSetting.cols + 2):
+				if 0 < i < MazeSetting.rows + 1 and 0 < j < MazeSetting.cols + 1:
 					fill_type = MazeBase.ground
 				else:
 					fill_type = MazeBase.wall
 				self.set_type((floor, i, j), fill_type)
 
 	def block_insert(self, floor, width, height):
-		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 2 - height), (1, MazeBase.cols + 2 - width))
+		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 2 - height), (1, MazeSetting.cols + 2 - width))
 		for z, x, y in pos_list:
 			for i in range(x, x + height):
 				for j in range(y, y + width):
@@ -197,7 +216,7 @@ class Maze:
 				for i in range(x - 1, x + height + 1):
 					for j in range(y - 1, y + width + 1):
 						if x <= i < x + height and y <= j < y + width:
-							fill_type = MazeBase.ground_replace_temp
+							fill_type = MazeBase.ground_replace
 						else:
 							fill_type = MazeBase.wall
 						self.set_type((floor, i, j), fill_type)
@@ -210,14 +229,14 @@ class Maze:
 			r = random.choice(choice_type)
 			if not self.block_insert(floor, r, 3 - r):
 				choice_type.remove(r)
-		self.change(floor, MazeBase.ground_replace_temp, MazeBase.ground)
+		self.change(floor, MazeBase.ground_replace, MazeBase.ground)
 
 
 	def is_special(self, special):
 		type1, type2, type3, type4 = map(self.get_type, special)
 		if type1 == MazeBase.ground  and type2 == MazeBase.wall and type3 == MazeBase.wall and type4 ==  MazeBase.ground:
 			return True
-		#if type1 in MazeBase.ground_list and type2 in [MazeBase.wall, MazeBase.ground_replace_temp] and type3 in [MazeBase.wall, MazeBase.ground_replace_temp] and type4 in MazeBase.ground_list:
+		#if type1 in MazeBase.ground_list and type2 in [MazeBase.wall, MazeBase.ground_replace] and type3 in [MazeBase.wall, MazeBase.ground_replace] and type4 in MazeBase.ground_list:
 		#	return True
 		return False
 
@@ -289,7 +308,7 @@ class Maze:
 	#| 0 0 | 0 |
 	def block_check(self, floor):
 		check = True
-		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 1), (1, MazeBase.cols + 1))
+		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
 		for pos in pos_list:
 			if self.get_type(pos) != MazeBase.wall:
 				continue
@@ -310,9 +329,9 @@ class Maze:
 		pos_type = self.get_type(pos)
 		if pos_type == MazeBase.wall:
 			edge.add(pos)
-		if pos_type in [MazeBase.wall, MazeBase.ground_replace_temp]:
+		if pos_type in [MazeBase.wall, MazeBase.ground_replace]:
 			return edge
-		self.set_type(pos, MazeBase.ground_replace_temp)
+		self.set_type(pos, MazeBase.ground_replace)
 		for around in self.get_around(pos, 1):
 			edge |= self.get_edge(around)
 		return edge
@@ -326,7 +345,7 @@ class Maze:
 		return ()
 
 	def block_connect(self, floor):
-		pos_list = self.get_pos_list(floor, (1, MazeBase.rows + 1), (1, MazeBase.cols + 1))
+		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
 		for pos in pos_list:
 			if self.get_type(pos) == MazeBase.wall:
 				continue
@@ -335,7 +354,7 @@ class Maze:
 			self.set_type(pos, MazeBase.ground)
 			edge = self.get_edge(pos)
 			pos = self.get_edge_pos(edge)
-			self.change(floor, MazeBase.ground_replace_temp, MazeBase.ground)
+			self.change(floor, MazeBase.ground_replace, MazeBase.ground)
 
 
 	#对特殊方块进行调整
@@ -451,7 +470,7 @@ class Maze:
 
 	def adjust_solid(self, floor):
 		check = False
-		pos_list = self.get_pos_list(floor, (0, MazeBase.rows), (0, MazeBase.cols))
+		pos_list = self.get_pos_list(floor, (0, MazeSetting.rows), (0, MazeSetting.cols))
 		for pos in pos_list:
 			if self.get_type(pos) != MazeBase.wall:
 				continue
@@ -464,7 +483,7 @@ class Maze:
 
 	def adjust_square(self, floor):
 		check = False
-		pos_list = self.get_pos_list(floor, (1, MazeBase.rows), (1, MazeBase.cols))
+		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows), (1, MazeSetting.cols))
 		for pos in pos_list:
 			if self.get_type(pos) != MazeBase.wall:
 				continue
@@ -483,13 +502,15 @@ class Maze:
 			pass
 
 
+	#方块是否规则
+	#是否有对角的墙
 	def is_block(self, floor):
 		if not self.init_stairs(floor):
 			return False
 		return True
 
 	def block_create(self): #小地图时有可能卡住
-		for floor in range(MazeBase.floor):
+		for floor in range(MazeSetting.floor):
 			self.init_floor(floor)
 			while True:
 				self.block_init(floor)
@@ -503,15 +524,6 @@ class Maze:
 			self.create_stairs(floor)
 
 
-	def tree_create(self):
-		pass
-
-	def create(self):
-		self.block_create()
-		self.tree_create()
-		self.show(lambda pos: self.get_type(pos))
-
-
 	#生成树状结构
 	#用2*2的方块移动，该方块能活动的最大范围为一个块状区域
 	#周围有小于等于2个ground的ground区域，同类型的方块连通的道路，为路径区域，路径的一端有被墙三面包围的ground，则为尽头
@@ -520,12 +532,93 @@ class Maze:
 	#一个区域连接着2个区域的，为路径区域
 	#一个区域连接着3个或以上区域的，为分支区域
 
+	tree = {}
+
+	def tree_init(self):
+		self.tree = copy.deepcopy(MazeBase.tree_node)
+
+	def tree_insert_point(self, floor):
+		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
+		for pos in pos_list:
+			if self.get_type(pos) in [MazeBase.wall, MazeBase.area]:
+				continue
+			if len(self.get_around_wall(pos)) <= 1:
+				self.set_type(pos, MazeBase.point)
+
+	def check_area(self, pos):
+		square = self.get_square(pos)
+		for pos in square:
+			if self.get_type(pos) == MazeBase.wall:
+				return ()
+		return square
+	
+	def tree_insert_area(self, floor):
+		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows), (1, MazeSetting.cols))
+		for pos in pos_list:
+			if self.get_type(pos) == MazeBase.wall:
+				continue
+			square = self.check_area(pos)
+			for square_pos in square:
+				self.set_type(square_pos, MazeBase.area)
+
+	#以pos为起始，漫延一个区域或道路
+	#道路的话，漫延至转折点
+	#区域的话，漫延整个区域
+	#往不同的分支依次递归
+
+	def spread_pos(self, node, pos):
+		node['info']['area'].add(pos)
+		self.set_type(pos, MazeBase.ground_replace)
+
+	def spread_node(self, node, pos):
+		pos_type = self.get_type(pos)
+		self.spread_pos(node, pos)
+		for around_pos in self.get_around(pos, 1):
+			if self.get_type(around_pos) in [MazeBase.wall, MazeBase.ground_replace] or around_pos in node['info']['area']:
+				continue
+			if pos_type in [MazeBase.point]: #点是区域或分支
+				node['way']['forward'][around_pos] = {}
+				continue
+			self.spread_node(node, around_pos)
+
+	def add_node(self, pos, backward):
+		node = copy.deepcopy(MazeBase.tree_node)
+		backward['way']['forward'][pos] = node
+		node['way']['backward'][pos] = backward
+		self.spread_node(node, pos)
+		print node['info']['area']
+		for pos, forward in node['way']['forward'].items():
+			self.add_node(pos, node)
+
+	def tree_start(self):
+		self.add_node(self.info[0]['stairs_start'], self.tree)
+
+	#连通点
+	#道路
+	#区域
+	#和之前路径相邻的连通点归并到上一级路径
+	#和之后路径相邻的连通点若不会把区域分割，且只连通一条路径，可归并到下一级路径
+	def tree_create(self):
+		self.tree_init()
+		for floor in range(MazeSetting.floor):
+			self.tree_insert_point(floor)
+			self.tree_insert_area(floor)
+		self.tree_start()
+
+
+	def create(self):
+		self.block_create()
+		self.show(lambda pos: self.get_type(pos))
+		self.tree_create()
+		self.show(lambda pos: self.get_type(pos))
+
+
 	def show(self, format):
-		for k in range(MazeBase.floor):
-			for i in range(MazeBase.rows + 2):
-				for j in range(MazeBase.cols + 2):
+		for k in range(MazeSetting.floor):
+			for i in range(MazeSetting.rows + 2):
+				for j in range(MazeSetting.cols + 2):
 					ret = format((k, i, j))
-					if ret in [MazeBase.ground, MazeBase.ground_bar_temp, MazeBase.ground_block_temp]:
+					if ret in [MazeBase.ground]:
 						print ' ',
 					else:
 						print ret,
@@ -534,26 +627,6 @@ class Maze:
 
 	def get_show(self, show):
 		self.maze[0] = [[{'type': int(col), 'value': 0} for col in row.replace('  ', ' 0').split(' ')] for row in show.split('\n')[1:-1]]
-
-
-maze_show = '''
-1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-1 1     1 1     1 1   1   1 1
-1 1 1 1 1 1 1 1 1 1   1   1 1
-1   1     1 1 1 1 1 1 1 1 1 1
-1   1 1 1 1   1 1   1 1 1 1 1
-1 1 1 1 1 1   1 1   1 1     1
-1 1     1 1 1 1 1 1 1 1 1 1 1
-1 1 1 1 1 1 1 1 1 1 1   1   1
-1 1 1 1     1 1     1   1   1
-1   1 1 1 1 1 1 1 1 1 1 1 1 1
-1   1 1 1 1     1     1     1
-1 1 1 1   1 1 1 1 1 1 1 1 1 1
-1   1 1   1   1   1   1   1 1
-1   1 1 1 1   1   1   1   1 1
-1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-'''
-tree_node = {'floor': 0, 'empty': False, 'info': {'type': 0, 'pos': (0, 0), 'area': [], 'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}}, 'way': {'forward': {}, 'backward': {}}}
 
 
 if __name__ == '__main__':
