@@ -1,18 +1,14 @@
 #-*- coding:utf-8 -*-
 import random
 
-#块状区域
-#选择区域
-#分支区域
-
-
 def put(*args):
 	print args
 	import sys
 	sys.stdout.flush()
 
+
 class MazeBase:
-	floor = 10
+	floor = 3
 	rows = 5
 	cols = 13
 
@@ -37,6 +33,12 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
+
+
+class MazeSetting:
+	#楼梯对齐，禁用可大幅提高地图生成速度
+	stairs_align = True
+
 
 class Maze:
 	maze = []
@@ -130,7 +132,7 @@ class Maze:
 		if len(pos_list) <= 2: #不足以摆放楼梯
 			return False
 
-		if floor <= 0:
+		if floor <= 0 or not MazeSetting.stairs_align:
 			start_pos = random.choice(pos_list)
 			self.info[floor]['stairs_start'] = start_pos
 		else:
@@ -154,7 +156,7 @@ class Maze:
 		start_pos = self.info[floor]['stairs_start']
 		self.set_type(start_pos, MazeBase.stairs)
 		self.set_value(start_pos, MazeBase.stairs_start)
-		
+
 		end_pos = self.info[floor]['stairs_end']
 		self.set_type(end_pos, MazeBase.stairs)
 		self.set_value(end_pos, MazeBase.stairs_end)
@@ -171,7 +173,7 @@ class Maze:
 	#填充m*n的方格
 	#处理多层的墙
 	#建立通道
-	
+
 	def block_init(self, floor):
 		for i in range(MazeBase.rows + 2):
 			for j in range(MazeBase.cols + 2):
@@ -262,7 +264,7 @@ class Maze:
 	def set_special(self, special):
 		special_list = self.get_move_special(special)
 		pos0, pos1, pos2, pos3 = special
-		
+
 		if not self.inside(pos0):
 			choose = 2
 		elif not self.inside(pos3):
@@ -345,7 +347,7 @@ class Maze:
 			if self.get_type(pos) != MazeBase.wall:
 				return False
 		return True
-		
+
 	def get_solid(self, pos):
 		z, x, y = pos
 		solid_list = (((z, x, y), (z, x + 1, y), (z, x + 2, y), (z, x, y + 1), (z, x + 1, y + 1), (z, x + 2, y + 1)),
@@ -385,7 +387,7 @@ class Maze:
 			if self.get_type(pos) != MazeBase.wall:
 				return False
 		return True
-		
+
 	def get_square(self, pos):
 		z, x, y = pos
 		square = ((z, x, y), (z, x + 1, y), (z, x, y + 1), (z, x + 1, y + 1))
@@ -396,7 +398,7 @@ class Maze:
 		if self.is_square(square):
 			return square
 		return ()
-		
+
 
 	def get_separate(self, square):
 		separate_list = []
@@ -442,7 +444,7 @@ class Maze:
 		 else:
 		 	pass
 		 	#print set(separate_list)
-	
+
 	def set_square(self, square):
 		self.check_separate(square)
 		return False
@@ -506,6 +508,7 @@ class Maze:
 
 	def create(self):
 		self.block_create()
+		self.tree_create()
 		self.show(lambda pos: self.get_type(pos))
 
 
@@ -531,7 +534,7 @@ class Maze:
 
 	def get_show(self, show):
 		self.maze[0] = [[{'type': int(col), 'value': 0} for col in row.replace('  ', ' 0').split(' ')] for row in show.split('\n')[1:-1]]
-		
+
 
 maze_show = '''
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
@@ -555,6 +558,6 @@ tree_node = {'floor': 0, 'empty': False, 'info': {'type': 0, 'pos': (0, 0), 'are
 
 if __name__ == '__main__':
 	maze = Maze()
-	maze.get_show(maze_show)
+	#maze.get_show(maze_show)
 	#maze.show(lambda pos: maze.get_type(pos))
 	maze.create()
