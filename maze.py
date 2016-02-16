@@ -54,9 +54,9 @@ class MazeSetting:
 	#层数
 	floor = 1
 	#行
-	rows = 5
+	rows = 9
 	#列
-	cols = 13
+	cols = 9
 	#楼梯对齐，禁用可大幅提高地图生成速度
 	stairs_align = True
 
@@ -631,28 +631,38 @@ class Maze:
 		self.add_node(self.info[0]['stairs_start'], self.tree)
 
 
+	#调整树，减少分支数量
+	#单节点尽头
+	def tree_adjust(self, floor):
+		pass
+
+
 	#移入，remove该点，add该点的forward
 	#移出，remove该点的forward，add该点
-	def in_move_node(self, forward):
-		node = self.tree_map[forward]
+	def in_move_node(self, move):
+		node = self.tree_map[move]
 		self.move_node.remove(node['number'])
 		for pos, forward in node['way']['forward'].items():
+			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
+				continue
 			self.move_node.add(forward['number'])
 
-	def out_move_node(self, forward):
-		node = self.tree_map[forward]
+	def out_move_node(self, move):
+		node = self.tree_map[move]
 		self.move_node.add(node['number'])
 		for pos, forward in node['way']['forward'].items():
+			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
+				continue
 			self.move_node.remove(forward['number'])
 
 	num = 0
 
 	def node_travel(self, node_list):
 		self.num += 1
-		for forward in set(self.move_node):
-			self.in_move_node(forward)
-			self.node_travel(node_list + [forward])
-			self.out_move_node(forward)
+		for move in set(self.move_node):
+			self.in_move_node(move)
+			self.node_travel(node_list + [move])
+			self.out_move_node(move)
 
 	def tree_travel(self):
 		self.node_travel([])
