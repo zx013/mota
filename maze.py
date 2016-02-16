@@ -541,9 +541,16 @@ class Maze:
 	#一个区域连接着3个或以上区域的，为分支区域
 
 	tree = {}
+	tree_number = 0
+	tree_map = {}
+	#下一步可移动的点
+	move_node = set()
 
 	def tree_init(self):
 		self.tree = copy.deepcopy(MazeBase.tree_node)
+		self.tree_number = 0
+		self.tree_map = {self.tree_number: self.tree}
+		self.move_node = set([self.tree_number])
 
 	def tree_insert_point(self, floor):
 		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
@@ -605,33 +612,69 @@ class Maze:
 			self.spread_node(node, around_pos)
 
 	def add_node(self, pos, backward):
+		self.tree_number += 1
 		node = copy.deepcopy(MazeBase.tree_node)
+		node['number'] = self.tree_number
+		self.tree_map[self.tree_number] = node
 		backward['way']['forward'][pos] = node
 		node['way']['backward'][pos] = backward
 		node['info']['type'] = self.get_type(pos)
 		if node['info']['type'] == MazeBase.stairs: #楼梯归为地面
 			node['info']['type'] = MazeBase.ground
 		self.spread_node(node, pos)
-		print node['info'], node['way']['forward'].keys()
-		self.show(lambda pos: self.get_type(pos))
+		#print node['info'], node['way']['forward'].keys()
+		#self.show(lambda pos: self.get_type(pos))
 		for pos, forward in node['way']['forward'].items():
 			self.add_node(pos, node)
 
 	def tree_start(self):
 		self.add_node(self.info[0]['stairs_start'], self.tree)
 
-	#连通点
-	#道路
-	#区域
-	#和之前路径相邻的连通点归并到上一级路径
-	#和之后路径相邻的连通点若不会把区域分割，且只连通一条路径，可归并到下一级路径
+
+	#移入，remove该点，add该点的forward
+	#移出，remove该点的forward，add该点
+	def in_move_node(self, forward):
+		node = self.tree_map[forward]
+		self.move_node.remove(node['number'])
+		for pos, forward in node['way']['forward'].items():
+			self.move_node.add(forward['number'])
+
+	def out_move_node(self, forward):
+		node = self.tree_map[forward]
+		self.move_node.add(node['number'])
+		for pos, forward in node['way']['forward'].items():
+			self.move_node.remove(forward['number'])
+
+	num = 0
+
+	def node_travel(self, node_list):
+		self.num += 1
+		for forward in set(self.move_node):
+			self.in_move_node(forward)
+			self.node_travel(node_list + [forward])
+			self.out_move_node(forward)
+
+	def tree_travel(self):
+		self.node_travel([])
+		print len(self.tree_map), self.num
+
+	#区域单独成块
+	#道路和转折点拼接
 	def tree_create(self):
 		self.tree_init()
 		for floor in range(MazeSetting.floor):
 			self.tree_insert_point(floor)
 			self.tree_insert_area(floor)
 		self.tree_start()
+		print self.move_node
+		self.tree_travel()
 
+	#区域通过方式
+	#损耗，获得，扫荡
+	#道路通过方式
+	#损耗，获得
+	#单个末结点通过方式
+	#扫荡
 
 	def create(self):
 		self.block_create()
