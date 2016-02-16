@@ -52,7 +52,7 @@ class MazeBase:
 
 class MazeSetting:
 	#层数
-	floor = 3
+	floor = 1
 	#行
 	rows = 5
 	#列
@@ -117,6 +117,14 @@ class Maze:
 			around.append((z, x, y - num))
 		if y < MazeSetting.cols + 2 - num:
 			around.append((z, x, y + num))
+		return around
+
+	def get_around_floor(self, pos):
+		floor = pos[0]
+		around = self.get_around(pos, 1)
+		#楼梯结束的周围包括了下一层的楼梯
+		if self.info[floor]['stairs_end'] == pos and self.info.has_key(floor + 1):
+			around.append(self.info[floor + 1]['stairs_start'])
 		return around
 
 	def get_around_wall(self, pos):
@@ -570,23 +578,42 @@ class Maze:
 		node['info']['area'].add(pos)
 		self.set_type(pos, MazeBase.ground_replace)
 
+	#点加入区域，递归周围的点
+	#点为路径点，加入周围的点
+	#点为区域点，加入周围的区域点，不加入周围的路径点或分支点，周围点中的路径点或分支点，加入forward
+	#点为分支点，将周围的分支点加入forward，不加入周围的点
 	def spread_node(self, node, pos):
 		pos_type = self.get_type(pos)
 		self.spread_pos(node, pos)
-		for around_pos in self.get_around(pos, 1):
-			if self.get_type(around_pos) in [MazeBase.wall, MazeBase.ground_replace] or around_pos in node['info']['area']:
+		for around_pos in self.get_around_floor(pos):
+			#墙，已经遍历的点
+			around_type = self.get_type(around_pos)
+			if around_type in [MazeBase.wall, MazeBase.ground_replace]:
 				continue
-			if pos_type in [MazeBase.point]: #点是区域或分支
+			if pos_type in [MazeBase.point]: #分支点
 				node['way']['forward'][around_pos] = {}
 				continue
+			elif pos_type in [MazeBase.area]: #区域点
+				if around_type not in [MazeBase.area]:
+					node['way']['forward'][around_pos] = {}
+					continue
+			else:
+				if around_type in [MazeBase.area]:
+					node['way']['forward'][around_pos] = {}
+					continue
+				
 			self.spread_node(node, around_pos)
 
 	def add_node(self, pos, backward):
 		node = copy.deepcopy(MazeBase.tree_node)
 		backward['way']['forward'][pos] = node
 		node['way']['backward'][pos] = backward
+		node['info']['type'] = self.get_type(pos)
+		if node['info']['type'] == MazeBase.stairs: #楼梯归为地面
+			node['info']['type'] = MazeBase.ground
 		self.spread_node(node, pos)
-		print node['info']['area']
+		print node['info'], node['way']['forward'].keys()
+		self.show(lambda pos: self.get_type(pos))
 		for pos, forward in node['way']['forward'].items():
 			self.add_node(pos, node)
 
