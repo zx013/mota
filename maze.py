@@ -54,9 +54,9 @@ class MazeSetting:
 	#层数
 	floor = 1
 	#行
-	rows = 9
+	rows = 13
 	#列
-	cols = 9
+	cols = 13
 	#楼梯对齐，禁用可大幅提高地图生成速度
 	stairs_align = True
 
@@ -566,7 +566,7 @@ class Maze:
 			if self.get_type(pos) == MazeBase.wall:
 				return ()
 		return square
-	
+
 	def tree_insert_area(self, floor):
 		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows), (1, MazeSetting.cols))
 		for pos in pos_list:
@@ -608,7 +608,7 @@ class Maze:
 				if around_type in [MazeBase.area]:
 					node['way']['forward'][around_pos] = {}
 					continue
-				
+
 			self.spread_node(node, around_pos)
 
 	def add_node(self, pos, backward):
@@ -668,6 +668,11 @@ class Maze:
 		self.node_travel([])
 		print len(self.tree_map), self.num
 
+	#遍历树
+	def tree_ergodic(self, func):
+		for move, node in self.tree_map.items():
+			func(node)
+
 	#区域单独成块
 	#道路和转折点拼接
 	def tree_create(self):
@@ -676,8 +681,60 @@ class Maze:
 			self.tree_insert_point(floor)
 			self.tree_insert_area(floor)
 		self.tree_start()
-		print self.move_node
-		self.tree_travel()
+		#print self.move_node
+		#self.tree_travel()
+		num = 0
+		for move, node in self.tree_map.items():
+			if len(node['info']['area']) == 1 and len(node['way']['forward']) == 0:
+				num += 1
+		print 'tree node:', len(self.tree_map)
+		print 'one point:', num
+		for floor in range(MazeSetting.floor):
+			self.change(floor, MazeBase.ground_replace, MazeBase.ground)
+
+
+	def item_init(self):
+		pass
+
+	#没算进楼梯
+	def is_slit(self, pos):
+		if self.get_type(pos) == MazeBase.wall:
+			return False
+		around_type = map(self.get_type, self.get_around(pos, 1))
+		if around_type not in [[MazeBase.ground, MazeBase.ground, MazeBase.wall, MazeBase.wall], [MazeBase.wall, MazeBase.wall, MazeBase.ground, MazeBase.ground]]:
+			return False
+		return True
+
+	door_num = 0
+	def set_slit(self, pos):
+		if self.is_slit(pos):
+			self.set_type(pos, MazeBase.door)
+			self.door_num += 1
+
+	def set_door(self, node):
+		backward = node['way']['backward']
+		if len(backward) == 0:
+			return
+		backward_pos, backward_node = backward.items()[0]
+		if node['info']['type'] != MazeBase.area:
+			forward = node['way']['forward']
+			if len(forward) == 0 or backward_node['info']['type'] == MazeBase.area:
+				self.set_slit(backward_pos)
+		else:
+			forward_pos = list(set(self.get_around(backward_pos, 1)) & backward_node['info']['area'])[0]
+			self.set_slit(forward_pos)
+		
+
+	#一个区域，只有物品，合并到上一个区域
+	#一个区域，没有物品，合并到下一个区域，没有下一个区域，则忽略该区域
+	#1 0 1，缝隙
+	#门只能放置在缝隙中，且处于区域周围或尽头路径的起始
+	#尽头路径area越大，门的概率越高
+
+	def item_create(self):
+		self.item_init()
+		self.tree_ergodic(self.set_door)
+		print 'door num:', self.door_num
 
 	#区域通过方式
 	#损耗，获得，扫荡
@@ -690,6 +747,7 @@ class Maze:
 		self.block_create()
 		self.show(lambda pos: self.get_type(pos))
 		self.tree_create()
+		self.item_create()
 		self.show(lambda pos: self.get_type(pos))
 
 
