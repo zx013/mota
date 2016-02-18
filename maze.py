@@ -706,23 +706,26 @@ class Maze:
 		return True
 
 	door_num = 0
-	def set_slit(self, pos):
+	def set_door(self, pos):
 		if self.is_slit(pos):
 			self.set_type(pos, MazeBase.door)
 			self.door_num += 1
 
-	def set_door(self, node):
+	area_num = 0
+	def set_item(self, node):
 		backward = node['way']['backward']
 		if len(backward) == 0:
 			return
 		backward_pos, backward_node = backward.items()[0]
-		if node['info']['type'] != MazeBase.area:
+		if node['info']['type'] != MazeBase.area: #路径
 			forward = node['way']['forward']
-			if len(forward) == 0 or backward_node['info']['type'] == MazeBase.area:
-				self.set_slit(backward_pos)
-		else:
+			#尽头路径或上一个node为区域的
+			#if len(forward) == 0 or backward_node['info']['type'] == MazeBase.area:
+			self.set_door(backward_pos)
+		else: #区域
 			forward_pos = list(set(self.get_around(backward_pos, 1)) & backward_node['info']['area'])[0]
-			self.set_slit(forward_pos)
+			self.set_door(forward_pos)
+			self.area_num += 1
 		
 
 	#一个区域，只有物品，合并到上一个区域
@@ -730,25 +733,45 @@ class Maze:
 	#1 0 1，缝隙
 	#门只能放置在缝隙中，且处于区域周围或尽头路径的起始
 	#尽头路径area越大，门的概率越高
+	
+	#门后放置怪物
+	#区域只放置一个
+	#路径依次放置多个，area越大，可能放置的就越多
+	
+	#空余部分放置物品
 
+	#路径上尽可能少的放置，一层的一钥匙和门数大约为面积的开方，怪物数稍微多一些
+	
+	#计算门链
+	#计算怪物链，最后放置生命药水
+	#将链嵌入地图结构
+	#计算最优解和可能解
+	#调整分布（增加怪物或减少物品），直到可能解数量在一个范围内
 	def item_create(self):
 		self.item_init()
-		self.tree_ergodic(self.set_door)
+		self.tree_ergodic(self.set_item)
+		print 'area num:', self.area_num
 		print 'door num:', self.door_num
 
-	#区域通过方式
-	#损耗，获得，扫荡
-	#道路通过方式
-	#损耗，获得
-	#单个末结点通过方式
-	#扫荡
+	#区域或道路通过方式
+	#损耗，获得，（扫荡）
+
+	def get_ground_num(self):
+		ground_num = 0
+		for k in range(MazeSetting.floor):
+			for i in range(MazeSetting.rows + 2):
+				for j in range(MazeSetting.cols + 2):
+					if self.get_type((k, i, j)) == MazeBase.ground:
+						ground_num += 1
+		print 'ground num:', ground_num
 
 	def create(self):
 		self.block_create()
-		self.show(lambda pos: self.get_type(pos))
+		#self.show(lambda pos: self.get_type(pos))
 		self.tree_create()
 		self.item_create()
-		self.show(lambda pos: self.get_type(pos))
+		self.get_ground_num()
+		#self.show(lambda pos: self.get_type(pos))
 
 
 	def show(self, format):
