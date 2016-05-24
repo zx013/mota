@@ -882,6 +882,18 @@ class Maze:
 				print
 			print
 
+	def set_show(self):
+		s = ''
+		for i in range(MazeSetting.rows + 2):
+			for j in range(MazeSetting.cols + 2):
+				ret = self.get_type((0, i, j))
+				if ret in [MazeBase.ground]:
+					s += '   '
+				else:
+					s += str(ret) + ' '
+			s += '\n'
+		return s
+
 	def get_show(self, show):
 		self.maze[0] = [[{'type': int(col), 'value': 0} for col in row.replace('  ', ' 0').split(' ')] for row in show.split('\n')[1:-1]]
 
@@ -891,3 +903,4 @@ if __name__ == '__main__':
 	#maze.get_show(maze_show)
 	#maze.show(lambda pos: maze.get_type(pos))
 	maze.create()
+	print maze.set_show()
