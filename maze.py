@@ -580,16 +580,16 @@ class Maze:
 	#道路的话，漫延至转折点
 	#区域的话，漫延整个区域
 	#往不同的分支依次递归
-
 	def spread_pos(self, node, pos):
 		node['info']['area'].add(pos)
-		self.set_type(pos, MazeBase.ground_replace)
+		if self.get_type(pos) not in [MazeBase.door]:
+			self.set_type(pos, MazeBase.ground_replace)
 
 	#点加入区域，递归周围的点
 	#点为路径点，加入周围的点
 	#点为区域点，加入周围的区域点，不加入周围的路径点或分支点，周围点中的路径点或分支点，加入forward
 	#点为分支点，将周围的分支点加入forward，不加入周围的点
-	def spread_node(self, node, pos):
+	def spread_node(self, pre, node, pos):
 		pos_type = self.get_type(pos)
 		self.spread_pos(node, pos)
 		for around_pos in self.get_around_floor(pos):
@@ -597,21 +597,27 @@ class Maze:
 			around_type = self.get_type(around_pos)
 			if around_type in [MazeBase.wall, MazeBase.ground_replace]:
 				continue
-			if pos_type in [MazeBase.point]: #分支点
-				node['way']['forward'][around_pos] = {}
-				continue
-			elif pos_type in [MazeBase.area]: #区域点
-				if around_type not in [MazeBase.area]:
+			if pre:
+				if pos_type in [MazeBase.point]: #分支点
 					node['way']['forward'][around_pos] = {}
 					continue
+				elif pos_type in [MazeBase.area]: #区域点
+					if around_type not in [MazeBase.area]:
+						node['way']['forward'][around_pos] = {}
+						continue
+				else:
+					if around_type in [MazeBase.area]:
+						node['way']['forward'][around_pos] = {}
+						continue
 			else:
-				if around_type in [MazeBase.area]:
-					node['way']['forward'][around_pos] = {}
-					continue
+				if around_type in [MazeBase.door]:
+					if map(self.get_type, self.get_around(around_pos, 1)).count(MazeBase.ground): #门两侧没有被填充
+						node['way']['forward'][around_pos] = {}
+						continue
 
-			self.spread_node(node, around_pos)
+			self.spread_node(pre, node, around_pos)
 
-	def add_node(self, pos, backward):
+	def add_node(self, pre, pos, backward):
 		self.tree_number += 1
 		node = copy.deepcopy(MazeBase.tree_node)
 		node['number'] = self.tree_number
@@ -621,14 +627,12 @@ class Maze:
 		node['info']['type'] = self.get_type(pos)
 		if node['info']['type'] == MazeBase.stairs: #楼梯归为地面
 			node['info']['type'] = MazeBase.ground
-		self.spread_node(node, pos)
+		self.spread_node(pre, node, pos)
 		#print node['info'], node['way']['forward'].keys()
 		#self.show(lambda pos: self.get_type(pos))
 		for pos, forward in node['way']['forward'].items():
-			self.add_node(pos, node)
+			self.add_node(pre, pos, node)
 
-	def tree_start(self):
-		self.add_node(self.info[0]['stairs_start'], self.tree)
 
 
 	#调整树，减少分支数量
@@ -685,20 +689,16 @@ class Maze:
 
 	#区域单独成块
 	#道路和转折点拼接
-	def tree_create(self):
+	def tree_create(self, pre=True):
 		self.tree_init()
-		for floor in range(MazeSetting.floor):
-			self.tree_insert_point(floor)
-			self.tree_insert_area(floor)
-		self.tree_start()
+		if pre:
+			for floor in range(MazeSetting.floor):
+				self.tree_insert_point(floor)
+				self.tree_insert_area(floor)
+		self.add_node(pre, self.info[0]['stairs_start'], self.tree)
 		#print self.move_node
 		#self.tree_travel()
-		num = 0
-		for move, node in self.tree_map.items():
-			if len(node['info']['area']) == 1 and len(node['way']['forward']) == 0:
-				num += 1
-		print 'tree node:', len(self.tree_map)
-		print 'one point:', num
+
 		for floor in range(MazeSetting.floor):
 			self.change(floor, MazeBase.ground_replace, MazeBase.ground)
 
@@ -719,7 +719,7 @@ class Maze:
 	def around_door(self, pos):
 		z, x, y = pos
 		around = [(z, x + 2, y), (z, x + 1, y + 1), (z, x, y + 2), (z, x - 1, y + 1), (z, x - 2, y), (z, x - 1, y - 1), (z, x, y - 2), (z, x + 1, y - 1)]
-		return sum(map(lambda x: self.get_type(x) == MazeBase.door, around))
+		return map(self.get_type, around).count(MazeBase.door)
 
 	door_num = 0
 	def set_door(self, pos):
@@ -729,7 +729,7 @@ class Maze:
 			
 
 	area_num = 0
-	def set_item(self, node):
+	def set_node(self, node):
 		backward = node['way']['backward']
 		if len(backward) == 0:
 			return
@@ -751,7 +751,6 @@ class Maze:
 
 	#将两个node合并成一个节点
 	def merge_node(self, node1, node2):
-		tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'way': {'forward': {}, 'backward': {}}}
 		node1['empty'] = node1['empty'] and node1['empty']
 		#node1['info']['type']
 		node1['info']['area'] |= node2['info']['area']
@@ -761,13 +760,26 @@ class Maze:
 		del self.tree_map[node2['number']]
 		del node2
 	
+	merge_list = []
+	#两个相邻区域没有门，则合并
 	def node_door(self, node):
-		merge_node = False
+		
 		for forward_pos, forward_node in node['way']['forward'].items():
-			self.merge_node(node, forward_node)
-			merge_node = True
-		if merge_node:
-			self.node_door(node)
+			if len(node['way']['backward']) == 0:
+				continue
+			backward_pos, backward_node = node['way']['backward'].items()[0]
+			forward_pos_list = list(set(self.get_around(backward_pos, 1)) & backward_node['info']['area'])
+			if len(forward_pos_list) == 0:
+				continue
+			forward_pos = forward_pos_list[0]
+			door_num = map(self.get_type, (forward_pos, backward_pos)).count(MazeBase.door)
+			if door_num != 0:
+				continue
+			self.merge_list.append((node['number'], forward_node['number']))
+		#	self.merge_node(node, forward_node)
+		#	merge_node = True
+		#if merge_node:
+		#	self.node_door(node)
 		
 
 	#一个区域，只有物品，合并到上一个区域
@@ -799,11 +811,13 @@ class Maze:
 	#角色身上的钥匙数越多，选择的数量大幅增加，所以钥匙数量必须严格控制
 	def item_create(self):
 		self.item_init()
-		self.tree_ergodic(self.set_item)
-		self.tree_ergodic(self.node_door)
+		
+		#self.tree_ergodic(self.node_door)
 		print 'area num:', self.area_num
 		print 'door num:', self.door_num
-		print self.tree_map.keys()
+		#print self.merge_list, len(self.merge_list), len(self.tree_map)
+		#for k, v in self.tree_map.items():
+		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 
 	#区域或道路通过方式
 	#损耗，获得，（扫荡）
@@ -821,7 +835,12 @@ class Maze:
 		self.block_create()
 		#self.show(lambda pos: self.get_type(pos))
 		self.tree_create()
-		self.item_create()
+		self.tree_ergodic(self.set_node)
+		self.tree_create(pre=False)
+		for k, v in self.tree_map.items():
+			print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
+		
+		print self.door_num, len(self.tree_map)
 		self.get_ground_num()
 		self.show(lambda pos: self.get_type(pos))
 
