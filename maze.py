@@ -46,7 +46,7 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'way': {'forward': {}, 'backward': {}}}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'all': 0, 'key': {'all': 0, 'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': ''}, 'way': {'forward': {}, 'backward': {}}}
 	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
@@ -703,9 +703,6 @@ class Maze:
 			self.change(floor, MazeBase.ground_replace, MazeBase.ground)
 
 
-	def item_init(self):
-		pass
-
 	#没算进楼梯
 	def is_slit(self, pos):
 		if self.get_type(pos) == MazeBase.wall:
@@ -780,6 +777,39 @@ class Maze:
 		#	merge_node = True
 		#if merge_node:
 		#	self.node_door(node)
+
+
+	def choice_dict(self, d):
+		total = sum(d.values())
+		rand = random.randint(1, total)
+		for key, val in d.items():
+			rand -= val
+			if rand <= 0:
+				return key
+
+
+	#寻找一条随机路径
+	def set_key(self):
+		key_list = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
+		key_choice = {'yellow': 65, 'blue': 20, 'red': 10, 'green': 5}
+		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
+		while move_list:
+			#move = random.choice(move_list)
+			move = move_list.pop(random.choice(range(len(move_list))))
+			node = self.tree_map[move]
+			#移除移动的node，添加node的forward
+			move_list += [forward_node['number'] for forward_node in node['way']['forward'].values()]
+			
+			#从拥有的钥匙中选择一把作为门的颜色
+			#随机添加一把钥匙
+			door = self.choice_dict(key_list)
+			key_list[door] -= 1
+			key = self.choice_dict(key_choice)
+			key_list[key] += 1
+			print door, key
+	
+	
+	
 		
 
 	#一个区域，只有物品，合并到上一个区域
@@ -809,15 +839,7 @@ class Maze:
 	#每个门后都放置一把钥匙，保证该路径畅通
 	#将较后区域的部分钥匙移动到较前区域，增加选择性，以3*13*13的区域小于1000万的搜索数为准
 	#角色身上的钥匙数越多，选择的数量大幅增加，所以钥匙数量必须严格控制
-	def item_create(self):
-		self.item_init()
-		
-		#self.tree_ergodic(self.node_door)
-		print 'area num:', self.area_num
-		print 'door num:', self.door_num
-		#print self.merge_list, len(self.merge_list), len(self.tree_map)
-		#for k, v in self.tree_map.items():
-		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
+
 
 	#区域或道路通过方式
 	#损耗，获得，（扫荡）
@@ -837,10 +859,13 @@ class Maze:
 		self.tree_create()
 		self.tree_ergodic(self.set_node)
 		self.tree_create(pre=False)
+		
+		self.set_key()
 		for k, v in self.tree_map.items():
 			print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 		
 		print self.door_num, len(self.tree_map)
+		#self.tree_travel()
 		self.get_ground_num()
 		self.show(lambda pos: self.get_type(pos))
 
