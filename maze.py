@@ -672,6 +672,7 @@ class Maze:
 	def tree_ergodic(self, func):
 		for move, node in self.tree_map.items():
 			func(node)
+			print node['number'], node['empty'], node['info']
 
 	#区域单独成块
 	#道路和转折点拼接
@@ -705,11 +706,18 @@ class Maze:
 			return False
 		return True
 
+	#点附近的门数量
+	def around_door(self, pos):
+		z, x, y = pos
+		around = [(z, x + 2, y), (z, x + 1, y + 1), (z, x, y + 2), (z, x - 1, y + 1), (z, x - 2, y), (z, x - 1, y - 1), (z, x, y - 2), (z, x + 1, y - 1)]
+		return sum(map(lambda x: self.get_type(x) == MazeBase.door, around))
+
 	door_num = 0
 	def set_door(self, pos):
-		if self.is_slit(pos):
+		if self.is_slit(pos) and self.around_door(pos) < 2:
 			self.set_type(pos, MazeBase.door)
 			self.door_num += 1
+			
 
 	area_num = 0
 	def set_item(self, node):
@@ -721,6 +729,10 @@ class Maze:
 			forward = node['way']['forward']
 			#尽头路径或上一个node为区域的
 			#if len(forward) == 0 or backward_node['info']['type'] == MazeBase.area:
+			area = len(node['info']['area'])
+			route = len(node['way']['forward']) + len(node['way']['backward'])
+			if area <= 2 and route == 1 or area <= 3 and route > 1:
+				return
 			self.set_door(backward_pos)
 		else: #区域
 			forward_pos = list(set(self.get_around(backward_pos, 1)) & backward_node['info']['area'])[0]
@@ -779,7 +791,7 @@ class Maze:
 		self.tree_create()
 		self.item_create()
 		self.get_ground_num()
-		#self.show(lambda pos: self.get_type(pos))
+		self.show(lambda pos: self.get_type(pos))
 
 
 	def show(self, format):
