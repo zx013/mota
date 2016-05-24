@@ -668,11 +668,20 @@ class Maze:
 		self.node_travel([])
 		print len(self.tree_map), self.num
 
-	#遍历树
+	#遍历树，支持中途删除
 	def tree_ergodic(self, func):
-		for move, node in self.tree_map.items():
-			func(node)
-			print node['number'], node['empty'], node['info']
+		move_list = set()
+		while True:
+			for move in set(self.tree_map.keys()) - move_list:
+				func(self.tree_map[move])
+				move_list.add(move)
+				break
+			else:
+				break
+				
+		#for move, node in self.tree_map.items():
+		#	func(node)
+		#	print node['number'], node['info'], node['way']['forward'].keys(), node['way']['backward'].keys()
 
 	#区域单独成块
 	#道路和转折点拼接
@@ -740,6 +749,27 @@ class Maze:
 			self.area_num += 1
 		
 
+	#将两个node合并成一个节点
+	def merge_node(self, node1, node2):
+		tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'way': {'forward': {}, 'backward': {}}}
+		node1['empty'] = node1['empty'] and node1['empty']
+		#node1['info']['type']
+		node1['info']['area'] |= node2['info']['area']
+		node1['way']['forward'].update(node2['way']['forward'])
+		del node1['way']['forward'][node2['way']['backward'].keys()[0]]
+
+		del self.tree_map[node2['number']]
+		del node2
+	
+	def node_door(self, node):
+		merge_node = False
+		for forward_pos, forward_node in node['way']['forward'].items():
+			self.merge_node(node, forward_node)
+			merge_node = True
+		if merge_node:
+			self.node_door(node)
+		
+
 	#一个区域，只有物品，合并到上一个区域
 	#一个区域，没有物品，合并到下一个区域，没有下一个区域，则忽略该区域
 	#1 0 1，缝隙
@@ -770,8 +800,10 @@ class Maze:
 	def item_create(self):
 		self.item_init()
 		self.tree_ergodic(self.set_item)
+		self.tree_ergodic(self.node_door)
 		print 'area num:', self.area_num
 		print 'door num:', self.door_num
+		print self.tree_map.keys()
 
 	#区域或道路通过方式
 	#损耗，获得，（扫荡）
