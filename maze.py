@@ -46,7 +46,7 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': ''}, 'way': {'forward': {}, 'backward': {}}}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'damage': 0, 'monster': set()}, 'way': {'forward': {}, 'backward': {}}}
 	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
@@ -60,6 +60,22 @@ class MazeSetting:
 	#楼梯对齐，禁用可大幅提高地图生成速度
 	stairs_align = True
 
+
+class Hero:
+	def __init__(self):
+		self.health = 1000
+		self.attack = 10
+		self.defence = 10
+
+	def fight(self, hero):
+		if self.attack <= hero.defence:
+			return -1
+		if hero.attack <= self.defence:
+			return 0;
+		hit = round(1.0 * hero.health / (self.attack - hero.defence))
+		damage = (hit - 1) * (hero.attack - self.defence)
+		self.health -= damage
+		return damage;
 
 class Maze:
 	maze = []
@@ -550,6 +566,7 @@ class Maze:
 		self.tree = copy.deepcopy(MazeBase.tree_node)
 		self.tree_number = 0
 		self.tree_map = {self.tree_number: self.tree}
+		self.fight_state['hero'] = Hero()
 		self.fight_state['move_node'] = set([self.tree_number])
 		self.fight_state['key'] = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
 
@@ -642,77 +659,6 @@ class Maze:
 		pass
 
 
-	def in_node_fight(self, node):
-		door = node['count']['door']
-		key = self.fight_state['key']
-
-		if door:
-			if key[door] == 0:
-				return False
-			key[door] -= 1
-		for k, v in node['count']['key'].items():
-			key[k] += v
-		return True
-
-	def out_node_fight(self, node):
-		door = node['count']['door']
-		key = self.fight_state['key']
-
-		for k, v in node['count']['key'].items():
-			key[k] -= v
-		if door:
-			key[door] += 1
-
-	#移入，remove该点，add该点的forward
-	#移出，remove该点的forward，add该点
-	def in_move_node(self, move):
-		node = self.tree_map[move]
-		if not self.in_node_fight(node):
-			return False
-		self.fight_state['move_node'].remove(node['number'])
-		for pos, forward in node['way']['forward'].items():
-			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
-				continue
-			self.fight_state['move_node'].add(forward['number'])
-		return True
-
-	def out_move_node(self, move):
-		node = self.tree_map[move]
-		self.fight_state['move_node'].add(node['number'])
-		for pos, forward in node['way']['forward'].items():
-			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
-				continue
-			self.fight_state['move_node'].remove(forward['number'])
-		self.out_node_fight(node)
-
-	num = 0
-
-	def node_travel(self, node_list):
-		self.num += 1
-		for move in self.fight_state['move_node']:
-			if not self.in_move_node(move):
-				continue
-			self.node_travel(node_list + [move])
-			self.out_move_node(move)
-
-	def tree_travel(self):
-		self.node_travel([])
-		print len(self.tree_map), self.num
-
-	#遍历树，支持中途删除
-	def tree_ergodic(self, func):
-		move_list = set()
-		while True:
-			for move in set(self.tree_map.keys()) - move_list:
-				func(self.tree_map[move])
-				move_list.add(move)
-				break
-			else:
-				break
-
-		#for move, node in self.tree_map.items():
-		#	func(node)
-		#	print node['number'], node['info'], node['way']['forward'].keys(), node['way']['backward'].keys()
 
 	#区域单独成块
 	#道路和转折点拼接
@@ -816,7 +762,7 @@ class Maze:
 
 
 	#寻找一条随机路径
-	def set_key(self):
+	def set_item(self):
 		#当前的钥匙
 		key_list = copy.deepcopy(self.fight_state['key'])
 		#钥匙选择的概率
@@ -875,6 +821,96 @@ class Maze:
 	#区域或道路通过方式
 	#损耗，获得，（扫荡）
 
+
+	def in_node_fight(self, node):
+		door = node['count']['door']
+		key = self.fight_state['key']
+		hero = self.fight_state['hero']
+		node['count']['damage'] = 0
+
+		if door:
+			if key[door] == 0:
+				return False
+
+		for monster in node['count']['monster']:
+			damage = hero.fight(monster)
+			if damage < 0:
+				return False
+			node['count']['damage'] += damage
+
+		if door:
+			key[door] -= 1
+		for k, v in node['count']['key'].items():
+			key[k] += v
+
+		hero.health += node['count']['potion']
+		hero.attack += node['count']['gem']['attack']
+		hero.defence += node['count']['gem']['defence']
+		return True
+
+	def out_node_fight(self, node):
+		door = node['count']['door']
+		key = self.fight_state['key']
+		hero = self.fight_state['hero']
+		damage = node['count']['damage']
+
+		hero.health += damage
+		if door:
+			key[door] += 1
+		for k, v in node['count']['key'].items():
+			key[k] -= v
+		hero.health -= node['count']['potion']
+		hero.attack -= node['count']['gem']['attack']
+		hero.defence -= node['count']['gem']['defence']
+
+	#移入，remove该点，add该点的forward
+	#移出，remove该点的forward，add该点
+	def in_move_node(self, move):
+		node = self.tree_map[move]
+		if not self.in_node_fight(node):
+			return False
+		self.fight_state['move_node'].remove(node['number'])
+		for pos, forward in node['way']['forward'].items():
+			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
+				continue
+			self.fight_state['move_node'].add(forward['number'])
+		return True
+
+	def out_move_node(self, move):
+		node = self.tree_map[move]
+		self.fight_state['move_node'].add(node['number'])
+		for pos, forward in node['way']['forward'].items():
+			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
+				continue
+			self.fight_state['move_node'].remove(forward['number'])
+		self.out_node_fight(node)
+
+	num = 0
+
+	def node_travel(self, node_list):
+		self.num += 1
+		for move in self.fight_state['move_node']:
+			if not self.in_move_node(move):
+				continue
+			self.node_travel(node_list + [move])
+			self.out_move_node(move)
+
+	def tree_travel(self):
+		self.node_travel([])
+		print len(self.tree_map), self.num
+
+	#遍历树，支持中途删除
+	def tree_ergodic(self, func):
+		move_list = set()
+		while True:
+			for move in set(self.tree_map.keys()) - move_list:
+				func(self.tree_map[move])
+				move_list.add(move)
+				break
+			else:
+				break
+
+
 	def get_ground_num(self):
 		ground_num = 0
 		for k in range(MazeSetting.floor):
@@ -891,8 +927,8 @@ class Maze:
 		self.tree_ergodic(self.set_node)
 		self.tree_create(pre=False)
 
-		#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，完全在计算能力之内
-		self.set_key()
+		#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，有一次计算超时，完全在计算能力之内（超过若干时间的，超时之后停止计算并重新生成）
+		self.set_item()
 		#for k, v in self.tree_map.items():
 		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 
@@ -900,6 +936,8 @@ class Maze:
 		self.tree_travel()
 		#self.get_ground_num()
 		#self.show(lambda pos: self.get_type(pos))
+		hero = self.fight_state['hero']
+		print self.fight_state['key'], hero.health, hero.attack, hero.defence
 
 
 	def show(self, format):
