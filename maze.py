@@ -72,9 +72,8 @@ class Hero:
 			return -1
 		if hero.attack <= self.defence:
 			return 0;
-		hit = round(1.0 * hero.health / (self.attack - hero.defence))
+		hit = int((hero.health - 1) / (self.attack - hero.defence) + 1)
 		damage = (hit - 1) * (hero.attack - self.defence)
-		self.health -= damage
 		return damage;
 
 class Maze:
@@ -828,14 +827,17 @@ class Maze:
 		hero = self.fight_state['hero']
 		node['count']['damage'] = 0
 
+		#没有钥匙
 		if door:
 			if key[door] == 0:
 				return False
 
+		#战斗失败
 		for monster in node['count']['monster']:
 			damage = hero.fight(monster)
-			if damage < 0:
+			if damage < 0 or self.health <= damage:
 				return False
+			self.health -= damage
 			node['count']['damage'] += damage
 
 		if door:
@@ -852,9 +854,8 @@ class Maze:
 		door = node['count']['door']
 		key = self.fight_state['key']
 		hero = self.fight_state['hero']
-		damage = node['count']['damage']
 
-		hero.health += damage
+		hero.health += node['count']['damage']
 		if door:
 			key[door] += 1
 		for k, v in node['count']['key'].items():
