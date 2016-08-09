@@ -46,7 +46,7 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'all': 0, 'key': {'all': 0, 'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': ''}, 'way': {'forward': {}, 'backward': {}}}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': ''}, 'way': {'forward': {}, 'backward': {}}}
 	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
@@ -543,14 +543,15 @@ class Maze:
 	tree = {}
 	tree_number = 0
 	tree_map = {}
-	#下一步可移动的点
-	move_node = set()
+	#人物状态
+	fight_state = {}
 
 	def tree_init(self):
 		self.tree = copy.deepcopy(MazeBase.tree_node)
 		self.tree_number = 0
 		self.tree_map = {self.tree_number: self.tree}
-		self.move_node = set([self.tree_number])
+		self.fight_state['move_node'] = set([self.tree_number])
+		self.fight_state['key'] = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
 
 	def tree_insert_point(self, floor):
 		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
@@ -641,30 +642,56 @@ class Maze:
 		pass
 
 
+	def in_node_fight(self, node):
+		door = node['count']['door']
+		key = self.fight_state['key']
+
+		if door:
+			if key[door] == 0:
+				return False
+			key[door] -= 1
+		for k, v in node['count']['key'].items():
+			key[k] += v
+		return True
+
+	def out_node_fight(self, node):
+		door = node['count']['door']
+		key = self.fight_state['key']
+
+		for k, v in node['count']['key'].items():
+			key[k] -= v
+		if door:
+			key[door] += 1
+
 	#移入，remove该点，add该点的forward
 	#移出，remove该点的forward，add该点
 	def in_move_node(self, move):
 		node = self.tree_map[move]
-		self.move_node.remove(node['number'])
+		if not self.in_node_fight(node):
+			return False
+		self.fight_state['move_node'].remove(node['number'])
 		for pos, forward in node['way']['forward'].items():
 			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
 				continue
-			self.move_node.add(forward['number'])
+			self.fight_state['move_node'].add(forward['number'])
+		return True
 
 	def out_move_node(self, move):
 		node = self.tree_map[move]
-		self.move_node.add(node['number'])
+		self.fight_state['move_node'].add(node['number'])
 		for pos, forward in node['way']['forward'].items():
 			if len(forward['info']['area']) == 1 and len(forward['way']['forward']) == 0:
 				continue
-			self.move_node.remove(forward['number'])
+			self.fight_state['move_node'].remove(forward['number'])
+		self.out_node_fight(node)
 
 	num = 0
 
 	def node_travel(self, node_list):
 		self.num += 1
-		for move in set(self.move_node):
-			self.in_move_node(move)
+		for move in self.fight_state['move_node']:
+			if not self.in_move_node(move):
+				continue
 			self.node_travel(node_list + [move])
 			self.out_move_node(move)
 
@@ -682,7 +709,7 @@ class Maze:
 				break
 			else:
 				break
-				
+
 		#for move, node in self.tree_map.items():
 		#	func(node)
 		#	print node['number'], node['info'], node['way']['forward'].keys(), node['way']['backward'].keys()
@@ -696,7 +723,7 @@ class Maze:
 				self.tree_insert_point(floor)
 				self.tree_insert_area(floor)
 		self.add_node(pre, self.info[0]['stairs_start'], self.tree)
-		#print self.move_node
+		#print self.fight_state['move_node']
 		#self.tree_travel()
 
 		for floor in range(MazeSetting.floor):
@@ -723,7 +750,7 @@ class Maze:
 		if self.is_slit(pos) and self.around_door(pos) < 2:
 			self.set_type(pos, MazeBase.door)
 			self.door_num += 1
-			
+
 
 	area_num = 0
 	def set_node(self, node):
@@ -744,7 +771,7 @@ class Maze:
 			forward_pos = list(set(self.get_around(backward_pos, 1)) & backward_node['info']['area'])[0]
 			self.set_door(forward_pos)
 			self.area_num += 1
-		
+
 
 	#将两个node合并成一个节点
 	def merge_node(self, node1, node2):
@@ -756,11 +783,11 @@ class Maze:
 
 		del self.tree_map[node2['number']]
 		del node2
-	
+
 	merge_list = []
 	#两个相邻区域没有门，则合并
 	def node_door(self, node):
-		
+
 		for forward_pos, forward_node in node['way']['forward'].items():
 			if len(node['way']['backward']) == 0:
 				continue
@@ -790,8 +817,11 @@ class Maze:
 
 	#寻找一条随机路径
 	def set_key(self):
-		key_list = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
+		#当前的钥匙
+		key_list = copy.deepcopy(self.fight_state['key'])
+		#钥匙选择的概率
 		key_choice = {'yellow': 65, 'blue': 20, 'red': 10, 'green': 5}
+
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
 		while move_list:
 			#move = random.choice(move_list)
@@ -799,25 +829,26 @@ class Maze:
 			node = self.tree_map[move]
 			#移除移动的node，添加node的forward
 			move_list += [forward_node['number'] for forward_node in node['way']['forward'].values()]
-			
+
 			#从拥有的钥匙中选择一把作为门的颜色
 			#随机添加一把钥匙
 			door = self.choice_dict(key_list)
 			key_list[door] -= 1
 			key = self.choice_dict(key_choice)
 			key_list[key] += 1
-			print door, key
-	
-	
-	
-		
+
+			node['count']['door'] = door
+			node['count']['key'][key] += 1
+			#print node['count']
+
+
 
 	#一个区域，只有物品，合并到上一个区域
 	#一个区域，没有物品，合并到下一个区域，没有下一个区域，则忽略该区域
 	#1 0 1，缝隙
 	#门只能放置在缝隙中，且处于区域周围或尽头路径的起始
 	#尽头路径area越大，门的概率越高
-	
+
 	#门后放置怪物
 	#区域只放置一个
 	#路径依次放置多个，area越大，可能放置的就越多
@@ -826,13 +857,13 @@ class Maze:
 
 	#路径上尽可能少的放置，一层的一钥匙和门数大约为面积的开方，怪物数稍微多一些
 
-	
+
 	#计算门链
 	#计算怪物链，最后放置生命药水
 	#将链嵌入地图结构
 	#计算最优解和可能解
 	#调整分布（增加怪物或减少物品），直到可能解数量在一个范围内
-	
+
 	#门链计算
 	#按比例分布门，分布愈均匀选择可能性愈少
 	#随机选取一条路径
@@ -859,15 +890,16 @@ class Maze:
 		self.tree_create()
 		self.tree_ergodic(self.set_node)
 		self.tree_create(pre=False)
-		
+
+		#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，完全在计算能力之内
 		self.set_key()
-		for k, v in self.tree_map.items():
-			print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
-		
-		print self.door_num, len(self.tree_map)
-		#self.tree_travel()
-		self.get_ground_num()
-		self.show(lambda pos: self.get_type(pos))
+		#for k, v in self.tree_map.items():
+		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
+
+		#print self.door_num, len(self.tree_map)
+		self.tree_travel()
+		#self.get_ground_num()
+		#self.show(lambda pos: self.get_type(pos))
 
 
 	def show(self, format):
@@ -888,7 +920,7 @@ class Maze:
 			for j in range(MazeSetting.cols + 2):
 				ret = self.get_type((0, i, j))
 				if ret in [MazeBase.ground]:
-					s += '   '
+					s += '  '
 				else:
 					s += str(ret) + ' '
 			s += '\n'
@@ -903,4 +935,4 @@ if __name__ == '__main__':
 	#maze.get_show(maze_show)
 	#maze.show(lambda pos: maze.get_type(pos))
 	maze.create()
-	print maze.set_show()
+	#print maze.set_show()
