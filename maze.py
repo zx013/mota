@@ -81,6 +81,8 @@ class MazeSetting:
 	cols = 13
 	#楼梯对齐，禁用可大幅提高地图生成速度
 	stairs_align = True
+	#最大路径数量
+	way_num = 10000
 
 
 class Hero:
@@ -739,6 +741,17 @@ class Maze:
 			self.set_door(forward_pos)
 			self.area_num += 1
 
+	#遍历树，支持中途删除
+	def tree_ergodic(self, func):
+		move_list = set()
+		while True:
+			for move in set(self.tree_map.keys()) - move_list:
+				func(self.tree_map[move])
+				move_list.add(move)
+				break
+			else:
+				break
+
 
 	#将两个node合并成一个节点
 	def merge_node(self, node1, node2):
@@ -908,30 +921,23 @@ class Maze:
 			self.fight_state['move_node'].remove(forward['number'])
 		self.out_node_fight(node)
 
-	num = 0
 
 	def node_travel(self, node_list):
-		self.num += 1
+		self.travel_num += 1
+		if self.travel_num > MazeSetting.way_num:
+			return False
 		for move in self.fight_state['move_node']:
 			if not self.in_move_node(move):
 				continue
-			self.node_travel(node_list + [move])
+			result = self.node_travel(node_list + [move])
 			self.out_move_node(move)
+			if not result:
+				return result
+		return True
 
 	def tree_travel(self):
-		self.node_travel([])
-		print len(self.tree_map), self.num
-
-	#遍历树，支持中途删除
-	def tree_ergodic(self, func):
-		move_list = set()
-		while True:
-			for move in set(self.tree_map.keys()) - move_list:
-				func(self.tree_map[move])
-				move_list.add(move)
-				break
-			else:
-				break
+		self.travel_num = 0
+		return self.node_travel([])
 
 
 	def get_ground_num(self):
@@ -944,19 +950,24 @@ class Maze:
 		print 'ground num:', ground_num
 
 	def create(self):
-		self.block_create()
-		#self.show(lambda pos: self.get_type(pos))
-		self.tree_create()
-		self.tree_ergodic(self.set_node)
-		self.tree_create(pre=False)
+		while True:
+			self.block_create()
+			#self.show(lambda pos: self.get_type(pos))
+			self.tree_create()
+			self.tree_ergodic(self.set_node)
+			self.tree_create(pre=False)
 
-		#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，有一次计算超时，完全在计算能力之内（超过若干时间的，超时之后停止计算并重新生成）
-		self.set_item()
+			#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，有一次计算超时，完全在计算能力之内（超过若干时间的，超时之后停止计算并重新生成）
+			self.set_item()
+
+			if self.tree_travel():
+				break
+			print len(self.tree_map), self.travel_num
 		#for k, v in self.tree_map.items():
 		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 
 		#print self.door_num, len(self.tree_map)
-		self.tree_travel()
+		print len(self.tree_map), self.travel_num
 		#self.get_ground_num()
 		#self.show(lambda pos: self.get_type(pos))
 		hero = self.fight_state['hero']
