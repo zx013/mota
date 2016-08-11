@@ -2,6 +2,15 @@
 import random
 import copy
 
+'''
+模块划分
+1.地图生成
+2.树生成
+3.放置物品
+
+'''
+
+
 def put(*args):
 	print args
 	import sys
@@ -24,6 +33,19 @@ maze_show = '''
 1   1 1 1 1   1   1   1   1 1
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 '''
+
+class MonsterBase:
+	monster_list = set()
+
+
+#1.从monster_list中取出若干monster，取出数量由tree的分支决定，每个可多个，层数越前取出的值越靠前
+#2.根据monster的att和def，分配gem的att和def
+#3.将monster和gem放入tree中，进行遍历，计算出最优解
+#4.按最优解的顺序遍历monster，进行战斗推演，放入health和potion，使中途不会出现health低于0的情况
+class MonsterNode:
+	node = {'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'monster': {'health': 0, 'attack': 0, 'defence': 0}}
+	def next(self):
+		pass
 
 
 class MazeBase:
@@ -74,7 +96,7 @@ class Hero:
 			return 0;
 		hit = int((hero.health - 1) / (self.attack - hero.defence) + 1)
 		damage = (hit - 1) * (hero.attack - self.defence)
-		return damage;
+		return damage
 
 class Maze:
 	maze = []
