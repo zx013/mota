@@ -68,7 +68,7 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'damage': 0, 'monster': set()}, 'way': {'forward': {}, 'backward': {}}}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
 	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
@@ -86,10 +86,10 @@ class MazeSetting:
 
 
 class Hero:
-	def __init__(self):
-		self.health = 1000
-		self.attack = 10
-		self.defence = 10
+	def __init__(self, health=1000, attack=10, defence=10):
+		self.health = health
+		self.attack = attack
+		self.defence = defence
 
 	def fight(self, hero):
 		if self.attack <= hero.defence:
@@ -821,6 +821,10 @@ class Maze:
 			node['count']['key'][key] += 1
 			#print node['count']
 
+			node['count']['monster'] = Hero(health=10, attack=10 + random.randint(0, 30), defence=random.randint(0, 10))
+			node['count']['gem']['attack'] = random.randint(0, 3)
+			node['count']['gem']['defence'] = random.randint(0, 3)
+
 
 
 	#一个区域，只有物品，合并到上一个区域
@@ -860,7 +864,7 @@ class Maze:
 		door = node['count']['door']
 		key = self.fight_state['key']
 		hero = self.fight_state['hero']
-		node['count']['damage'] = 0
+		monster = node['count']['monster']
 
 		#没有钥匙
 		if door:
@@ -868,12 +872,14 @@ class Maze:
 				return False
 
 		#战斗失败
-		for monster in node['count']['monster']:
+		if monster:
 			damage = hero.fight(monster)
-			if damage < 0 or self.health <= damage:
+			if damage < 0:
 				return False
-			self.health -= damage
-			node['count']['damage'] += damage
+			hero.health -= damage
+			node['count']['damage'] = damage
+		else:
+			node['count']['damage'] = 0
 
 		if door:
 			key[door] -= 1
@@ -923,7 +929,9 @@ class Maze:
 
 
 	def node_travel(self, node_list):
-		self.travel_num += 1
+		if len(node_list) == len(self.tree_map):
+			self.travel_num += 1
+			print node_list, self.fight_state['hero'].health
 		if self.travel_num > MazeSetting.way_num:
 			return False
 		for move in self.fight_state['move_node']:
