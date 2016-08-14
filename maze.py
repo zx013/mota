@@ -827,10 +827,10 @@ class Maze:
 
 			node['count']['monster'] = Hero(health=health, attack=attack, defence=defence)
 			node['count']['gem']['attack'] = random.randint(1, 3)
-			node['count']['gem']['defence'] = random.randint(1, 3)
+			node['count']['gem']['defence'] = random.randint(1, 2)
 			health += 5
-			attack += 2
-			defence += 1
+			attack += 3
+			defence += 2
 
 
 
@@ -939,11 +939,15 @@ class Maze:
 		if len(node_list) == len(self.tree_map):
 			health = self.fight_state['hero'].health
 			self.travel_total_num += 1
-			if self.travel_max_health < health:
+			if self.travel_total_num == 1:
 				self.travel_max_health = health
 				self.travel_max_num = 1
-			elif self.travel_max_health == health:
-				self.travel_max_num += 1
+			else:
+				if self.travel_max_health < health:
+					self.travel_max_health = health
+					self.travel_max_num = 1
+				elif self.travel_max_health == health:
+					self.travel_max_num += 1
 			print node_list, self.fight_state['hero'].health
 
 		if self.travel_total_num > MazeSetting.way_num:
@@ -991,7 +995,7 @@ class Maze:
 		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 
 		#print self.door_num, len(self.tree_map)
-		print len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num
+		print 'node num = {0}, total num = {1}, max health = {2}, max way = {3}'.format(len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num)
 		#self.get_ground_num()
 		#self.show(lambda pos: self.get_type(pos))
 		hero = self.fight_state['hero']
