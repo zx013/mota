@@ -803,6 +803,10 @@ class Maze:
 		key_choice = {'yellow': 65, 'blue': 20, 'red': 10, 'green': 5}
 
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
+		
+		health = 10
+		attack = 10
+		defence = 5
 		while move_list:
 			#move = random.choice(move_list)
 			move = move_list.pop(random.choice(range(len(move_list))))
@@ -821,9 +825,12 @@ class Maze:
 			node['count']['key'][key] += 1
 			#print node['count']
 
-			node['count']['monster'] = Hero(health=10, attack=10 + random.randint(0, 30), defence=random.randint(0, 10))
-			node['count']['gem']['attack'] = random.randint(0, 3)
-			node['count']['gem']['defence'] = random.randint(0, 3)
+			node['count']['monster'] = Hero(health=health, attack=attack, defence=defence)
+			node['count']['gem']['attack'] = random.randint(1, 3)
+			node['count']['gem']['defence'] = random.randint(1, 3)
+			health += 5
+			attack += 2
+			defence += 1
 
 
 
@@ -930,9 +937,16 @@ class Maze:
 
 	def node_travel(self, node_list):
 		if len(node_list) == len(self.tree_map):
-			self.travel_num += 1
+			health = self.fight_state['hero'].health
+			self.travel_total_num += 1
+			if self.travel_max_health < health:
+				self.travel_max_health = health
+				self.travel_max_num = 1
+			elif self.travel_max_health == health:
+				self.travel_max_num += 1
 			print node_list, self.fight_state['hero'].health
-		if self.travel_num > MazeSetting.way_num:
+
+		if self.travel_total_num > MazeSetting.way_num:
 			return False
 		for move in self.fight_state['move_node']:
 			if not self.in_move_node(move):
@@ -944,7 +958,9 @@ class Maze:
 		return True
 
 	def tree_travel(self):
-		self.travel_num = 0
+		self.travel_total_num = 0
+		self.travel_max_health = 0
+		self.travel_max_num = 0
 		return self.node_travel([])
 
 
@@ -970,12 +986,12 @@ class Maze:
 
 			if self.tree_travel():
 				break
-			print len(self.tree_map), self.travel_num
+			print len(self.tree_map), self.travel_total_num
 		#for k, v in self.tree_map.items():
 		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 
 		#print self.door_num, len(self.tree_map)
-		print len(self.tree_map), self.travel_num
+		print len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num
 		#self.get_ground_num()
 		#self.show(lambda pos: self.get_type(pos))
 		hero = self.fight_state['hero']
