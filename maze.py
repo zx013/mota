@@ -796,6 +796,12 @@ class Maze:
 
 
 	#寻找一条随机路径
+	#分配各类物品
+	#放置点：门的位置，门后方的位置，其他空间
+	#门的位置，放置door或者monster
+	#门后方的位置，门的位置放置door时，放置monster或空，门的位置放置monster时，放置空
+	#其他空间，放置key, gem, potion，根据需求可放可不放
+	#一个区域，至少有1个door或monster
 	def set_item(self):
 		#当前的钥匙
 		key_list = copy.deepcopy(self.fight_state['key'])
@@ -804,7 +810,7 @@ class Maze:
 
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
 		
-		health = 10
+		health = 20
 		attack = 10
 		defence = 5
 		while move_list:
@@ -814,21 +820,33 @@ class Maze:
 			#移除移动的node，添加node的forward
 			move_list += [forward_node['number'] for forward_node in node['way']['forward'].values()]
 
-			#从拥有的钥匙中选择一把作为门的颜色
-			#随机添加一把钥匙
-			door = self.choice_dict(key_list)
-			key_list[door] -= 1
+			is_monster = True #是否设置monster
+
+			if random.random() < 0.75: #放置door
+				#从拥有的钥匙中选择一把作为门的颜色
+				#随机添加一把钥匙
+				door = self.choice_dict(key_list)
+				key_list[door] -= 1
+				node['count']['door'] = door
+				if random.random() < 0.25: #不放置monster
+					is_monster = False
+
+			#身上的key越多，放置的key越少
+			total_key = sum(key_list.values())
 			key = self.choice_dict(key_choice)
 			key_list[key] += 1
-
-			node['count']['door'] = door
+			
 			node['count']['key'][key] += 1
 			#print node['count']
 
-			node['count']['monster'] = Hero(health=health, attack=attack, defence=defence)
-			node['count']['gem']['attack'] = random.randint(1, 3)
+			#print len(node['info']['area'])
+			if is_monster:
+				node['count']['monster'] = Hero(health=health, attack=attack, defence=defence)
+			else:
+				node['count']['monster'] = None
+			node['count']['gem']['attack'] = random.randint(2, 3)
 			node['count']['gem']['defence'] = random.randint(1, 2)
-			health += 5
+			health += 10
 			attack += 3
 			defence += 2
 
