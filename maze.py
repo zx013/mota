@@ -809,7 +809,9 @@ class Maze:
 		key_choice = {'yellow': 65, 'blue': 20, 'red': 10, 'green': 5}
 
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
-		
+
+		total_door = 0
+		total_key = 0
 		health = 20
 		attack = 10
 		defence = 5
@@ -820,6 +822,10 @@ class Maze:
 			#移除移动的node，添加node的forward
 			move_list += [forward_node['number'] for forward_node in node['way']['forward'].values()]
 
+			#能够使用的空间
+			space = len(node['info']['area'])
+			print space, len(move_list), key_list
+
 			is_monster = True #是否设置monster
 
 			if random.random() < 0.75: #放置door
@@ -828,22 +834,41 @@ class Maze:
 				door = self.choice_dict(key_list)
 				key_list[door] -= 1
 				node['count']['door'] = door
-				if random.random() < 0.25: #不放置monster
+				total_door += 1
+				#空间越小，放置monster的概率越小
+				if space <= 2 or space == 3 and random.random() < 0.50 or space > 3 and random.random() < 0.25: #不放置monster
 					is_monster = False
-
-			#身上的key越多，放置的key越少
-			total_key = sum(key_list.values())
-			key = self.choice_dict(key_choice)
-			key_list[key] += 1
-			
-			node['count']['key'][key] += 1
-			#print node['count']
-
-			#print len(node['info']['area'])
+				space -= 1 #door的space
 			if is_monster:
 				node['count']['monster'] = Hero(health=health, attack=attack, defence=defence)
+				space -= 1 #monster的space
 			else:
 				node['count']['monster'] = None
+
+			#身上的key越多，放置的key越少
+			#total_door - total_key值越大，放置的key越多
+			if total_key <= total_door: #key总数比门多时，不放置key
+				sum_key = sum(key_list.values())
+				key_num = 0
+				if sum_key == 0:
+					key_num = self.choice_dict({1: 80, 2: 13, 3: 5, 4: 2}) #1-4
+				elif sum_key == 1:
+					key_num = self.choice_dict({1: 90, 2: 8, 3: 2}) #1-3
+				elif sum_key == 2:
+					key_num = self.choice_dict({0: 95, 1: 3, 2: 2}) #0-2
+				elif sum_key == 3:
+					key_num = self.choice_dict({0: 98, 1: 2}) #0-1
+
+				if key_num > space:
+					key_num = space
+				for i in range(key_num):
+					key = self.choice_dict(key_choice)
+					key_list[key] += 1
+					node['count']['key'][key] += 1
+				total_key += key_num
+				space -= key_num
+			#print node['count']
+
 			node['count']['gem']['attack'] = random.randint(2, 3)
 			node['count']['gem']['defence'] = random.randint(1, 2)
 			health += 10
@@ -966,7 +991,7 @@ class Maze:
 					self.travel_max_num = 1
 				elif self.travel_max_health == health:
 					self.travel_max_num += 1
-			print node_list, self.fight_state['hero'].health
+			#print node_list, self.fight_state['hero'].health
 
 		if self.travel_total_num > MazeSetting.way_num:
 			return False
