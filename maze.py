@@ -34,18 +34,11 @@ maze_show = '''
 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 '''
 
-class MonsterBase:
-	monster_list = set()
-
 
 #1.从monster_list中取出若干monster，取出数量由tree的分支决定，每个可多个，层数越前取出的值越靠前
 #2.根据monster的att和def，分配gem的att和def
 #3.将monster和gem放入tree中，进行遍历，计算出最优解
 #4.按最优解的顺序遍历monster，进行战斗推演，放入health和potion，使中途不会出现health低于0的情况
-class MonsterNode:
-	node = {'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'monster': {'health': 0, 'attack': 0, 'defence': 0}}
-	def next(self):
-		pass
 
 
 class MazeBase:
@@ -68,7 +61,7 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set()}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set(), 'space': 0}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
 	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
@@ -99,6 +92,10 @@ class Hero:
 		hit = int((hero.health - 1) / (self.attack - hero.defence) + 1)
 		damage = (hit - 1) * (hero.attack - self.defence)
 		return damage
+
+class Monster(Hero):
+	pass
+
 
 class Maze:
 	maze = []
@@ -810,11 +807,20 @@ class Maze:
 
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
 
+		hero_attack = self.fight_state['hero'].attack
+		hero_defence = self.fight_state['hero'].defence
+		
+		base_attack = hero_attack / 20 if hero_attack >= 20 else 1
+		base_defence = hero_defence / 20 if hero_defence >= 20 else 1
+		base_health = 2 * (hero_attack + hero_defence)
+
 		total_door = 0
-		total_key = 0
-		health = 20
-		attack = 10
-		defence = 5
+		total_key = 0		
+		
+		monster_sword = 0
+		total_gem_attack = 0
+		total_gem_defence = 0
+		
 		while move_list:
 			#move = random.choice(move_list)
 			move = move_list.pop(random.choice(range(len(move_list))))
@@ -824,11 +830,11 @@ class Maze:
 
 			#能够使用的空间
 			space = len(node['info']['area'])
-			print space, len(move_list), key_list
 
 			is_monster = True #是否设置monster
 
-			if random.random() < 0.75: #放置door
+			if random.random() < 0.75 and sum(key_list.values()) > 0:
+				#放置door, 没有钥匙时不放置门
 				#从拥有的钥匙中选择一把作为门的颜色
 				#随机添加一把钥匙
 				door = self.choice_dict(key_list)
@@ -839,8 +845,28 @@ class Maze:
 				if space <= 2 or space == 3 and random.random() < 0.50 or space > 3 and random.random() < 0.25: #不放置monster
 					is_monster = False
 				space -= 1 #door的space
+
+			#monster的最低attack高于已分配所有defence gem的总和
+			#monster的最高defence低于已分配所有attack gem的总和
+			#monster的attack, defence之和持续增长
 			if is_monster:
-				node['count']['monster'] = Hero(health=health, attack=attack, defence=defence)
+				attack = total_gem_defence + 1
+				defence = total_gem_attack - 1
+				
+				value = sum([random.random() < 0.50 for i in xrange(defence + monster_sword)])
+				attack += value
+				defence -= value
+
+				print attack, defence
+
+				monster_attack = hero_attack + attack * base_attack
+				monster_defence = hero_defence + defence * base_defence
+				monster_health = base_health + random.randint(-monster_sword, monster_sword)
+				print '<', monster_health, monster_attack, monster_defence, '>'
+				node['count']['monster'] = Monster(health=monster_health, attack=monster_attack, defence=monster_defence)
+				
+				monster_sword += self.choice_dict({0: 65, 1: 20, 2: 10, 3: 5})
+
 				space -= 1 #monster的space
 			else:
 				node['count']['monster'] = None
@@ -867,13 +893,23 @@ class Maze:
 					node['count']['key'][key] += 1
 				total_key += key_num
 				space -= key_num
-			#print node['count']
 
-			node['count']['gem']['attack'] = random.randint(2, 3)
-			node['count']['gem']['defence'] = random.randint(1, 2)
-			health += 10
-			attack += 3
-			defence += 2
+			gem_num = self.choice_dict({0: 25, 1: 60, 2: 10, 3: 5})
+			if gem_num > space:
+				gem_num = space
+			for i in range(gem_num):
+				gem_val = self.choice_dict({1: 90, 3: 9, 10: 1})
+				if random.random() < 0.50:
+					node['count']['gem']['attack'] = gem_val
+					total_gem_attack += gem_val
+				else:
+					node['count']['gem']['defence'] = gem_val
+					total_gem_defence += gem_val
+			space -= gem_num
+			
+			node['info']['space'] = space
+
+			print '[', space, len(move_list), key_list, hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
 
 
 
@@ -1033,7 +1069,8 @@ class Maze:
 
 			if self.tree_travel():
 				break
-			print len(self.tree_map), self.travel_total_num
+			print 'rebuild', len(self.tree_map), self.travel_total_num
+			print
 		#for k, v in self.tree_map.items():
 		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 
