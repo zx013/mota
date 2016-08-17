@@ -800,6 +800,7 @@ class Maze:
 	#其他空间，放置key, gem, potion，根据需求可放可不放
 	#一个区域，至少有1个door或monster
 	def set_item(self):
+		node_list = []
 		#当前的钥匙
 		key_list = copy.deepcopy(self.fight_state['key'])
 		#钥匙选择的概率
@@ -809,18 +810,18 @@ class Maze:
 
 		hero_attack = self.fight_state['hero'].attack
 		hero_defence = self.fight_state['hero'].defence
-		
+
 		base_attack = hero_attack / 20 if hero_attack >= 20 else 1
 		base_defence = hero_defence / 20 if hero_defence >= 20 else 1
 		base_health = 2 * (hero_attack + hero_defence)
 
 		total_door = 0
-		total_key = 0		
-		
+		total_key = 0
+
 		monster_sword = 0
 		total_gem_attack = 0
 		total_gem_defence = 0
-		
+
 		while move_list:
 			#move = random.choice(move_list)
 			move = move_list.pop(random.choice(range(len(move_list))))
@@ -852,7 +853,7 @@ class Maze:
 			if is_monster:
 				attack = total_gem_defence + 1
 				defence = total_gem_attack - 1
-				
+
 				value = sum([random.random() < 0.50 for i in xrange(defence + monster_sword)])
 				attack += value
 				defence -= value
@@ -864,7 +865,7 @@ class Maze:
 				monster_health = base_health + random.randint(-monster_sword, monster_sword)
 				print '<', monster_health, monster_attack, monster_defence, '>'
 				node['count']['monster'] = Monster(health=monster_health, attack=monster_attack, defence=monster_defence)
-				
+
 				monster_sword += self.choice_dict({0: 65, 1: 20, 2: 10, 3: 5})
 
 				space -= 1 #monster的space
@@ -894,22 +895,26 @@ class Maze:
 				total_key += key_num
 				space -= key_num
 
+			node['count']['gem']['attack'] = 0
+			node['count']['gem']['defence'] = 0
 			gem_num = self.choice_dict({0: 25, 1: 60, 2: 10, 3: 5})
 			if gem_num > space:
 				gem_num = space
 			for i in range(gem_num):
 				gem_val = self.choice_dict({1: 90, 3: 9, 10: 1})
 				if random.random() < 0.50:
-					node['count']['gem']['attack'] = gem_val
+					node['count']['gem']['attack'] += gem_val
 					total_gem_attack += gem_val
 				else:
-					node['count']['gem']['defence'] = gem_val
+					node['count']['gem']['defence'] += gem_val
 					total_gem_defence += gem_val
 			space -= gem_num
-			
+
 			node['info']['space'] = space
+			node_list.append(node['number'])
 
 			print '[', space, len(move_list), key_list, hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
+		return node_list
 
 
 
@@ -1028,6 +1033,7 @@ class Maze:
 				elif self.travel_max_health == health:
 					self.travel_max_num += 1
 			#print node_list, self.fight_state['hero'].health
+		#print node_list, self.tree_map.keys(), self.fight_state['move_node']
 
 		if self.travel_total_num > MazeSetting.way_num:
 			return False
@@ -1065,17 +1071,19 @@ class Maze:
 			self.tree_create(pre=False)
 
 			#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，有一次计算超时，完全在计算能力之内（超过若干时间的，超时之后停止计算并重新生成）
-			self.set_item()
+			node_list = self.set_item()
 
 			if self.tree_travel():
-				break
-			print 'rebuild', len(self.tree_map), self.travel_total_num
+				if self.travel_total_num != 0:
+					break
+			print
 			print
 		#for k, v in self.tree_map.items():
 		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
 
 		#print self.door_num, len(self.tree_map)
 		print 'node num = {0}, total num = {1}, max health = {2}, max way = {3}'.format(len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num)
+		print node_list
 		#self.get_ground_num()
 		#self.show(lambda pos: self.get_type(pos))
 		hero = self.fight_state['hero']
