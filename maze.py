@@ -798,7 +798,7 @@ class Maze:
 				return key
 
 
-	#寻找一条随机路径
+	#寻找一条随机路径，保证该路径能够通过，但不保证该路径为最优解
 	#分配各类物品
 	#放置点：门的位置，门后方的位置，其他空间
 	#门的位置，放置door或者monster
@@ -874,7 +874,7 @@ class Maze:
 				if monster_attribute < total_gem_defence + total_gem_attack:
 					#提升一次monster的综合能力
 					monster_attribute = total_gem_defence + total_gem_attack
-					for i in xrange(self.choice_dict({5: 30, 10: 50, 20: 20})):
+					for i in xrange(self.choice_dict({3: 30, 5: 50, 10: 20})):
 						if random.random() < 0.75:
 							monster_attribute += 1
 						base_health += self.choice_dict({0: 50, 1: 20, 2: 30, 3: 10})
@@ -883,14 +883,25 @@ class Maze:
 				attack = monster_attribute - defence
 
 				value = sum([random.random() < MazeSetting.monster_type for i in xrange(attack / 2 + defence)])
-				if value > defence:
-					value = defence
+
 				attack += value
 				defence -= value
 
 				monster_attack = hero_attack + attack * base_attack
 				monster_defence = hero_defence + defence * base_defence
+				if monster_defence < 0:
+					monster_attack += monster_defence
+					monster_defence = 0
+
+				is_rand = False
+				for m_health, m_attack, m_defence in monster_list:
+					#相同monster_attribute下的不同的attack和defence分配
+					if m_attack + m_defence == monster_attack + monster_defence and m_attack != monster_attack:
+						is_rand = True
+						break
 				monster_health = base_health
+				if is_rand:
+					monster_health += random.randint(-base_health / 8, base_health / 8)
 
 				monster_list.add((monster_health, monster_attack, monster_defence))
 				print '<', monster_health, monster_attack, monster_defence, '>'
@@ -942,7 +953,8 @@ class Maze:
 			node['info']['space'] = space
 			node_list.append(node['number'])
 
-			print '[', space, len(move_list), key_list, hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
+			print '[', hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
+			print space, len(move_list), key_list
 		print monster_list
 		return node_list
 
@@ -1106,6 +1118,7 @@ class Maze:
 			if self.tree_travel():
 				if self.travel_total_num != 0:
 					break
+				print 'travel_total_num is 0'
 			print
 			print
 		#for k, v in self.tree_map.items():
