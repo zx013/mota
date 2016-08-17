@@ -77,6 +77,12 @@ class MazeSetting:
 	#最大路径数量
 	way_num = 10000
 
+	#宝石的数值是否会增加
+	auto_increase = True
+
+	#monster倾向于攻击(1)或防守(0)
+	monster_type = 0.25
+
 
 class Hero:
 	def __init__(self, health=1000, attack=10, defence=10):
@@ -811,14 +817,28 @@ class Maze:
 		hero_attack = self.fight_state['hero'].attack
 		hero_defence = self.fight_state['hero'].defence
 
-		base_attack = hero_attack / 20 if hero_attack >= 20 else 1
-		base_defence = hero_defence / 20 if hero_defence >= 20 else 1
-		base_health = 2 * (hero_attack + hero_defence)
+		#每个宝石增加的数值
+		if MazeSetting.auto_increase:
+			base_attack = hero_attack / 20
+			if base_attack < 1:
+				base_attack = 1
+			base_defence = hero_defence / 20
+			if base_defence < 1:
+				base_defence = 1
+		else:
+			base_attack = 1
+			base_defence = 1
+		base_health = hero_attack + hero_defence
+		base_health += random.randint(-base_health / 4, base_health / 4)
 
 		total_door = 0
 		total_key = 0
 
-		monster_sword = 0
+		#monster的总属性(attack和defence之和)，便于生成相近的monster，防止一味的递增
+		monster_attribute = 0
+		#monster种类列表
+		monster_list = set()
+
 		total_gem_attack = 0
 		total_gem_defence = 0
 
@@ -851,22 +871,30 @@ class Maze:
 			#monster的最高defence低于已分配所有attack gem的总和
 			#monster的attack, defence之和持续增长
 			if is_monster:
-				attack = total_gem_defence + 1
+				if monster_attribute < total_gem_defence + total_gem_attack:
+					#提升一次monster的综合能力
+					monster_attribute = total_gem_defence + total_gem_attack
+					for i in xrange(self.choice_dict({5: 30, 10: 50, 20: 20})):
+						if random.random() < 0.75:
+							monster_attribute += 1
+						base_health += self.choice_dict({0: 50, 1: 20, 2: 30, 3: 10})
+				#attack = total_gem_defence + 1
 				defence = total_gem_attack - 1
+				attack = monster_attribute - defence
 
-				value = sum([random.random() < 0.50 for i in xrange(defence + monster_sword)])
+				value = sum([random.random() < MazeSetting.monster_type for i in xrange(attack / 2 + defence)])
+				if value > defence:
+					value = defence
 				attack += value
 				defence -= value
 
-				print attack, defence
-
 				monster_attack = hero_attack + attack * base_attack
 				monster_defence = hero_defence + defence * base_defence
-				monster_health = base_health + random.randint(-monster_sword, monster_sword)
+				monster_health = base_health
+
+				monster_list.add((monster_health, monster_attack, monster_defence))
 				print '<', monster_health, monster_attack, monster_defence, '>'
 				node['count']['monster'] = Monster(health=monster_health, attack=monster_attack, defence=monster_defence)
-
-				monster_sword += self.choice_dict({0: 65, 1: 20, 2: 10, 3: 5})
 
 				space -= 1 #monster的space
 			else:
@@ -901,6 +929,7 @@ class Maze:
 			if gem_num > space:
 				gem_num = space
 			for i in range(gem_num):
+				#小宝石，大宝石，剑盾
 				gem_val = self.choice_dict({1: 90, 3: 9, 10: 1})
 				if random.random() < 0.50:
 					node['count']['gem']['attack'] += gem_val
@@ -914,6 +943,7 @@ class Maze:
 			node_list.append(node['number'])
 
 			print '[', space, len(move_list), key_list, hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
+		print monster_list
 		return node_list
 
 
