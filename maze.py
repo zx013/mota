@@ -40,6 +40,11 @@ maze_show = '''
 #3.将monster和gem放入tree中，进行遍历，计算出最优解
 #4.按最优解的顺序遍历monster，进行战斗推演，放入health和potion，使中途不会出现health低于0的情况
 
+class Tools:
+	@staticmethod
+	def ceil(x, y):
+		return int(float(x - 1) / y + 1)
+
 
 class MazeBase:
 	ground = 0
@@ -61,7 +66,7 @@ class MazeBase:
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set(), 'space': 0}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': 0, 'gem': {'attack': 0, 'defence': 0}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set(), 'space': 0}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': {'total': 0, 1: 0, 2: 0, 4: 0, 8: 0}, 'gem': {'attack': {'total': 0, 1: 0, 3: 0, 10: 0}, 'defence': {'total': 0, 1: 0, 3: 0, 10: 0}}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
 	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
@@ -84,7 +89,7 @@ class MazeSetting:
 	monster_type = 0.25
 
 	#potion是否超量放置，数值越大超过正常量越多，难度也越小
-	potion_type = 0.15
+	potion_type = 0.10
 
 
 class Hero:
@@ -98,12 +103,33 @@ class Hero:
 			return -1
 		if hero.attack <= self.defence:
 			return 0;
-		hit = int((hero.health - 1) / (self.attack - hero.defence) + 1)
+		hit = Tools.ceil(hero.health, self.attack - hero.defence)
 		damage = (hit - 1) * (hero.attack - self.defence)
 		return damage
 
 class Monster(Hero):
 	pass
+
+
+#难度水平，每一层按照该值确定
+class Level:
+	def __init__(self):
+		#每个gem和potion增加的数值
+		self.attack = 1
+		self.defence = 1
+		self.health = (self.attack + self.defence) * 50
+
+	def update(self, hero):
+		if MazeSetting.auto_increase:
+			self.attack = hero.attack / 20
+			if self.attack < 1:
+				self.attack = 1
+			self.defence = hero.defence / 20
+			if self.defence < 1:
+				self.defence = 1
+			self.health = (self.attack + self.defence) * 50
+
+level = Level()
 
 
 class Maze:
@@ -591,11 +617,11 @@ class Maze:
 	#人物状态
 	fight_state = {}
 
-	def tree_init(self):
+	def tree_init(self, hero):
 		self.tree = copy.deepcopy(MazeBase.tree_node)
 		self.tree_number = 0
 		self.tree_map = {self.tree_number: self.tree}
-		self.fight_state['hero'] = Hero(health=100, attack=10, defence=10)
+		self.fight_state['hero'] = hero
 		self.fight_state['move_node'] = set([self.tree_number])
 		self.fight_state['key'] = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
 
@@ -691,8 +717,8 @@ class Maze:
 
 	#区域单独成块
 	#道路和转折点拼接
-	def tree_create(self, pre=True):
-		self.tree_init()
+	def tree_create(self, hero, pre=True):
+		self.tree_init(hero)
 		if pre:
 			for floor in range(MazeSetting.floor):
 				self.tree_insert_point(floor)
@@ -822,17 +848,6 @@ class Maze:
 		hero_defence = self.fight_state['hero'].defence
 		hero = Hero(health=hero_health, attack=hero_attack, defence=hero_defence)
 
-		#每个宝石增加的数值
-		if MazeSetting.auto_increase:
-			base_attack = hero_attack / 20
-			if base_attack < 1:
-				base_attack = 1
-			base_defence = hero_defence / 20
-			if base_defence < 1:
-				base_defence = 1
-		else:
-			base_attack = 1
-			base_defence = 1
 		base_health = hero_attack + hero_defence
 		base_health += random.randint(-base_health / 4, base_health / 4)
 
@@ -892,8 +907,8 @@ class Maze:
 				attack += value
 				defence -= value
 
-				monster_attack = hero_attack + attack * base_attack
-				monster_defence = hero_defence + defence * base_defence
+				monster_attack = hero_attack + attack * level.attack
+				monster_defence = hero_defence + defence * level.defence
 				if monster_defence < 0:
 					monster_attack += monster_defence
 					monster_defence = 0
@@ -914,12 +929,12 @@ class Maze:
 				node['count']['monster'] = monster
 
 				damage = hero.fight(monster)
-				if damage >= 0:
-					hero.health -= damage
-				else:
+				if damage < 0:
 					return #该道路不通（由最小defence保证不会进入此处，加上以防万一）
+				hero.health -= damage
+
 				#potion可放在该节点之前的所有节点中
-				#potion的增长值为(base_attack + base_defence) * 50
+				#potion的增长值为(level.attack + level.defence) * 50
 				#potion分四种，分别增加1, 2, 4, 8
 				if hero.health <= 0:
 					total_space = 0
@@ -927,15 +942,26 @@ class Maze:
 						total_space += self.tree_map[move]['info']['space']
 
 					#最小增加的数量，至少为1
-					health = int((-float(hero.health) - 1) / ((base_attack + base_defence) * 50) + 1) + 1
-					health += sum([random.random() < MazeSetting.potion_type for i in xrange(8)])
+					potion = Tools.ceil(-hero.health, level.health) + 1
+					potion_increase = sum([random.random() < MazeSetting.potion_type for i in xrange(8)])
 					#前面的空间不足以放下足够多的potion(按最大的8来放置)
-					if total_space < int(float(health - 1) / 8 + 1):
+					if total_space < Tools.ceil(potion, 8):
 						return
-						
-					health = int((-float(hero.health) - 1) / ((base_attack + base_defence) * 50) + 1)
-					print total_space, hero.health, health
-					#prev_node['count']['potion']
+					if total_space >= Tools.ceil(potion + potion_increase, 8):
+						potion += potion_increase
+
+					hero.health += potion * level.health
+					for move in node_list[::-1]: #从后往前
+						last_node = self.tree_map[move]
+						for i in [8, 4, 2, 1]:
+							while potion >= i and last_node['info']['space'] >= 1:
+								potion -= i
+								last_node['info']['space'] -= 1
+								last_node['count']['potion'][i] += 1
+								last_node['count']['potion']['total'] += i
+					#额外增加的值没有放完不受影响
+					if potion > potion_increase:
+						return
 
 				space -= 1 #monster的space
 			else:
@@ -964,8 +990,8 @@ class Maze:
 				total_key += key_num
 				space -= key_num
 
-			node['count']['gem']['attack'] = 0
-			node['count']['gem']['defence'] = 0
+			#node['count']['gem']['attack']['total'] = 0
+			#node['count']['gem']['defence']['total'] = 0
 			gem_num = self.choice_dict({0: 25, 1: 60, 2: 10, 3: 5})
 			if gem_num > space:
 				gem_num = space
@@ -973,11 +999,13 @@ class Maze:
 				#小宝石，大宝石，剑盾
 				gem_val = self.choice_dict({1: 90, 3: 9, 10: 1})
 				if random.random() < 0.50:
-					node['count']['gem']['attack'] += gem_val
+					node['count']['gem']['attack'][gem_val] += 1
+					node['count']['gem']['attack']['total'] += gem_val
 					total_gem_attack += gem_val
 					hero.attack += gem_val
 				else:
-					node['count']['gem']['defence'] += gem_val
+					node['count']['gem']['defence'][gem_val] += 1
+					node['count']['gem']['defence']['total'] += gem_val
 					total_gem_defence += gem_val
 					hero.defence += gem_val
 			space -= gem_num
@@ -985,7 +1013,7 @@ class Maze:
 			node['info']['space'] = space
 			node_list.append(node['number'])
 
-			#print '[', hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
+			print '[', hero.health, hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
 			#print space, len(move_list), key_list
 		print monster_list
 		return node_list
@@ -1051,9 +1079,9 @@ class Maze:
 		for k, v in node['count']['key'].items():
 			key[k] += v
 
-		hero.health += node['count']['potion']
-		hero.attack += node['count']['gem']['attack']
-		hero.defence += node['count']['gem']['defence']
+		hero.health += node['count']['potion']['total'] * level.health
+		hero.attack += node['count']['gem']['attack']['total'] * level.attack
+		hero.defence += node['count']['gem']['defence']['total'] * level.defence
 		return True
 
 	def out_node_fight(self, node):
@@ -1066,9 +1094,9 @@ class Maze:
 			key[door] += 1
 		for k, v in node['count']['key'].items():
 			key[k] -= v
-		hero.health -= node['count']['potion']
-		hero.attack -= node['count']['gem']['attack']
-		hero.defence -= node['count']['gem']['defence']
+		hero.health -= node['count']['potion']['total'] * level.health
+		hero.attack -= node['count']['gem']['attack']['total'] * level.attack
+		hero.defence -= node['count']['gem']['defence']['total'] * level.defence
 
 	#移入，remove该点，add该点的forward
 	#移出，remove该点的forward，add该点
@@ -1140,11 +1168,14 @@ class Maze:
 
 	def create(self):
 		while True:
+			hero = Hero(health=100, attack=10, defence=10)
+			level.update(hero)
+
 			self.block_create()
 			#self.show(lambda pos: self.get_type(pos))
-			self.tree_create()
+			self.tree_create(hero)
 			self.tree_ergodic(self.set_node)
-			self.tree_create(pre=False)
+			self.tree_create(hero, pre=False)
 
 			#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，有一次计算超时，完全在计算能力之内（超过若干时间的，超时之后停止计算并重新生成）
 			node_list = self.set_item()
