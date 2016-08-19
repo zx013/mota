@@ -1013,9 +1013,8 @@ class Maze:
 			node['info']['space'] = space
 			node_list.append(node['number'])
 
-			print '[', hero.health, hero_attack + total_gem_attack, hero_defence + total_gem_defence, ']'
-			#print space, len(move_list), key_list
 		print monster_list
+		
 		return node_list
 
 
@@ -1157,6 +1156,43 @@ class Maze:
 		return self.node_travel([])
 
 
+	def hero_walk(self, hero, node_list):
+		hero = Hero(health=hero.health, attack=hero.attack, defence=hero.defence)
+		for move in node_list:
+			node = self.tree_map[move]
+			print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
+
+			if node['count']['door']:
+				print '<open door, {0}>'.format(node['count']['door'])
+			monster = node['count']['monster']
+			if monster:
+				print '<attack monster, health={0}, attack={1}, defence={2}>'.format(monster.health, monster.attack, monster.defence)
+				damage = hero.fight(monster)
+				if damage < 0:
+					print 'hero die'
+					return False
+				hero.health -= damage
+
+			for k, v in node['count']['key'].items():
+				if v > 0:
+					print '<get key, {0} {1}>, '.format(k, v),
+			if node['count']['gem']['attack']['total'] > 0:
+				print '<get attack gem, {0}>, '.format(node['count']['gem']['attack']['total'] * level.attack),
+			if node['count']['gem']['defence']['total'] > 0:
+				print '<get defence gem, {0}>, '.format(node['count']['gem']['defence']['total'] * level.defence),
+			
+			if node['count']['potion']['total'] > 0:
+				print '<get potion, {0}>, '.format(node['count']['potion']['total'] * level.health),
+			
+			print
+			print
+
+			hero.health += node['count']['potion']['total'] * level.health
+			hero.attack += node['count']['gem']['attack']['total'] * level.attack
+			hero.defence += node['count']['gem']['defence']['total'] * level.defence
+		print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
+
+
 	def get_ground_num(self):
 		ground_num = 0
 		for k in range(MazeSetting.floor):
@@ -1200,6 +1236,7 @@ class Maze:
 		#self.show(lambda pos: self.get_type(pos))
 		hero = self.fight_state['hero']
 		print self.fight_state['key'], hero.health, hero.attack, hero.defence
+		self.hero_walk(hero, node_list)
 
 
 	def show(self, format):
