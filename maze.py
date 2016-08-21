@@ -114,20 +114,29 @@ class Monster(Hero):
 #难度水平，每一层按照该值确定
 class Level:
 	def __init__(self):
-		#每个gem和potion增加的数值
-		self.attack = 1
-		self.defence = 1
-		self.health = (self.attack + self.defence) * 50
+		self.hero = Hero(health=100, attack=10, defence=10)
+		self.update()
+		self.floor = 0
 
-	def update(self, hero):
+	def update(self):
+		#每个gem和potion增加的数值
 		if MazeSetting.auto_increase:
-			self.attack = hero.attack / 20
+			self.attack = self.hero.attack / 20
 			if self.attack < 1:
 				self.attack = 1
-			self.defence = hero.defence / 20
+			self.defence = self.hero.defence / 20
 			if self.defence < 1:
 				self.defence = 1
 			self.health = (self.attack + self.defence) * 50
+
+	def next(self):
+		self.floor += 1
+		maze = Maze()
+		self.update()
+		node_list = maze.create()
+
+		print maze.fight_state['key'], self.hero.health, self.hero.attack, self.hero.defence
+		maze.hero_walk(self.hero, node_list)
 
 level = Level()
 
@@ -617,11 +626,11 @@ class Maze:
 	#人物状态
 	fight_state = {}
 
-	def tree_init(self, hero):
+	def tree_init(self):
 		self.tree = copy.deepcopy(MazeBase.tree_node)
 		self.tree_number = 0
 		self.tree_map = {self.tree_number: self.tree}
-		self.fight_state['hero'] = hero
+		self.fight_state['hero'] = copy.deepcopy(level.hero)
 		self.fight_state['move_node'] = set([self.tree_number])
 		self.fight_state['key'] = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
 
@@ -717,8 +726,7 @@ class Maze:
 
 	#区域单独成块
 	#道路和转折点拼接
-	def tree_create(self, hero, pre=True):
-		self.tree_init(hero)
+	def tree_create(self, pre=True):
 		if pre:
 			for floor in range(MazeSetting.floor):
 				self.tree_insert_point(floor)
@@ -746,12 +754,13 @@ class Maze:
 		around = [(z, x + 2, y), (z, x + 1, y + 1), (z, x, y + 2), (z, x - 1, y + 1), (z, x - 2, y), (z, x - 1, y - 1), (z, x, y - 2), (z, x + 1, y - 1)]
 		return map(self.get_type, around).count(MazeBase.door)
 
+
+
 	door_num = 0
 	def set_door(self, pos):
 		if self.is_slit(pos) and self.around_door(pos) < 2:
 			self.set_type(pos, MazeBase.door)
 			self.door_num += 1
-
 
 	area_num = 0
 	def set_node(self, node):
@@ -816,6 +825,8 @@ class Maze:
 		#	merge_node = True
 		#if merge_node:
 		#	self.node_door(node)
+
+
 
 
 	def choice_dict(self, d):
@@ -1157,7 +1168,7 @@ class Maze:
 
 
 	def hero_walk(self, hero, node_list):
-		hero = Hero(health=hero.health, attack=hero.attack, defence=hero.defence)
+		#hero = Hero(health=hero.health, attack=hero.attack, defence=hero.defence)
 		for move in node_list:
 			node = self.tree_map[move]
 			print '<floor {0}>'.format(list(set([v[0] for v in node['info']['area']])))
@@ -1196,32 +1207,26 @@ class Maze:
 
 	def create(self):
 		while True:
-			hero = Hero(health=100, attack=10, defence=10)
-			level.update(hero)
-
 			self.block_create()
 			#self.show(lambda pos: self.get_type(pos))
-			self.tree_create(hero)
+			self.tree_init()
+			self.tree_create()
 			self.tree_ergodic(self.set_node)
-			self.tree_create(hero, pre=False)
+			self.tree_create(pre=False)
 
 			#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，有一次计算超时，完全在计算能力之内（超过若干时间的，超时之后停止计算并重新生成）
 			node_list = self.set_item()
 			if node_list is None:
 				print 'set item error'
 				continue
-
 			#self.tree_travel()
 			break
-
+		
 		#print 'node num = {0}, total num = {1}, max health = {2}, max way = {3}'.format(len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num)
 		print node_list
 		#print self.travel_node_list
 		#self.show(lambda pos: self.get_type(pos))
-		hero = self.fight_state['hero']
-		print self.fight_state['key'], hero.health, hero.attack, hero.defence
-		self.hero_walk(hero, node_list)
-
+		return node_list
 
 	def show(self, format):
 		for k in range(MazeSetting.floor):
@@ -1252,8 +1257,5 @@ class Maze:
 
 
 if __name__ == '__main__':
-	maze = Maze()
-	#maze.get_show(maze_show)
-	#maze.show(lambda pos: maze.get_type(pos))
-	maze.create()
-	#print maze.set_show()
+	level.next()
+	level.next()
