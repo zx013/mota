@@ -77,9 +77,9 @@ class MazeSetting:
 	rows = 13
 	#列
 	cols = 13
-	#楼梯对齐，禁用可大幅提高地图生成速度
+	#楼梯对齐，下一层的上行楼梯和上一层的下行楼梯在同一位置，禁用可大幅提高地图生成速度
 	stairs_align = True
-	#最大路径数量
+	#最大路径数量，只有一层时数量才在计算能力之内，多层时计算时间超出计算能力范围，但不影响正常通关
 	way_num = 10000
 
 	#宝石的数值是否会增加
@@ -1160,6 +1160,7 @@ class Maze:
 		hero = Hero(health=hero.health, attack=hero.attack, defence=hero.defence)
 		for move in node_list:
 			node = self.tree_map[move]
+			print '<floor {0}>'.format(list(set([v[0] for v in node['info']['area']])))
 			print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
 
 			if node['count']['door']:
@@ -1193,15 +1194,6 @@ class Maze:
 		print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
 
 
-	def get_ground_num(self):
-		ground_num = 0
-		for k in range(MazeSetting.floor):
-			for i in range(MazeSetting.rows + 2):
-				for j in range(MazeSetting.cols + 2):
-					if self.get_type((k, i, j)) == MazeBase.ground:
-						ground_num += 1
-		print 'ground num:', ground_num
-
 	def create(self):
 		while True:
 			hero = Hero(health=100, attack=10, defence=10)
@@ -1219,20 +1211,12 @@ class Maze:
 				print 'set item error'
 				continue
 
-			if self.tree_travel():
-				if self.travel_total_num != 0:
-					break
-				print 'travel_total_num is 0'
-			print
-			print
-		#for k, v in self.tree_map.items():
-		#	print v['number'], v['info']['area'], v['way']['forward'].keys(), v['way']['backward'].keys()
+			#self.tree_travel()
+			break
 
-		#print self.door_num, len(self.tree_map)
-		print 'node num = {0}, total num = {1}, max health = {2}, max way = {3}'.format(len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num)
+		#print 'node num = {0}, total num = {1}, max health = {2}, max way = {3}'.format(len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num)
 		print node_list
-		print self.travel_node_list
-		#self.get_ground_num()
+		#print self.travel_node_list
 		#self.show(lambda pos: self.get_type(pos))
 		hero = self.fight_state['hero']
 		print self.fight_state['key'], hero.health, hero.attack, hero.defence
