@@ -114,20 +114,24 @@ class Monster(Hero):
 #难度水平，每一层按照该值确定
 class Level:
 	def __init__(self):
+		self.floor = 0
 		self.hero = Hero(health=100, attack=10, defence=10)
 		self.update()
-		self.floor = 0
 
 	def update(self):
 		#每个gem和potion增加的数值
 		if MazeSetting.auto_increase:
-			self.attack = self.hero.attack / 20
+			self.attack = self.floor / 10
 			if self.attack < 1:
 				self.attack = 1
-			self.defence = self.hero.defence / 20
+			self.defence = self.floor / 10
 			if self.defence < 1:
 				self.defence = 1
-			self.health = (self.attack + self.defence) * 50
+		else:
+			self.attack = 1
+			self.defence = 1
+		value = str((self.hero.attack + self.hero.defence) * 2)
+		self.health = int(value[0]) * 10 ** (len(value) - 1)
 
 	def next(self):
 		self.floor += 1
@@ -137,6 +141,11 @@ class Level:
 
 		print maze.fight_state['key'], self.hero.health, self.hero.attack, self.hero.defence
 		maze.hero_walk(self.hero, node_list)
+
+	def iter(self):
+		while True:
+			self.next()
+			yield
 
 level = Level()
 
@@ -620,16 +629,13 @@ class Maze:
 	#一个区域连接着2个区域的，为路径区域
 	#一个区域连接着3个或以上区域的，为分支区域
 
-	tree = {}
-	tree_number = 0
-	tree_map = {}
-	#人物状态
-	fight_state = {}
+
 
 	def tree_init(self):
 		self.tree = copy.deepcopy(MazeBase.tree_node)
 		self.tree_number = 0
 		self.tree_map = {self.tree_number: self.tree}
+		self.fight_state = {}
 		self.fight_state['hero'] = copy.deepcopy(level.hero)
 		self.fight_state['move_node'] = set([self.tree_number])
 		self.fight_state['key'] = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
@@ -831,6 +837,8 @@ class Maze:
 
 	def choice_dict(self, d):
 		total = sum(d.values())
+		if total < 1:
+			return
 		rand = random.randint(1, total)
 		for key, val in d.items():
 			rand -= val
@@ -873,6 +881,7 @@ class Maze:
 		total_gem_attack = 0
 		total_gem_defence = 0
 
+		node_space = 0
 		while move_list:
 			#move = random.choice(move_list)
 			move = move_list.pop(random.choice(range(len(move_list))))
@@ -883,19 +892,35 @@ class Maze:
 			#能够使用的空间
 			space = len(node['info']['area'])
 
+			is_door = True
 			is_monster = True #是否设置monster
 
-			if random.random() < 0.75 and sum(key_list.values()) > 0:
+			if node_space < 8:
+				is_door = True
+				is_monster = False
+			else:
+				if random.random() < 0.75 and sum(key_list.values()) > 0:
+					is_door = True
+					#空间越小，放置monster的概率越小
+					if space <= 2 or space == 3 and random.random() < 0.50 or space > 3 and random.random() < 0.25: #不放置monster
+						is_monster = False
+					else:
+						is_monster = True
+				else:
+					is_door = False
+					is_monster = True
+
+			if is_door:
 				#放置door, 没有钥匙时不放置门
 				#从拥有的钥匙中选择一把作为门的颜色
 				#随机添加一把钥匙
 				door = self.choice_dict(key_list)
+				if not door:
+					error = {'type': 'no keys'}
+					return False, error
 				key_list[door] -= 1
 				node['count']['door'] = door
 				total_door += 1
-				#空间越小，放置monster的概率越小
-				if space <= 2 or space == 3 and random.random() < 0.50 or space > 3 and random.random() < 0.25: #不放置monster
-					is_monster = False
 				space -= 1 #door的space
 
 			#monster的最低attack高于已分配所有defence gem的总和
@@ -918,8 +943,8 @@ class Maze:
 				attack += value
 				defence -= value
 
-				monster_attack = hero_attack + attack * level.attack
-				monster_defence = hero_defence + defence * level.defence
+				monster_attack = hero_defence + attack * level.defence
+				monster_defence = hero_attack + defence * level.attack
 				if monster_defence < 0:
 					monster_attack += monster_defence
 					monster_defence = 0
@@ -941,7 +966,8 @@ class Maze:
 
 				damage = hero.fight(monster)
 				if damage < 0:
-					return #该道路不通（由最小defence保证不会进入此处，加上以防万一）
+					error = {'type': 'error damage', 'info': [hero.attack, hero.defence, monster.attack, monster.defence]}
+					return False, error #该道路不通（由最小defence保证不会进入此处，加上以防万一）
 				hero.health -= damage
 
 				#potion可放在该节点之前的所有节点中
@@ -957,7 +983,8 @@ class Maze:
 					potion_increase = sum([random.random() < MazeSetting.potion_type for i in xrange(8)])
 					#前面的空间不足以放下足够多的potion(按最大的8来放置)
 					if total_space < Tools.ceil(potion, 8):
-						return
+						error = {'type': 'no space 1', 'info': [node_space, total_space, space, potion]}
+						return False, error
 					if total_space >= Tools.ceil(potion + potion_increase, 8):
 						potion += potion_increase
 
@@ -972,7 +999,8 @@ class Maze:
 								last_node['count']['potion']['total'] += i
 					#额外增加的值没有放完不受影响
 					if potion > potion_increase:
-						return
+						error = {'type': 'no space 2'}
+						return False, error
 
 				space -= 1 #monster的space
 			else:
@@ -1013,20 +1041,21 @@ class Maze:
 					node['count']['gem']['attack'][gem_val] += 1
 					node['count']['gem']['attack']['total'] += gem_val
 					total_gem_attack += gem_val
-					hero.attack += gem_val
+					hero.attack += gem_val * level.attack
 				else:
 					node['count']['gem']['defence'][gem_val] += 1
 					node['count']['gem']['defence']['total'] += gem_val
 					total_gem_defence += gem_val
-					hero.defence += gem_val
+					hero.defence += gem_val * level.defence
 			space -= gem_num
 
 			node['info']['space'] = space
 			node_list.append(node['number'])
+			node_space += space
 
 		print monster_list
-		
-		return node_list
+
+		return True, node_list
 
 
 
@@ -1169,9 +1198,10 @@ class Maze:
 
 	def hero_walk(self, hero, node_list):
 		#hero = Hero(health=hero.health, attack=hero.attack, defence=hero.defence)
+		print 'begin fight'
 		for move in node_list:
 			node = self.tree_map[move]
-			print '<floor {0}>'.format(list(set([v[0] for v in node['info']['area']])))
+			print '<floor {0}>'.format(list(set([v[0] + level.floor for v in node['info']['area']])))
 			print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
 
 			if node['count']['door']:
@@ -1192,10 +1222,10 @@ class Maze:
 				print '<get attack gem, {0}>, '.format(node['count']['gem']['attack']['total'] * level.attack),
 			if node['count']['gem']['defence']['total'] > 0:
 				print '<get defence gem, {0}>, '.format(node['count']['gem']['defence']['total'] * level.defence),
-			
+
 			if node['count']['potion']['total'] > 0:
 				print '<get potion, {0}>, '.format(node['count']['potion']['total'] * level.health),
-			
+
 			print
 			print
 
@@ -1203,6 +1233,7 @@ class Maze:
 			hero.attack += node['count']['gem']['attack']['total'] * level.attack
 			hero.defence += node['count']['gem']['defence']['total'] * level.defence
 		print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
+		print 'end fight'
 
 
 	def create(self):
@@ -1215,13 +1246,14 @@ class Maze:
 			self.tree_create(pre=False)
 
 			#放置钥匙后，可靠路径在1w左右波动，最大出现过100w，有一次计算超时，完全在计算能力之内（超过若干时间的，超时之后停止计算并重新生成）
-			node_list = self.set_item()
-			if node_list is None:
-				print 'set item error'
+			result, error = self.set_item()
+			if not result:
+				print 'set item error', error
 				continue
 			#self.tree_travel()
+			node_list = error
 			break
-		
+
 		#print 'node num = {0}, total num = {1}, max health = {2}, max way = {3}'.format(len(self.tree_map), self.travel_total_num, self.travel_max_health, self.travel_max_num)
 		print node_list
 		#print self.travel_node_list
@@ -1257,5 +1289,5 @@ class Maze:
 
 
 if __name__ == '__main__':
-	level.next()
-	level.next()
+	for i in level.iter():
+		pass
