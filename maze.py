@@ -116,15 +116,18 @@ class Level:
 	def __init__(self):
 		self.floor = 0
 		self.hero = Hero(health=100, attack=10, defence=10)
-		self.update()
+		self.key = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
+		self.attack = 1
+		self.defence = 1
+		self.health = 100
 
-	def update(self):
+	def update(self, maze):
 		#每个gem和potion增加的数值
 		if MazeSetting.auto_increase:
-			self.attack = self.floor / 10
+			self.attack = int(self.floor ** 0.35)
 			if self.attack < 1:
 				self.attack = 1
-			self.defence = self.floor / 10
+			self.defence = int(self.floor ** 0.35)
 			if self.defence < 1:
 				self.defence = 1
 		else:
@@ -133,14 +136,17 @@ class Level:
 		value = str((self.hero.attack + self.hero.defence) * 2)
 		self.health = int(value[0]) * 10 ** (len(value) - 1)
 
-	def next(self):
+		self.hero = maze.fight_state['hero']
+		self.key = maze.fight_state['key']
 		self.floor += 1
+
+	def next(self):
 		maze = Maze()
-		self.update()
 		node_list = maze.create()
 
 		print maze.fight_state['key'], self.hero.health, self.hero.attack, self.hero.defence
-		maze.hero_walk(self.hero, node_list)
+		maze.hero_walk(node_list)
+		self.update(maze)
 
 	def iter(self):
 		while True:
@@ -638,7 +644,7 @@ class Maze:
 		self.fight_state = {}
 		self.fight_state['hero'] = copy.deepcopy(level.hero)
 		self.fight_state['move_node'] = set([self.tree_number])
-		self.fight_state['key'] = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
+		self.fight_state['key'] = copy.deepcopy(level.key)
 
 	def tree_insert_point(self, floor):
 		pos_list = self.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
@@ -733,6 +739,7 @@ class Maze:
 	#区域单独成块
 	#道路和转折点拼接
 	def tree_create(self, pre=True):
+		self.tree_init()
 		if pre:
 			for floor in range(MazeSetting.floor):
 				self.tree_insert_point(floor)
@@ -856,7 +863,7 @@ class Maze:
 	def set_item(self):
 		node_list = []
 		#当前的钥匙
-		key_list = copy.deepcopy(self.fight_state['key'])
+		key_list = copy.deepcopy(level.key)
 		#钥匙选择的概率
 		key_choice = {'yellow': 65, 'blue': 20, 'red': 10, 'green': 5}
 
@@ -1196,7 +1203,9 @@ class Maze:
 		return self.node_travel([])
 
 
-	def hero_walk(self, hero, node_list):
+	def hero_walk(self, node_list):
+		hero = self.fight_state['hero']
+		key = self.fight_state['key']
 		#hero = Hero(health=hero.health, attack=hero.attack, defence=hero.defence)
 		print 'begin fight'
 		for move in node_list:
@@ -1217,6 +1226,7 @@ class Maze:
 
 			for k, v in node['count']['key'].items():
 				if v > 0:
+					key[k] += v
 					print '<get key, {0} {1}>, '.format(k, v),
 			if node['count']['gem']['attack']['total'] > 0:
 				print '<get attack gem, {0}>, '.format(node['count']['gem']['attack']['total'] * level.attack),
@@ -1240,7 +1250,6 @@ class Maze:
 		while True:
 			self.block_create()
 			#self.show(lambda pos: self.get_type(pos))
-			self.tree_init()
 			self.tree_create()
 			self.tree_ergodic(self.set_node)
 			self.tree_create(pre=False)
