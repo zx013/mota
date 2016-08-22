@@ -144,14 +144,14 @@ class Level:
 		maze = Maze()
 		node_list = maze.create()
 
-		print maze.fight_state['key'], self.hero.health, self.hero.attack, self.hero.defence
+		print self.hero.health, self.hero.attack, self.hero.defence
 		maze.hero_walk(node_list)
 		self.update(maze)
+		return maze
 
 	def iter(self):
 		while True:
-			self.next()
-			yield
+			yield self.next()
 
 level = Level()
 
@@ -886,6 +886,9 @@ class Maze:
 		total_gem_defence = 0
 
 		node_space = 0
+
+		#第一个点不应该放置door和monster
+		#space的计算应该忽略楼梯
 		while move_list:
 			#move = random.choice(move_list)
 			move = move_list.pop(random.choice(range(len(move_list))))
@@ -1295,5 +1298,5 @@ class Maze:
 
 
 if __name__ == '__main__':
-	for i in level.iter():
+	for maze in level.iter():
 		pass
