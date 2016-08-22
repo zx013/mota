@@ -61,29 +61,48 @@ class Move:
 		print self.get_type(pos)
 
 
-	def get_around(self, pos_list, num):
-		around = []
+	def get_around(self, pos):
+		around = set()
+		z, x, y = pos
+		if x > 0:
+			around.add((z, x - 1, y))
+		if x < MazeSetting.rows + 1:
+			around.add((z, x + 1, y))
+		if y > 0:
+			around.add((z, x, y - 1))
+		if y < MazeSetting.cols + 1:
+			around.add((z, x, y + 1))
+		return {pos for pos in around if self.get_type(pos) != MazeBase.wall}
+
+	def get_around_list(self, pos_list, num):
+		around_list = set()
 		for pos in pos_list:
-			z, x, y = pos
-			if x > 0:
-				around.append((z, x - 1, y))
-			if x < MazeSetting.rows + 1:
-				around.append((z, x + 1, y))
-			if y > 0:
-				around.append((z, x, y - 1))
-			if y < MazeSetting.cols + 1:
-				around.append((z, x, y + 1))
-		return [pos for pos in around if self.get_type(pos) != MazeBase.wall and pos not in self.way[num]]
+			around_list |= self.get_around(pos)
+		around_list -= pos_list | self.way[num - 1]
+		return around_list
+
+	def get_way(self, pos, num):
+		way = []
+		for i in xrange(num - 1, 0, -1):
+			old_z, old_x, old_y = pos
+			new_z, new_x, new_y = list(self.get_around(pos) & self.way[i])[0]
+			pos = new_z, new_x, new_y
+			way.append((new_x - old_x, new_y - old_y))
+		return way[::-1]
 
 	def move_pos(self, pos):
-		around = [self.pos]
+		if self.get_type(pos) == MazeBase.wall:
+			return
+		self.way = {0: set()}
+		around = set([self.pos])
 		num = 1
-		self.way = {num: around}
-		while True:
-			around = self.get_around([self.pos], num)
-			print num, around
+		self.way[num] = around
+		while around:
+			around = self.get_around_list(around, num)
 			num += 1
-			self.way = {num: around}
+			self.way[num] = around
+			if pos in around:
+				return self.get_way(pos, num)
 
 class Control:
 	pass
@@ -105,4 +124,4 @@ if __name__ == '__main__':
 	move.move_direct(MoveBase.down)
 	move.move_direct(MoveBase.left)
 	move.move_direct(MoveBase.right)
-	move.move_pos(stairs_end)
+	print move.move_pos(stairs_end)
