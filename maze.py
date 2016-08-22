@@ -111,28 +111,28 @@ class Monster(Hero):
 	pass
 
 
-#难度水平，每一层按照该值确定
+#难度水平及一些基本属性，每一层按照该值确定
 class Level:
 	def __init__(self):
 		self.floor = 0
 		self.hero = Hero(health=100, attack=10, defence=10)
 		self.key = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
-		self.attack = 1
-		self.defence = 1
-		self.health = 100
+		self.gem_attack = 1
+		self.gem_defence = 1
+		self.potion = 100
 
 	def update(self, maze):
 		#每个gem和potion增加的数值
 		if MazeSetting.auto_increase:
-			self.attack = int(self.floor ** 0.35)
-			if self.attack < 1:
-				self.attack = 1
-			self.defence = int(self.floor ** 0.35)
-			if self.defence < 1:
-				self.defence = 1
+			self.gem_attack = int(self.floor ** 0.35)
+			if self.gem_attack < 1:
+				self.gem_attack = 1
+			self.gem_defence = int(self.floor ** 0.35)
+			if self.gem_defence < 1:
+				self.gem_defence = 1
 		else:
-			self.attack = 1
-			self.defence = 1
+			self.gem_attack = 1
+			self.gem_defence = 1
 		value = str((self.hero.attack + self.hero.defence) * 2)
 		self.health = int(value[0]) * 10 ** (len(value) - 1)
 
@@ -869,12 +869,9 @@ class Maze:
 
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
 
-		hero_health = self.fight_state['hero'].health
-		hero_attack = self.fight_state['hero'].attack
-		hero_defence = self.fight_state['hero'].defence
-		hero = Hero(health=hero_health, attack=hero_attack, defence=hero_defence)
+		hero = copy.deepcopy(level.hero)
 
-		base_health = hero_attack + hero_defence
+		base_health = level.hero.attack + level.hero.defence
 		base_health += random.randint(-base_health / 4, base_health / 4)
 
 		total_door = 0
@@ -950,8 +947,8 @@ class Maze:
 				attack += value
 				defence -= value
 
-				monster_attack = hero_defence + attack * level.defence
-				monster_defence = hero_attack + defence * level.attack
+				monster_attack = level.hero.defence + attack * level.gem_defence
+				monster_defence = level.hero.attack + defence * level.gem_attack
 				if monster_defence < 0:
 					monster_attack += monster_defence
 					monster_defence = 0
@@ -978,7 +975,7 @@ class Maze:
 				hero.health -= damage
 
 				#potion可放在该节点之前的所有节点中
-				#potion的增长值为(level.attack + level.defence) * 50
+				#potion的增长值为(level.gem_attack + level.gem_defence) * 50
 				#potion分四种，分别增加1, 2, 4, 8
 				if hero.health <= 0:
 					total_space = 0
@@ -986,7 +983,7 @@ class Maze:
 						total_space += self.tree_map[move]['info']['space']
 
 					#最小增加的数量，至少为1
-					potion = Tools.ceil(-hero.health, level.health) + 1
+					potion = Tools.ceil(-hero.health, level.potion) + 1
 					potion_increase = sum([random.random() < MazeSetting.potion_type for i in xrange(8)])
 					#前面的空间不足以放下足够多的potion(按最大的8来放置)
 					if total_space < Tools.ceil(potion, 8):
@@ -995,7 +992,7 @@ class Maze:
 					if total_space >= Tools.ceil(potion + potion_increase, 8):
 						potion += potion_increase
 
-					hero.health += potion * level.health
+					hero.health += potion * level.potion
 					for move in node_list[::-1]: #从后往前
 						last_node = self.tree_map[move]
 						for i in [8, 4, 2, 1]:
@@ -1048,12 +1045,12 @@ class Maze:
 					node['count']['gem']['attack'][gem_val] += 1
 					node['count']['gem']['attack']['total'] += gem_val
 					total_gem_attack += gem_val
-					hero.attack += gem_val * level.attack
+					hero.attack += gem_val * level.gem_attack
 				else:
 					node['count']['gem']['defence'][gem_val] += 1
 					node['count']['gem']['defence']['total'] += gem_val
 					total_gem_defence += gem_val
-					hero.defence += gem_val * level.defence
+					hero.defence += gem_val * level.gem_defence
 			space -= gem_num
 
 			node['info']['space'] = space
@@ -1125,9 +1122,9 @@ class Maze:
 		for k, v in node['count']['key'].items():
 			key[k] += v
 
-		hero.health += node['count']['potion']['total'] * level.health
-		hero.attack += node['count']['gem']['attack']['total'] * level.attack
-		hero.defence += node['count']['gem']['defence']['total'] * level.defence
+		hero.health += node['count']['potion']['total'] * level.potion
+		hero.attack += node['count']['gem']['attack']['total'] * level.gem_attack
+		hero.defence += node['count']['gem']['defence']['total'] * level.gem_defence
 		return True
 
 	def out_node_fight(self, node):
@@ -1140,9 +1137,9 @@ class Maze:
 			key[door] += 1
 		for k, v in node['count']['key'].items():
 			key[k] -= v
-		hero.health -= node['count']['potion']['total'] * level.health
-		hero.attack -= node['count']['gem']['attack']['total'] * level.attack
-		hero.defence -= node['count']['gem']['defence']['total'] * level.defence
+		hero.health -= node['count']['potion']['total'] * level.potion
+		hero.attack -= node['count']['gem']['attack']['total'] * level.gem_attack
+		hero.defence -= node['count']['gem']['defence']['total'] * level.gem_defence
 
 	#移入，remove该点，add该点的forward
 	#移出，remove该点的forward，add该点
@@ -1229,19 +1226,19 @@ class Maze:
 					key[k] += v
 					print '<get key, {0} {1}>, '.format(k, v),
 			if node['count']['gem']['attack']['total'] > 0:
-				print '<get attack gem, {0}>, '.format(node['count']['gem']['attack']['total'] * level.attack),
+				print '<get attack gem, {0}>, '.format(node['count']['gem']['attack']['total'] * level.gem_attack),
 			if node['count']['gem']['defence']['total'] > 0:
-				print '<get defence gem, {0}>, '.format(node['count']['gem']['defence']['total'] * level.defence),
+				print '<get defence gem, {0}>, '.format(node['count']['gem']['defence']['total'] * level.gem_defence),
 
 			if node['count']['potion']['total'] > 0:
-				print '<get potion, {0}>, '.format(node['count']['potion']['total'] * level.health),
+				print '<get potion, {0}>, '.format(node['count']['potion']['total'] * level.potion),
 
 			print
 			print
 
-			hero.health += node['count']['potion']['total'] * level.health
-			hero.attack += node['count']['gem']['attack']['total'] * level.attack
-			hero.defence += node['count']['gem']['defence']['total'] * level.defence
+			hero.health += node['count']['potion']['total'] * level.potion
+			hero.attack += node['count']['gem']['attack']['total'] * level.gem_attack
+			hero.defence += node['count']['gem']['defence']['total'] * level.gem_defence
 		print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
 		print 'end fight'
 
