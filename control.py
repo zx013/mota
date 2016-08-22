@@ -60,8 +60,30 @@ class Move:
 		pos = z, x + move_x, y + move_y
 		print self.get_type(pos)
 
+
+	def get_around(self, pos_list, num):
+		around = []
+		for pos in pos_list:
+			z, x, y = pos
+			if x > 0:
+				around.append((z, x - 1, y))
+			if x < MazeSetting.rows + 1:
+				around.append((z, x + 1, y))
+			if y > 0:
+				around.append((z, x, y - 1))
+			if y < MazeSetting.cols + 1:
+				around.append((z, x, y + 1))
+		return [pos for pos in around if self.get_type(pos) != MazeBase.wall and pos not in self.way[num]]
+
 	def move_pos(self, pos):
-		pass
+		around = [self.pos]
+		num = 1
+		self.way = {num: around}
+		while True:
+			around = self.get_around([self.pos], num)
+			print num, around
+			num += 1
+			self.way = {num: around}
 
 class Control:
 	pass
@@ -83,3 +105,4 @@ if __name__ == '__main__':
 	move.move_direct(MoveBase.down)
 	move.move_direct(MoveBase.left)
 	move.move_direct(MoveBase.right)
+	move.move_pos(stairs_end)
