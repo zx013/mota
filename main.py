@@ -3,18 +3,13 @@ import kivy
 kivy.require('1.9.0')
 
 from kivy.app import App
-from kivy.uix.label import Label
-
-from maze import Maze
+from show import Show
 
 
 class mainApp(App):
 	def build(self):
-		maze = Maze()
-		maze.create()
-		s = maze.set_show()
-		label = Label(text=s)
-		return label
+		show = Show()
+		return show
 
 if __name__ == '__main__':
 	mainApp().run()
