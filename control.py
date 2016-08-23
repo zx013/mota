@@ -1,5 +1,6 @@
 #-*- coding:utf-8 -*-
 from maze import MazeBase, MazeSetting
+from maze import state, level
 '''
 class MazeBase:
 	ground = 0
@@ -14,9 +15,8 @@ class MazeBase:
 import Queue
 
 class Event:
-	def __init__(self, maze, pos):
+	def __init__(self, maze):
 		self.maze = maze
-		self.pos = pos
 		self.move_queue = Queue.Queue()
 
 	def add(self, direct):
@@ -33,28 +33,29 @@ class Event:
 		while True:
 			try:
 				direct = self.move_queue.get() #取出移动点
-				pos = self.maze.move_pos(self.pos, direct) #移动后位置
+				pos = self.maze.move_pos(state.pos, direct) #移动后位置
 				pos_type = self.maze.get_type(pos)
+				pos_value = self.maze.get_value(pos)
+
+				is_move = False
 				if pos_type == MazeBase.ground:
-					pass
+					is_move = True
 				elif pos_type == MazeBase.wall:
-					pass
-				elif pos_type == MazeBase.Item.Key.yellow:
-					pass
-				elif pos_type == MazeBase.Item.Key.blue:
-					pass
-				elif pos_type == MazeBase.Item.Key.red:
-					pass
-				elif pos_type == MazeBase.Item.Key.green:
-					pass
-				elif pos_type == MazeBase.Item.Gem.attack:
-					pass
-				elif pos_type == MazeBase.Item.Gem.defence:
-					pass
+					is_move = False
+				elif pos_type == MazeBase.Item.key:
+					self.get_key(pos_value)
+					is_move = True
+				elif pos_type == MazeBase.Item.gem_attack:
+					self.get_attack_gem(pos_type, pos_value)
+					is_move = True
+				elif pos_type == MazeBase.Item.gem_defence:
+					self.get_attack_gem(pos_type, pos_value)
+					is_move = True
 				elif pos_type == MazeBase.Item.potion:
-					pass
+					self.get_potion(pos_value)
+					is_move = True
 				elif pos_type == MazeBase.door:
-					pass
+					is_move = self.open_door(pos_value)
 				elif pos_type == MazeBase.monster:
 					pass
 				elif pos_type == MazeBase.stairs:
@@ -63,26 +64,46 @@ class Event:
 					pass
 				else:
 					pass
-				
+
+				if is_move:
+					self.maze.set_type(pos, 0)
+					self.maze.set_value(pos, 0)
+					self.move_hero(pos)
+
 			except Exception, ex:
 				print ex
 
-	def open_door(self):
-		pass
+	def move_hero(self, pos):
+		#hero move
+		state.pos = pos
+
+
+	def get_key(self, color):
+		#item clear
+		state.key[color] += 1
+
+	def get_attack_gem(self, attack):
+		#item clear
+		state.hero.attack += attack * level.attack
+
+	def get_attack_gem(self, defence):
+		#item clear
+		state.hero.defence += defence * level.defence
+
+	def get_potion(self, pos_value):
+		#item clear
+		state.hero.health += pos_value * level.health
+
+
+	def open_door(self, color):
+		if state.key[color] == 0:
+			return False
+
+		state.key[color] -= 1
+		return True
 
 	def attack_monster(self):
 		pass
-
-	def get_key(self):
-		pass
-
-	def get_gem(self):
-		pass
-
-	def get_potion(self):
-		pass
-
-
 
 
 class MoveBase:

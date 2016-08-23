@@ -46,6 +46,8 @@ class Tools:
 		return int(float(x - 1) / y + 1)
 
 
+
+
 class MazeBase:
 	ground = 0
 	wall = 1
@@ -62,23 +64,25 @@ class MazeBase:
 	ground_list = [ground, ground_replace]
 
 	class Item:
-		class Key:
-			yellow = 21
-			blue = 22
-			red = 23
-			green = 24
+		key = 21
 
-		class Gem:
-			attack = 25
-			defence = 26
+		gem_attack = 22
+		gem_defence = 23
 
-		potion = 27
+		potion = 24
+
+	#key和door的颜色
+	class Color:
+		yellow = 1
+		blue = 2
+		red = 3
+		green = 4
 
 	stairs_start = 1
 	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
-	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set(), 'space': 0}, 'count': {'key': {'yellow': 0, 'blue': 0, 'red': 0, 'green': 0}, 'door': '', 'potion': {'total': 0, 1: 0, 2: 0, 4: 0, 8: 0}, 'gem': {'attack': {'total': 0, 1: 0, 3: 0, 10: 0}, 'defence': {'total': 0, 1: 0, 3: 0, 10: 0}}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
+	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set(), 'space': 0}, 'count': {'key': {Color.yellow: 0, Color.blue: 0, Color.red: 0, Color.green: 0}, 'door': '', 'potion': {'total': 0, 1: 0, 2: 0, 4: 0, 8: 0}, 'gem': {'attack': {'total': 0, 1: 0, 3: 0, 10: 0}, 'defence': {'total': 0, 1: 0, 3: 0, 10: 0}}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
 	#'count': {'all': 0, 'ground': 0, 'wall': 0, 'item': 0, 'door': 0, 'monster': 0, 'stairs': 0, 'other': 0}
 
 
@@ -123,17 +127,28 @@ class Monster(Hero):
 	pass
 
 
+#实时状态
+class State:
+	def __init__(self):
+		self.floor = 0
+		self.hero = Hero(health=100, attack=10, defence=10)
+		self.key = {MazeBase.Color.yellow: 1, MazeBase.Color.blue: 0, MazeBase.Color.red: 0, MazeBase.Color.green: 0}
+		self.pos = (0, 0, 0)
+
+state = State()
+
+
 #难度水平及一些基本属性，每一层按照该值确定
 class Level:
 	def __init__(self):
 		self.floor = 0
 		self.hero = Hero(health=100, attack=10, defence=10)
-		self.key = {'yellow': 1, 'blue': 0, 'red': 0, 'green': 0}
+		self.key = {MazeBase.Color.yellow: 1, MazeBase.Color.blue: 0, MazeBase.Color.red: 0, MazeBase.Color.green: 0}
 		self.gem_attack = 1
 		self.gem_defence = 1
 		self.potion = 100
 
-	def update(self, tree):
+	def update(self):
 		#每个gem和potion增加的数值
 		if MazeSetting.auto_increase:
 			self.gem_attack = int(self.floor ** 0.35)
@@ -148,8 +163,6 @@ class Level:
 		value = str((self.hero.attack + self.hero.defence) * 2)
 		self.health = int(value[0]) * 10 ** (len(value) - 1)
 
-		self.hero = tree.fight_state['hero']
-		self.key = tree.fight_state['key']
 		self.floor += 1
 
 	def next(self):
@@ -157,8 +170,12 @@ class Level:
 		tree = Tree(maze)
 
 		print self.hero.health, self.hero.attack, self.hero.defence
+
 		tree.hero_walk(tree.node_list)
-		self.update(tree)
+		self.hero = tree.fight_state['hero']
+		self.key = tree.fight_state['key']
+
+		self.update()
 		return tree
 
 	def iter(self):
@@ -911,7 +928,7 @@ class Tree:
 		#当前的钥匙
 		key_list = copy.deepcopy(level.key)
 		#钥匙选择的概率
-		key_choice = {'yellow': 65, 'blue': 20, 'red': 10, 'green': 5}
+		key_choice = {MazeBase.Color.yellow: 65, MazeBase.Color.blue: 20, MazeBase.Color.red: 10, MazeBase.Color.green: 5}
 
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
 
