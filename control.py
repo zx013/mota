@@ -57,21 +57,27 @@ class Event:
 				elif pos_type == MazeBase.door:
 					is_move = self.open_door(pos_value)
 				elif pos_type == MazeBase.monster:
-					pass
+					is_move = self.attack_monster(pos_value)
 				elif pos_type == MazeBase.stairs:
 					pass
 				elif pos_type == MazeBase.other:
-					pass
+					is_move = False
 				else:
-					pass
+					is_move = False
 
 				if is_move:
 					self.maze.set_type(pos, 0)
 					self.maze.set_value(pos, 0)
 					self.move_hero(pos)
+				elif pos_type == MazeBase.monster:
+					self.die()
 
 			except Exception, ex:
 				print ex
+
+
+	def die(self):
+		self.clean()
 
 	def move_hero(self, pos):
 		#hero move
@@ -102,9 +108,17 @@ class Event:
 		state.key[color] -= 1
 		return True
 
-	def attack_monster(self):
-		pass
+	def attack_monster(self, monster):
+		#show damage
+		#item clear or die
+		damage = state.hero.fight(monster)
+		if damage < 0:
+			return False
+		state.hero.health -= damage
+		return True
 
+	def climb_stair(self):
+		pass
 
 class MoveBase:
 	up = (-1, 0)
