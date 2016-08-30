@@ -1,5 +1,18 @@
 #:kivy 1.9.0
 
+<Node>:
+	pos_hint: {'x': None, 'y': None}
+	size: 80, 80
+	canvas:
+		Color:
+			rgba: 0, 1, .5, .75
+		Rectangle:
+			size: 80, 80
+
 <Show>:
-	rows: 10
-	cols: 10
+	cols: 2
+	spacing: 10
+	Node:
+		size_hint_x: None
+	Node:
+		size_hint_x: None

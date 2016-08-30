@@ -2,9 +2,25 @@
 from kivy.uix.image import Image
 from kivy.uix.gridlayout import GridLayout
 
+from kivy.lang import Builder
+Builder.load_file('show.kv')
+
+
+def logging(s):
+	from kivy.logger import Logger
+	Logger.warning(str(s))
+
+class Node(Image):
+	pass
+
+
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
 class Show(GridLayout):
+	def on_touch_down(self, touch):
+		logging(self.children)
+		return True
+
 	#加载图片，取其中某个位置（使用缓存）
 	def load(self):
 		pass
