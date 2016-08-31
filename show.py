@@ -17,6 +17,19 @@ class Node(Image):
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
 class Show(GridLayout):
+	def __init__(self, **kwargs):
+		self.rows = 3
+		self.cols = 2
+		self.spacing = 1
+		super(Show, self).__init__(**kwargs)
+		for i in xrange(self.rows * self.cols):
+			self.add_widget(Node())
+		
+		self.hero = Node()
+		self.add_widget(self.hero)
+		self.hero.pos = 10, 550
+
+
 	def on_touch_down(self, touch):
 		logging(self.children)
 		return True

@@ -1,18 +1,15 @@
 #:kivy 1.9.0
 
 <Node>:
-	pos_hint: {'x': None, 'y': None}
-	size: 80, 80
+	size_hint: None, None
+	size: 40, 40
 	canvas:
-		Color:
-			rgba: 0, 1, .5, .75
 		Rectangle:
-			size: 80, 80
-
-<Show>:
-	cols: 2
-	spacing: 10
-	Node:
-		size_hint_x: None
-	Node:
-		size_hint_x: None
+			source: '121.png'
+			pos: self.pos
+			size: self.size
+	canvas.after:
+		Rectangle:
+			source: '132.png'
+			pos: self.pos
+			size: self.size
