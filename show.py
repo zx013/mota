@@ -3,6 +3,7 @@ from kivy.uix.image import Image
 from kivy.uix.gridlayout import GridLayout
 from kivy.graphics import Rectangle
 from kivy.uix.behaviors import FocusBehavior
+from kivy.clock import Clock
 
 from kivy.lang import Builder
 Builder.load_file('show.kv')
@@ -23,32 +24,31 @@ class Node(Image):
 
 
 
-class Move:
+class MoveHero:
 	def __init__(self, **kwargs):
 		canvas = kwargs['canvas']
+		pos = kwargs['pos']
 		self.image = Image(source='data/action/hero/blue.png')
 		with canvas:
-			self.rect = Rectangle(texture=self.image.texture.get_region(0, 1, 32, 32), pos=(10, 10), size=(80, 80))
-		self.step = 0
+			self.rect = Rectangle(texture=self.image.texture.get_region(0, 1, ShowBase.size, ShowBase.size), pos=pos, size=(ShowBase.size, ShowBase.size))
 
-	def next(self, direct):
+	def next(self, key, is_move=True):
 		move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
-		if direct not in move.keys():
-			return False
-		texture = self.image.texture.get_region(self.step * ShowBase.size, move[direct] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
-		self.rect.texture = texture
-		x, y = self.rect.pos
-		if direct == 'up':
-			y += 20
-		elif direct == 'down':
-			y -= 20
-		elif direct == 'left':
-			x -= 20
-		elif direct == 'right':
-			x += 20
-		self.rect.pos = x, y
-		self.step = (self.step + 1) % ShowBase.step
-		return True
+		for step in xrange(ShowBase.step):
+			texture = self.image.texture.get_region(step * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
+			self.rect.texture = texture
+			if is_move:
+				x, y = self.rect.pos
+				if key == 'up':
+					y += ShowBase.size / 4
+				elif key == 'down':
+					y -= ShowBase.size / 4
+				elif key == 'left':
+					x -= ShowBase.size / 4
+				elif key == 'right':
+					x += ShowBase.size / 4
+				self.rect.pos = x, y
+			yield
 
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
@@ -63,15 +63,19 @@ class Show(FocusBehavior, GridLayout):
 
 		#keyboard_on_key_down的必要条件
 		self.focused = True
-		self.move = Move(canvas=self.canvas.after)
+		self.movehero = MoveHero(canvas=self.canvas.after, pos=(10, 10))
 
 	def on_touch_down(self, touch):
 		super(Show, self).on_touch_down(touch)
 		return True
 
 	def keyboard_on_key_down(self, window, keycode, text, modifiers):
-		self.move.next(keycode[1])
-		logging((keycode, text))
+		key = keycode[1]
+		if key not in set(('up', 'down', 'left', 'right')):
+			return False
+		for i in self.movehero.next(key):
+			Clock.usleep(100000)
+		#Clock.create_trigger(self.movehero.next, key)()
 		return True
 
 	#加载图片，取其中某个位置（使用缓存）
