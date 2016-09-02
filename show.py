@@ -36,22 +36,33 @@ class Node(Image):
 	pass
 
 
+import Queue
+from functools import partial
 
 class MoveHero(Image):
 	def __init__(self, **kwargs):
 		self.pos = kwargs['pos']
 		self.size_hint = (None, None)
 		#self.size = (ShowBase.size, ShowBase.size)
-		self.size = (16, 16)
+		self.size = (32, 32)
 		super(MoveHero, self).__init__(**kwargs)
 		self.image = Image(source='data/action/hero/blue.png')
 		self.texture = self.image.texture.get_region(0, 1, ShowBase.size, ShowBase.size)
+		self.queue = Queue.Queue()
+		#Clock.schedule_interval(self.move, .1)
+		self.trigger = Clock.create_trigger(self.move)
 
-	def next(self, key, is_move=True):
+	def move(self, t):
+		#if self.queue.empty():
+		#	return;
+		#logging((key, step, is_move, t))
+		args = self.queue.get()
+		key = args['key']
+		step = args['step']
+		is_move = args['is_move']
 		move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
-		for step in xrange(ShowBase.step):
-			self.texture = self.image.texture.get_region(step * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
-			if is_move:
+		self.texture = self.image.texture.get_region(step * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
+		if is_move:
 				x, y = self.pos
 				if key == 'up':
 					y += ShowBase.size / 4
@@ -62,7 +73,19 @@ class MoveHero(Image):
 				elif key == 'right':
 					x += ShowBase.size / 4
 				self.pos = x, y
-			#Clock.usleep(100000)
+
+	def next(self, key, is_move=True):
+		#for i in xrange(self.queue.qsize()):
+		#	self.queue.get_nowait()
+		move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
+		for step in range(ShowBase.step)[::-1]:
+			self.queue.put({'key': key, 'step': step, 'is_move': is_move})
+			#Clock.create_trigger(partial(self.move, key, step, is_move))()
+			#self.trigger.callback = partial(self.move, key, step, is_move)
+			self.trigger()
+			#Clock._process_events()
+			#Clock.tick()
+
 
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
