@@ -41,7 +41,8 @@ class MoveHero(Image):
 	def __init__(self, **kwargs):
 		self.pos = kwargs['pos']
 		self.size_hint = (None, None)
-		self.size = (ShowBase.size, ShowBase.size)
+		#self.size = (ShowBase.size, ShowBase.size)
+		self.size = (16, 16)
 		super(MoveHero, self).__init__(**kwargs)
 		self.image = Image(source='data/action/hero/blue.png')
 		self.texture = self.image.texture.get_region(0, 1, ShowBase.size, ShowBase.size)
@@ -61,7 +62,7 @@ class MoveHero(Image):
 				elif key == 'right':
 					x += ShowBase.size / 4
 				self.pos = x, y
-			yield
+			#Clock.usleep(100000)
 
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
@@ -87,8 +88,7 @@ class Show(FocusBehavior, GridLayout):
 		key = keycode[1]
 		if key not in set(('up', 'down', 'left', 'right')):
 			return False
-		for i in self.movehero.next(key):
-			Clock.usleep(100000)
+		self.movehero.next(key)
 		#Clock.create_trigger(self.movehero.next, key)()
 		return True
 
