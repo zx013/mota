@@ -36,33 +36,22 @@ class Node(Image):
 	pass
 
 
-import Queue
 from functools import partial
+from itertools import cycle
 
 class MoveHero(Image):
 	def __init__(self, **kwargs):
 		self.pos = kwargs['pos']
-		self.size_hint = (None, None)
-		#self.size = (ShowBase.size, ShowBase.size)
-		self.size = (32, 32)
+		self.size = (ShowBase.size, ShowBase.size)
 		super(MoveHero, self).__init__(**kwargs)
 		self.image = Image(source='data/action/hero/blue.png')
 		self.texture = self.image.texture.get_region(0, 1, ShowBase.size, ShowBase.size)
-		self.queue = Queue.Queue()
-		#Clock.schedule_interval(self.move, .1)
-		self.trigger = Clock.create_trigger(self.move)
+		self.step = cycle(range(ShowBase.step)[::-1])
 
-	def move(self, t):
-		#if self.queue.empty():
-		#	return;
-		#logging((key, step, is_move, t))
-		args = self.queue.get()
-		key = args['key']
-		step = args['step']
-		is_move = args['is_move']
+	def next_step(self, key, moveable, t):
 		move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
-		self.texture = self.image.texture.get_region(step * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
-		if is_move:
+		self.texture = self.image.texture.get_region(self.step.next() * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
+		if moveable:
 				x, y = self.pos
 				if key == 'up':
 					y += ShowBase.size / 4
@@ -74,17 +63,9 @@ class MoveHero(Image):
 					x += ShowBase.size / 4
 				self.pos = x, y
 
-	def next(self, key, is_move=True):
-		#for i in xrange(self.queue.qsize()):
-		#	self.queue.get_nowait()
-		move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
-		for step in range(ShowBase.step)[::-1]:
-			self.queue.put({'key': key, 'step': step, 'is_move': is_move})
-			#Clock.create_trigger(partial(self.move, key, step, is_move))()
-			#self.trigger.callback = partial(self.move, key, step, is_move)
-			self.trigger()
-			#Clock._process_events()
-			#Clock.tick()
+	def move(self, key, moveable=True):
+		for step in xrange(ShowBase.step):
+			Clock.schedule_once(partial(self.next_step, key, moveable), step * 0.05)
 
 
 #先放置地面，再放置其他的物品
@@ -103,16 +84,11 @@ class Show(FocusBehavior, GridLayout):
 		self.movehero = MoveHero(pos=(10, 10))
 		self.add_widget(self.movehero)
 
-	def on_touch_down(self, touch):
-		super(Show, self).on_touch_down(touch)
-		return True
-
 	def keyboard_on_key_down(self, window, keycode, text, modifiers):
 		key = keycode[1]
 		if key not in set(('up', 'down', 'left', 'right')):
 			return False
-		self.movehero.next(key)
-		#Clock.create_trigger(self.movehero.next, key)()
+		self.movehero.move(key)
 		return True
 
 	#加载图片，取其中某个位置（使用缓存）
