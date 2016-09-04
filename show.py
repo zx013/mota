@@ -10,15 +10,6 @@ Builder.load_string('''
 <Node>:
 	size_hint: None, None
 	size: 40, 40
-	canvas:
-		Rectangle:
-			source: '121.png'
-			pos: self.pos
-			size: self.size
-		Rectangle:
-			source: '132.png'
-			pos: self.pos
-			size: self.size
 ''')
 
 
@@ -29,10 +20,6 @@ class ShowBase:
 def logging(s):
 	from kivy.logger import Logger
 	Logger.warning(str(s))
-
-
-class Node(Image):
-	pass
 
 
 class Schedule:
@@ -93,13 +80,13 @@ class Move(Image):
 		Trigger(self.next, range(ShowBase.step)[::-1], 5, key, moveable)
 
 
-class Action(Image):
+class Node(Image):
 	def __init__(self, **kwargs):
 		self.enable = True
 		self.pos = kwargs.get('pos', (0, 0))
 		self.size = (ShowBase.size, ShowBase.size)
-		super(Action, self).__init__(**kwargs)
-		self.image = Image(source='data/action/monster/8.png')
+		super(Node, self).__init__(**kwargs)
+		self.image = Image(source='data/action/monster/008.png')
 		self.texture = self.image.texture.get_region(0, 0, ShowBase.size, ShowBase.size)
 
 	def next(self, step, num):
@@ -115,24 +102,22 @@ class Show(FocusBehavior, GridLayout):
 	def __init__(self, **kwargs):
 		self.rows = 3
 		self.cols = 2
-		self.spacing = 1
+		#self.spacing = 1
 		super(Show, self).__init__(**kwargs)
-		for i in xrange(self.rows * self.cols):
-			self.add_widget(Node())
+		for i in xrange(self.rows):
+			for j in xrange(self.cols):
+				self.add_widget(Node())
 
 		#keyboard_on_key_down的必要条件
 		self.focused = True
 		self.move = Move(pos=(100, 100))
 		self.add_widget(self.move)
-		self.action = Action(pos=(10, 10))
-		self.add_widget(self.action)
 
 	def keyboard_on_key_down(self, window, keycode, text, modifiers):
 		key = keycode[1]
 		if key not in set(('up', 'down', 'left', 'right')):
 			return False
 		self.move(key)
-		self.action(1)
 		return True
 
 	#加载图片，取其中某个位置（使用缓存）
