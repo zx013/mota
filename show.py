@@ -64,33 +64,50 @@ if 'Trigger' not in dir():
 	Trigger = Schedule().trigger
 
 
-class MoveHero(Image):
+class Move(Image):
 	def __init__(self, **kwargs):
 		self.enable = True
 		self.pos = kwargs.get('pos', (0, 0))
 		self.size = (ShowBase.size, ShowBase.size)
-		super(MoveHero, self).__init__(**kwargs)
+		super(Move, self).__init__(**kwargs)
 		self.image = Image(source='data/action/hero/blue.png')
 		self.texture = self.image.texture.get_region(0, 1, ShowBase.size, ShowBase.size)
 
 	def next(self, step, key, moveable):
-		move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
-		self.texture = self.image.texture.get_region(step * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
-		if moveable:
-				x, y = self.pos
-				if key == 'up':
-					y += ShowBase.size / 4
-				elif key == 'down':
-					y -= ShowBase.size / 4
-				elif key == 'left':
-					x -= ShowBase.size / 4
-				elif key == 'right':
-					x += ShowBase.size / 4
-				self.pos = x, y
+		if self.enable:
+			move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
+			self.texture = self.image.texture.get_region(step * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
+			if moveable:
+					x, y = self.pos
+					if key == 'up':
+						y += ShowBase.size / ShowBase.step
+					elif key == 'down':
+						y -= ShowBase.size / ShowBase.step
+					elif key == 'left':
+						x -= ShowBase.size / ShowBase.step
+					elif key == 'right':
+						x += ShowBase.size / ShowBase.step
+					self.pos = x, y
 
-	def move(self, key, moveable=True):
+	def __call__(self, key, moveable=True):
 		Trigger(self.next, range(ShowBase.step)[::-1], 5, key, moveable)
 
+
+class Action(Image):
+	def __init__(self, **kwargs):
+		self.enable = True
+		self.pos = kwargs.get('pos', (0, 0))
+		self.size = (ShowBase.size, ShowBase.size)
+		super(Action, self).__init__(**kwargs)
+		self.image = Image(source='data/action/monster/8.png')
+		self.texture = self.image.texture.get_region(0, 0, ShowBase.size, ShowBase.size)
+
+	def next(self, step, num):
+		if self.enable:
+			self.texture = self.image.texture.get_region(step * ShowBase.size, num * ShowBase.size, ShowBase.size, ShowBase.size)
+
+	def __call__(self, num):
+		Trigger(self.next, range(ShowBase.step)[::-1], 5, num)
 
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
@@ -105,14 +122,17 @@ class Show(FocusBehavior, GridLayout):
 
 		#keyboard_on_key_down的必要条件
 		self.focused = True
-		self.movehero = MoveHero(pos=(10, 10))
-		self.add_widget(self.movehero)
+		self.move = Move(pos=(100, 100))
+		self.add_widget(self.move)
+		self.action = Action(pos=(10, 10))
+		self.add_widget(self.action)
 
 	def keyboard_on_key_down(self, window, keycode, text, modifiers):
 		key = keycode[1]
 		if key not in set(('up', 'down', 'left', 'right')):
 			return False
-		self.movehero.move(key)
+		self.move(key)
+		self.action(1)
 		return True
 
 	#加载图片，取其中某个位置（使用缓存）
