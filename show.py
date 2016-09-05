@@ -89,7 +89,7 @@ class Node(Image):
 		self.pos = kwargs.get('pos', (0, 0))
 		self.size = (ShowBase.size, ShowBase.size)
 		super(Node, self).__init__(**kwargs)
-		self.image = Image(source='data/action/monster/008.png')
+		self.image = Image(source='data/action/monster/003.png')
 		self.texture = self.image.texture.get_region(0, 0, ShowBase.size, ShowBase.size)
 
 	def next(self, step, num):
@@ -97,26 +97,43 @@ class Node(Image):
 			self.texture = self.image.texture.get_region(step * ShowBase.size, num * ShowBase.size, ShowBase.size, ShowBase.size)
 
 	def __call__(self, num):
-		Trigger(self.next, range(ShowBase.step)[::-1], 20, -1, num=num)
+		Trigger(self.next, range(ShowBase.step)[::-1], 15, -1, num=num)
 
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
 class Show(FocusBehavior, GridLayout):
 	def __init__(self, **kwargs):
-		self.rows = 3
-		self.cols = 2
+		from maze import Maze, MazeSetting
+		maze = Maze()
+		self.rows = MazeSetting.rows
+		self.cols = MazeSetting.cols
+
+		self.pos = (100, 100)
+		self.size_hint = (None, None)
+		self.size = (self.rows * ShowBase.size, self.cols * ShowBase.size)
 		#self.spacing = 1
 		super(Show, self).__init__(**kwargs)
+
+		logging((self.pos_hint, self.pos, self.size))
+
+		with self.canvas.before:
+			texture = Image(source='data/basic/ground.png').texture
+			for i in xrange(self.rows):
+				for j in xrange(self.cols):
+					Rectangle(texture=texture, pos=(self.x + i * ShowBase.size, self.y + j * ShowBase.size), size=(ShowBase.size, ShowBase.size))
 		for i in xrange(self.rows):
 			for j in xrange(self.cols):
 				node = Node()
 				self.add_widget(node)
-				node(1)
+				node(2)
+
+
+		self.texture = Image(source='data/basic/ground.png').texture
 
 		#keyboard_on_key_down的必要条件
 		self.focused = True
 		self.move = Move(pos=(100, 100))
-		self.add_widget(self.move)
+		#self.add_widget(self.move)
 
 	def keyboard_on_key_down(self, window, keycode, text, modifiers):
 		key = keycode[1]
