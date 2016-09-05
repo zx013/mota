@@ -32,20 +32,23 @@ class Schedule:
 	def run(self, t):
 		if self.event.has_key(Clock.frames):
 			while not self.event[Clock.frames].empty():
-				func, step, args, kwargs = self.event[Clock.frames].get()
-				func(step, *args, **kwargs)
+				func, step, kwargs = self.event[Clock.frames].get()
+				func(step, **kwargs)
 			del self.event[Clock.frames]
 
-	def trigger(self, func, iterator, interval, *args, **kwargs):
-		while True: #有可能下一帧会立刻执行，保证该函数执行完前，该帧不执行
-			frames = Clock.frames + 1
-			old_frames = frames
-			for step in iterator:
-				frames += interval
-				self.event.setdefault(frames, self.Queue())
-				self.event[frames].put((func, step, args, kwargs))
-			if old_frames == Clock.frames + 1:
-				break
+	#func: 定时触发的函数
+	#iterator: 生成器，遍历的值依次传给func
+	#interval: 函数触发间隔，单位为frames的数量
+	#cycle: 循环，负数为无限循环
+	#kwargs: 函数参数
+	def trigger(self, func, iterator, interval, cycle, **kwargs):
+		frames = Clock.frames
+		for step in iter(iterator):
+			frames += interval
+			self.event.setdefault(frames, self.Queue())
+			self.event[frames].put((func, step, kwargs))
+		if cycle > 1 or cycle < 0:
+			self.event[frames].put((lambda step, **kwargs: self.trigger(func, iterator, interval, cycle - 1, **kwargs), -1, kwargs))
 
 if 'Trigger' not in dir():
 	Trigger = Schedule().trigger
@@ -77,7 +80,7 @@ class Move(Image):
 					self.pos = x, y
 
 	def __call__(self, key, moveable=True):
-		Trigger(self.next, range(ShowBase.step)[::-1], 5, key, moveable)
+		Trigger(self.next, range(ShowBase.step)[::-1], 5, 1, key=key, moveable=moveable)
 
 
 class Node(Image):
@@ -94,7 +97,7 @@ class Node(Image):
 			self.texture = self.image.texture.get_region(step * ShowBase.size, num * ShowBase.size, ShowBase.size, ShowBase.size)
 
 	def __call__(self, num):
-		Trigger(self.next, range(ShowBase.step)[::-1], 5, num)
+		Trigger(self.next, range(ShowBase.step)[::-1], 20, -1, num=num)
 
 #先放置地面，再放置其他的物品
 #hero单独使用一个点
@@ -106,7 +109,9 @@ class Show(FocusBehavior, GridLayout):
 		super(Show, self).__init__(**kwargs)
 		for i in xrange(self.rows):
 			for j in xrange(self.cols):
-				self.add_widget(Node())
+				node = Node()
+				self.add_widget(node)
+				node(1)
 
 		#keyboard_on_key_down的必要条件
 		self.focused = True
