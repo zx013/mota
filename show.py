@@ -57,7 +57,8 @@ class Data:
 		self.data = {}
 		for path, dir_list, file_list in self.os.walk('data'):
 			self.data[path] = {}
-			for
+			for file_name in file_list:
+				pass
 
 	def get(self):
 		pass
