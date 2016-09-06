@@ -5,13 +5,6 @@ from kivy.graphics import Rectangle
 from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
 
-from kivy.lang import Builder
-Builder.load_string('''
-<Node>:
-	size_hint: None, None
-	size: 40, 40
-''')
-
 
 class ShowBase:
 	size = 32
@@ -54,6 +47,22 @@ if 'Trigger' not in dir():
 	Trigger = Schedule().trigger
 
 
+class Data:
+	import os
+
+	def __init__(self):
+		pass
+
+	def put(self):
+		self.data = {}
+		for path, dir_list, file_list in self.os.walk('data'):
+			self.data[path] = {}
+			for
+
+	def get(self):
+		pass
+
+
 class Move(Image):
 	def __init__(self, **kwargs):
 		self.enable = True
@@ -89,8 +98,13 @@ class Node(Image):
 		self.pos = kwargs.get('pos', (0, 0))
 		self.size = (ShowBase.size, ShowBase.size)
 		super(Node, self).__init__(**kwargs)
-		self.image = Image(source='data/action/monster/003.png')
-		self.texture = self.image.texture.get_region(0, 0, ShowBase.size, ShowBase.size)
+		#self.image = Image(source='data/action/monster/003.png')
+		#self.texture = self.image.texture.get_region(0, 0, ShowBase.size, ShowBase.size)
+		self.image = Image(source='data/basic/wall.png')
+		self.texture = self.image.texture.get_region(0, 32, ShowBase.size, ShowBase.size)
+
+	def show(self):
+		pass
 
 	def next(self, step, num):
 		if self.enable:
@@ -105,30 +119,24 @@ class Show(FocusBehavior, GridLayout):
 	def __init__(self, **kwargs):
 		from maze import Maze, MazeSetting
 		maze = Maze()
-		self.rows = MazeSetting.rows
-		self.cols = MazeSetting.cols
+		floor = maze.maze[0]
 
-		self.pos = (100, 100)
+		self.rows = 1 #MazeSetting.rows
+		self.cols = 2 #MazeSetting.cols
+
 		self.size_hint = (None, None)
-		self.size = (self.rows * ShowBase.size, self.cols * ShowBase.size)
-		#self.spacing = 1
+		self.size = (self.cols * ShowBase.size, self.rows * ShowBase.size)
 		super(Show, self).__init__(**kwargs)
 
-		logging((self.pos_hint, self.pos, self.size))
-
-		with self.canvas.before:
-			texture = Image(source='data/basic/ground.png').texture
-			for i in xrange(self.rows):
-				for j in xrange(self.cols):
+		texture = Image(source='data/basic/ground.png').texture
+		with self.canvas:
+			for i in xrange(self.cols):
+				for j in xrange(self.rows):
 					Rectangle(texture=texture, pos=(self.x + i * ShowBase.size, self.y + j * ShowBase.size), size=(ShowBase.size, ShowBase.size))
-		for i in xrange(self.rows):
-			for j in xrange(self.cols):
-				node = Node()
+		for i in xrange(self.cols):
+			for j in xrange(self.rows):
+				node = Node(node=floor[i][j])
 				self.add_widget(node)
-				node(2)
-
-
-		self.texture = Image(source='data/basic/ground.png').texture
 
 		#keyboard_on_key_down的必要条件
 		self.focused = True
