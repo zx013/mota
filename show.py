@@ -53,12 +53,14 @@ class Data:
 	def __init__(self):
 		pass
 
-	def put(self):
+	def load_image(self):
 		self.data = {}
 		for path, dir_list, file_list in self.os.walk('data'):
-			self.data[path] = {}
 			for file_name in file_list:
-				pass
+				real_name = '%s%s%s'.format(path, os.path.sep, file_name)
+				texture = Image(source=real_name).texture
+				x, y = texture.size
+				self.data[real_name] = {}
 
 	def get(self):
 		pass
