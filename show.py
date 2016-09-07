@@ -126,6 +126,17 @@ class Node(Image):
 				self.texture = Cache.get_image('basic/stairs.png', (1, 0))
 			elif node['value'] == MazeBase.Stairs.end:
 				self.texture = Cache.get_image('basic/stairs.png', (0, 0))
+		elif node['type'] == MazeBase.door:
+			if node['value'] == MazeBase.Color.yellow:
+				self.texture = Cache.get_image('basic/door.png', (0, 0))
+			elif node['value'] == MazeBase.Color.blue:
+				self.texture = Cache.get_image('basic/door.png', (1, 0))
+			elif node['value'] == MazeBase.Color.red:
+				self.texture = Cache.get_image('basic/door.png', (2, 0))
+			elif node['value'] == MazeBase.Color.green:
+				self.texture = Cache.get_image('basic/door.png', (3, 0))
+		elif node['type'] == MazeBase.monster:
+			self.texture = Cache.get_image('action/monster/003.png', (0, 1))
 		else:
 			logging(node)
 
@@ -143,9 +154,9 @@ class Node(Image):
 #hero单独使用一个点
 class Show(FocusBehavior, GridLayout):
 	def __init__(self, **kwargs):
-		from maze import Maze, MazeSetting
-		maze = Maze()
-		floor = maze.maze[0]
+		from maze import Level, MazeSetting
+		Level.next()
+		floor = Level.maze.maze[0]
 
 		self.rows = MazeSetting.rows + 2
 		self.cols = MazeSetting.cols + 2

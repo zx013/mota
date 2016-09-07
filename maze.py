@@ -140,7 +140,7 @@ state = State()
 
 
 #难度水平及一些基本属性，每一层按照该值确定
-class Level:
+class LevelBase:
 	def __init__(self):
 		self.floor = 0
 		self.hero = Hero(health=100, attack=10, defence=10)
@@ -167,8 +167,8 @@ class Level:
 		self.floor += 1
 
 	def next(self):
-		maze = Maze()
-		tree = Tree(maze)
+		self.maze = Maze()
+		tree = Tree(self.maze)
 
 		print self.hero.health, self.hero.attack, self.hero.defence
 
@@ -183,7 +183,7 @@ class Level:
 		while True:
 			yield self.next()
 
-level = Level()
+Level = LevelBase()
 
 
 class Maze:
@@ -706,9 +706,9 @@ class Tree:
 		self.tree_number = 0
 		self.tree_map = {self.tree_number: self.tree}
 		self.fight_state = {}
-		self.fight_state['hero'] = copy.deepcopy(level.hero)
+		self.fight_state['hero'] = copy.deepcopy(Level.hero)
 		self.fight_state['move_node'] = set([self.tree_number])
-		self.fight_state['key'] = copy.deepcopy(level.key)
+		self.fight_state['key'] = copy.deepcopy(Level.key)
 
 	def tree_insert_point(self, floor):
 		pos_list = self.maze.get_pos_list(floor, (1, MazeSetting.rows + 1), (1, MazeSetting.cols + 1))
@@ -927,15 +927,15 @@ class Tree:
 	def set_item(self):
 		node_list = []
 		#当前的钥匙
-		key_list = copy.deepcopy(level.key)
+		key_list = copy.deepcopy(Level.key)
 		#钥匙选择的概率
 		key_choice = {MazeBase.Color.yellow: 65, MazeBase.Color.blue: 20, MazeBase.Color.red: 10, MazeBase.Color.green: 5}
 
 		move_list = [forward_node['number'] for forward_node in self.tree['way']['forward'].values()]
 
-		hero = copy.deepcopy(level.hero)
+		hero = copy.deepcopy(Level.hero)
 
-		base_health = level.hero.attack + level.hero.defence
+		base_health = Level.hero.attack + Level.hero.defence
 		base_health += random.randint(-base_health / 4, base_health / 4)
 
 		total_door = 0
@@ -967,7 +967,7 @@ class Tree:
 			is_monster = True #是否设置monster
 
 			if node_space < 8:
-				is_door = True
+				is_door = False
 				is_monster = False
 			else:
 				if random.random() < 0.75 and sum(key_list.values()) > 0:
@@ -1014,8 +1014,8 @@ class Tree:
 				attack += value
 				defence -= value
 
-				monster_attack = level.hero.defence + attack * level.gem_defence
-				monster_defence = level.hero.attack + defence * level.gem_attack
+				monster_attack = Level.hero.defence + attack * Level.gem_defence
+				monster_defence = Level.hero.attack + defence * Level.gem_attack
 				if monster_defence < 0:
 					monster_attack += monster_defence
 					monster_defence = 0
@@ -1042,7 +1042,7 @@ class Tree:
 				hero.health -= damage
 
 				#potion可放在该节点之前的所有节点中
-				#potion的增长值为(level.gem_attack + level.gem_defence) * 50
+				#potion的增长值为(Level.gem_attack + Level.gem_defence) * 50
 				#potion分四种，分别增加1, 2, 4, 8
 				if hero.health <= 0:
 					total_space = 0
@@ -1050,7 +1050,7 @@ class Tree:
 						total_space += self.tree_map[move]['info']['space']
 
 					#最小增加的数量，至少为1
-					potion = Tools.ceil(-hero.health, level.potion) + 1
+					potion = Tools.ceil(-hero.health, Level.potion) + 1
 					potion_increase = sum([random.random() < MazeSetting.potion_type for i in xrange(8)])
 					#前面的空间不足以放下足够多的potion(按最大的8来放置)
 					if total_space < Tools.ceil(potion, 8):
@@ -1059,7 +1059,7 @@ class Tree:
 					if total_space >= Tools.ceil(potion + potion_increase, 8):
 						potion += potion_increase
 
-					hero.health += potion * level.potion
+					hero.health += potion * Level.potion
 					for move in node_list[::-1]: #从后往前
 						last_node = self.tree_map[move]
 						for i in [8, 4, 2, 1]:
@@ -1112,12 +1112,12 @@ class Tree:
 					node['count']['gem']['attack'][gem_val] += 1
 					node['count']['gem']['attack']['total'] += gem_val
 					total_gem_attack += gem_val
-					hero.attack += gem_val * level.gem_attack
+					hero.attack += gem_val * Level.gem_attack
 				else:
 					node['count']['gem']['defence'][gem_val] += 1
 					node['count']['gem']['defence']['total'] += gem_val
 					total_gem_defence += gem_val
-					hero.defence += gem_val * level.gem_defence
+					hero.defence += gem_val * Level.gem_defence
 			space -= gem_num
 
 			node['info']['space'] = space
@@ -1189,9 +1189,9 @@ class Tree:
 		for k, v in node['count']['key'].items():
 			key[k] += v
 
-		hero.health += node['count']['potion']['total'] * level.potion
-		hero.attack += node['count']['gem']['attack']['total'] * level.gem_attack
-		hero.defence += node['count']['gem']['defence']['total'] * level.gem_defence
+		hero.health += node['count']['potion']['total'] * Level.potion
+		hero.attack += node['count']['gem']['attack']['total'] * Level.gem_attack
+		hero.defence += node['count']['gem']['defence']['total'] * Level.gem_defence
 		return True
 
 	def out_node_fight(self, node):
@@ -1204,9 +1204,9 @@ class Tree:
 			key[door] += 1
 		for k, v in node['count']['key'].items():
 			key[k] -= v
-		hero.health -= node['count']['potion']['total'] * level.potion
-		hero.attack -= node['count']['gem']['attack']['total'] * level.gem_attack
-		hero.defence -= node['count']['gem']['defence']['total'] * level.gem_defence
+		hero.health -= node['count']['potion']['total'] * Level.potion
+		hero.attack -= node['count']['gem']['attack']['total'] * Level.gem_attack
+		hero.defence -= node['count']['gem']['defence']['total'] * Level.gem_defence
 
 	#移入，remove该点，add该点的forward
 	#移出，remove该点的forward，add该点
@@ -1274,7 +1274,7 @@ class Tree:
 		print 'begin fight'
 		for move in node_list:
 			node = self.tree_map[move]
-			print '<floor {0}>'.format(list(set([v[0] + level.floor for v in node['info']['area']])))
+			print '<floor {0}>'.format(list(set([v[0] + Level.floor for v in node['info']['area']])))
 			print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
 
 			if node['count']['door']:
@@ -1293,19 +1293,19 @@ class Tree:
 					key[k] += v
 					print '<get key, {0} {1}>, '.format(k, v),
 			if node['count']['gem']['attack']['total'] > 0:
-				print '<get attack gem, {0}>, '.format(node['count']['gem']['attack']['total'] * level.gem_attack),
+				print '<get attack gem, {0}>, '.format(node['count']['gem']['attack']['total'] * Level.gem_attack),
 			if node['count']['gem']['defence']['total'] > 0:
-				print '<get defence gem, {0}>, '.format(node['count']['gem']['defence']['total'] * level.gem_defence),
+				print '<get defence gem, {0}>, '.format(node['count']['gem']['defence']['total'] * Level.gem_defence),
 
 			if node['count']['potion']['total'] > 0:
-				print '<get potion, {0}>, '.format(node['count']['potion']['total'] * level.potion),
+				print '<get potion, {0}>, '.format(node['count']['potion']['total'] * Level.potion),
 
 			print
 			print
 
-			hero.health += node['count']['potion']['total'] * level.potion
-			hero.attack += node['count']['gem']['attack']['total'] * level.gem_attack
-			hero.defence += node['count']['gem']['defence']['total'] * level.gem_defence
+			hero.health += node['count']['potion']['total'] * Level.potion
+			hero.attack += node['count']['gem']['attack']['total'] * Level.gem_attack
+			hero.defence += node['count']['gem']['defence']['total'] * Level.gem_defence
 		print '<hero state, health={0}, attack={1}, defence={2}>'.format(hero.health, hero.attack, hero.defence)
 		print 'end fight'
 
@@ -1330,10 +1330,31 @@ class Tree:
 		self.node_list = node_list
 		#print self.travel_node_list
 		#self.show(lambda pos: self.get_type(pos))
+		self.set_maze()
 
+	def set_maze(self):
+		from show import logging
+		for move, node in self.tree_map.items():
+			#logging((node['way']['forward'].keys(), node['way']['backward'].keys()))
+			is_door = False
+			if node['way']['backward'].keys():
+				pos = node['way']['backward'].keys()[0]
+				door = node['count']['door']
+				#logging((self.maze.get_type(pos), door))
+				if door == '':
+					self.maze.set_type(pos, MazeBase.ground)
+				else:
+					self.maze.set_type(pos, MazeBase.door)
+					self.maze.set_value(pos, door)
+					is_door = True
+			if node['count']['monster']:
+				pos = node['way']['backward'].keys()[0]
+				if is_door:
+					pos = list(set(self.maze.get_around_floor(pos)) & node['info']['area'])[0]
+				self.maze.set_type(pos, MazeBase.monster)
 
 
 
 if __name__ == '__main__':
-	for maze in level.iter():
+	for maze in Level.iter():
 		pass
