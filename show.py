@@ -15,9 +15,9 @@ def logging(s):
 	Logger.warning(str(s))
 
 
-class Schedule:
-	from Queue import Queue
+from Queue import Queue
 
+class Schedule:
 	def __init__(self):
 		self.event = {}
 		Clock.schedule_interval(self.run, 0)
@@ -38,7 +38,7 @@ class Schedule:
 		frames = Clock.frames
 		for step in iter(iterator):
 			frames += interval
-			self.event.setdefault(frames, self.Queue())
+			self.event.setdefault(frames, Queue())
 			self.event[frames].put((func, step, kwargs))
 		if cycle > 1 or cycle < 0:
 			self.event[frames].put((lambda step, **kwargs: self.trigger(func, iterator, interval, cycle - 1, **kwargs), -1, kwargs))
@@ -47,23 +47,37 @@ if 'Trigger' not in dir():
 	Trigger = Schedule().trigger
 
 
-class Data:
-	import os
+import os
 
+class CacheBase:
 	def __init__(self):
-		pass
+		self.image_dir = 'data'
+		self.load_image()
 
 	def load_image(self):
 		self.data = {}
-		for path, dir_list, file_list in self.os.walk('data'):
+		for path, dir_list, file_list in os.walk(self.image_dir):
 			for file_name in file_list:
-				real_name = '%s%s%s'.format(path, os.path.sep, file_name)
-				texture = Image(source=real_name).texture
+				name = '/'.join((path, file_name)).replace('\\', '/')
+				texture = Image(source=name).texture
 				x, y = texture.size
-				self.data[real_name] = {}
+				x_time = x / ShowBase.size
+				y_time = y / ShowBase.size
+				x_size = x / x_time
+				y_size = y / y_time
+				x_offset = x_size - ShowBase.size
+				y_offset = y_size - ShowBase.size
+				self.data[name] = {}
+				for i in xrange(x_time):
+					for j in xrange(y_time):
+						self.data[name][(i, j)] = texture.get_region(i * x_size + x_offset, j * y_size + y_offset, ShowBase.size, ShowBase.size)
 
-	def get(self):
-		pass
+	def get_image(self, name, pos=(0, 0)):
+		name = '/'.join((self.image_dir, name)).replace('\\', '/')
+		return self.data[name][pos]
+
+if 'Cache' not in dir():
+	Cache = CacheBase()
 
 
 class Move(Image):
@@ -72,13 +86,12 @@ class Move(Image):
 		self.pos = kwargs.get('pos', (0, 0))
 		self.size = (ShowBase.size, ShowBase.size)
 		super(Move, self).__init__(**kwargs)
-		self.image = Image(source='data/action/hero/blue.png')
-		self.texture = self.image.texture.get_region(0, 1, ShowBase.size, ShowBase.size)
+		self.texture = Cache.get_image('action/hero/blue.png', (0, 3))
 
 	def next(self, step, key, moveable):
 		if self.enable:
 			move = {'up': 0, 'down': 3, 'left': 2, 'right': 1}
-			self.texture = self.image.texture.get_region(step * ShowBase.size, move[key] * (ShowBase.size + 1) + 1, ShowBase.size, ShowBase.size)
+			self.texture = Cache.get_image('action/hero/blue.png', (step, move[key]))
 			if moveable:
 					x, y = self.pos
 					if key == 'up':
@@ -95,16 +108,26 @@ class Move(Image):
 		Trigger(self.next, range(ShowBase.step)[::-1], 5, 1, key=key, moveable=moveable)
 
 
+from maze import MazeBase
+
 class Node(Image):
 	def __init__(self, **kwargs):
 		self.enable = True
 		self.pos = kwargs.get('pos', (0, 0))
 		self.size = (ShowBase.size, ShowBase.size)
 		super(Node, self).__init__(**kwargs)
-		#self.image = Image(source='data/action/monster/003.png')
-		#self.texture = self.image.texture.get_region(0, 0, ShowBase.size, ShowBase.size)
-		self.image = Image(source='data/basic/wall.png')
-		self.texture = self.image.texture.get_region(0, 32, ShowBase.size, ShowBase.size)
+		node = kwargs['node']
+		if node['type'] == MazeBase.ground:
+			self.texture = Cache.get_image('basic/ground.png', (0, 0))
+		elif node['type'] == MazeBase.wall:
+			self.texture = Cache.get_image('basic/wall.png', (0, 1))
+		elif node['type'] == MazeBase.stairs:
+			if node['value'] == MazeBase.Stairs.start:
+				self.texture = Cache.get_image('basic/stairs.png', (1, 0))
+			elif node['value'] == MazeBase.Stairs.end:
+				self.texture = Cache.get_image('basic/stairs.png', (0, 0))
+		else:
+			logging(node)
 
 	def show(self):
 		pass
@@ -124,14 +147,14 @@ class Show(FocusBehavior, GridLayout):
 		maze = Maze()
 		floor = maze.maze[0]
 
-		self.rows = 1 #MazeSetting.rows
-		self.cols = 2 #MazeSetting.cols
+		self.rows = MazeSetting.rows + 2
+		self.cols = MazeSetting.cols + 2
 
 		self.size_hint = (None, None)
 		self.size = (self.cols * ShowBase.size, self.rows * ShowBase.size)
 		super(Show, self).__init__(**kwargs)
 
-		texture = Image(source='data/basic/ground.png').texture
+		texture = Cache.get_image('basic/ground.png', (0, 0))
 		with self.canvas:
 			for i in xrange(self.cols):
 				for j in xrange(self.rows):

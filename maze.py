@@ -63,6 +63,10 @@ class MazeBase:
 
 	ground_list = [ground, ground_replace]
 
+	class Stairs:
+		start = 1
+		end = 2
+
 	class Item:
 		key = 21
 
@@ -77,9 +81,6 @@ class MazeBase:
 		blue = 2
 		red = 3
 		green = 4
-
-	stairs_start = 1
-	stairs_end = 2
 
 	maze_node = {'type': 0, 'value': 0}
 	tree_node = {'number': 0, 'empty': False, 'info': {'type': 0, 'area': set(), 'space': 0}, 'count': {'key': {Color.yellow: 0, Color.blue: 0, Color.red: 0, Color.green: 0}, 'door': '', 'potion': {'total': 0, 1: 0, 2: 0, 4: 0, 8: 0}, 'gem': {'attack': {'total': 0, 1: 0, 3: 0, 10: 0}, 'defence': {'total': 0, 1: 0, 3: 0, 10: 0}}, 'damage': 0, 'monster': None}, 'way': {'forward': {}, 'backward': {}}}
@@ -308,11 +309,11 @@ class Maze:
 	def create_stairs(self, floor):
 		start_pos = self.info[floor]['stairs_start']
 		self.set_type(start_pos, MazeBase.stairs)
-		self.set_value(start_pos, MazeBase.stairs_start)
+		self.set_value(start_pos, MazeBase.Stairs.start)
 
 		end_pos = self.info[floor]['stairs_end']
 		self.set_type(end_pos, MazeBase.stairs)
-		self.set_value(end_pos, MazeBase.stairs_end)
+		self.set_value(end_pos, MazeBase.Stairs.end)
 
 
 	def get_pos_list(self, floor, (start_x, end_x), (start_y, end_y)):
