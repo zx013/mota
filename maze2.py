@@ -1,4 +1,5 @@
 #-*- coding:utf-8 -*-
+import random
 
 class MazeBase:
 	class Type:
@@ -68,6 +69,15 @@ class Maze2:
 					rows_area.append(node)
 				floor_area.append(rows_area)
 			self.maze.append(floor_area)
+		self.create()
+
+	#maze[(0, 1, 1)].Type
+	def __getitem__(self, key):
+		z, x, y = key
+		return self.maze[z][x][y]
+
+	def __iter__(self):
+		return ((k, i, j) for k in xrange(MazeSetting.floor) for i in xrange(MazeSetting.rows + 2) for j in xrange(MazeSetting.cols + 2))
 
 	def get_around(self, pos, type):
 		around = set()
@@ -82,8 +92,8 @@ class Maze2:
 			around.add((z, x, y + 1))
 		return {(z, x, y) for z, x, y in around if self.maze[z][x][y].Type == type}
 
-	def is_pure(self, pos, num):		
-		around_wall = maze.get_around(pos, MazeBase.Type.Static.wall)
+	def is_pure(self, pos, num):
+		around_wall = self.get_around(pos, MazeBase.Type.Static.wall)
 		if len(around_wall) != 1:
 			return False
 		z, x, y = pos
@@ -100,15 +110,40 @@ class Maze2:
 		return True
 
 	#检查邻边的点周围几格内没有其它的边
-	def get_pure(self, pos):
+	def pure_num(self, pos):
 		for num in xrange(1, max(MazeSetting.rows, MazeSetting.cols)):
 			if not self.is_pure(pos, num):
 				return num - 1
-				
+
+	def get_pure(self, floor, num):
+		pure = set()
+		for i in xrange(MazeSetting.rows + 2):
+			for j in xrange(MazeSetting.cols + 2):
+				if self.pure_num((floor, i, j)) >= num:
+					pure.add((floor, i, j))
+		return pure
+
+	def increase_wall(self, pos, num):
+		while self.pure_num(pos) >= num:
+			self[pos].Type = MazeBase.Type.Static.wall
+			z, x, y = pos
+			z_wall, x_wall, y_wall = self.get_around(pos, MazeBase.Type.Static.wall).pop()
+			pos = (z, 2 * x - x_wall, 2 * y - y_wall)
+
+	def create(self):
+		from show import logging
+		while True:
+			num = 1
+			pure = self.get_pure(0, num)
+			if not pure:
+				return
+			pos = random.choice(tuple(pure))
+			self.increase_wall(pos, num)
 
 if __name__ == '__main__':
 	maze = Maze2()
-	for i in xrange(MazeSetting.rows + 2):
-		for j in xrange(MazeSetting.cols + 2):
-			print maze.get_pure((0, i, j)),
-		print
+	maze.increase_wall((0, 3, 1), 2)
+	#for i in xrange(MazeSetting.rows + 2):
+	#	for j in xrange(MazeSetting.cols + 2):
+	#		print maze.pure_num((0, i, j)),
+	#	print
