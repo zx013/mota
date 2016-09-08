@@ -108,7 +108,7 @@ class Move(Image):
 		Trigger(self.next, range(ShowBase.step)[::-1], 5, 1, key=key, moveable=moveable)
 
 
-from maze import MazeBase
+from maze2 import MazeBase
 
 class Node(Image):
 	def __init__(self, **kwargs):
@@ -117,25 +117,25 @@ class Node(Image):
 		self.size = (ShowBase.size, ShowBase.size)
 		super(Node, self).__init__(**kwargs)
 		node = kwargs['node']
-		if node['type'] == MazeBase.ground:
+		if node.Type == MazeBase.Type.Static.ground:
 			self.texture = Cache.get_image('basic/ground.png', (0, 0))
-		elif node['type'] == MazeBase.wall:
+		elif node.Type == MazeBase.Type.Static.wall:
 			self.texture = Cache.get_image('basic/wall.png', (0, 1))
-		elif node['type'] == MazeBase.stairs:
-			if node['value'] == MazeBase.Stairs.start:
+		elif node.Type == MazeBase.Type.Static.stairs:
+			if node.Value == MazeBase.Value.Stairs.start:
 				self.texture = Cache.get_image('basic/stairs.png', (1, 0))
-			elif node['value'] == MazeBase.Stairs.end:
+			elif node.Value == MazeBase.Value.Stairs.end:
 				self.texture = Cache.get_image('basic/stairs.png', (0, 0))
-		elif node['type'] == MazeBase.door:
-			if node['value'] == MazeBase.Color.yellow:
+		elif node.Type == MazeBase.Type.Static.door:
+			if node.Value == MazeBase.Value.Color.yellow:
 				self.texture = Cache.get_image('basic/door.png', (0, 0))
-			elif node['value'] == MazeBase.Color.blue:
+			elif node.Value == MazeBase.Value.Color.blue:
 				self.texture = Cache.get_image('basic/door.png', (1, 0))
-			elif node['value'] == MazeBase.Color.red:
+			elif node.Value == MazeBase.Value.Color.red:
 				self.texture = Cache.get_image('basic/door.png', (2, 0))
-			elif node['value'] == MazeBase.Color.green:
+			elif node.Value == MazeBase.Value.Color.green:
 				self.texture = Cache.get_image('basic/door.png', (3, 0))
-		elif node['type'] == MazeBase.monster:
+		elif node.Type == MazeBase.Type.Active.monster:
 			self.texture = Cache.get_image('action/monster/003.png', (0, 1))
 		else:
 			logging(node)
@@ -154,9 +154,11 @@ class Node(Image):
 #hero单独使用一个点
 class Show(FocusBehavior, GridLayout):
 	def __init__(self, **kwargs):
-		from maze import Level, MazeSetting
-		Level.next()
-		floor = Level.maze.maze[0]
+		#from maze import Level, MazeSetting
+		#Level.next()
+		#floor = Level.maze.maze[0]
+		from maze2 import Maze2, MazeSetting
+		floor = Maze2().maze[0]
 
 		self.rows = MazeSetting.rows + 2
 		self.cols = MazeSetting.cols + 2
@@ -167,11 +169,11 @@ class Show(FocusBehavior, GridLayout):
 
 		texture = Cache.get_image('basic/ground.png', (0, 0))
 		with self.canvas:
-			for i in xrange(self.cols):
-				for j in xrange(self.rows):
-					Rectangle(texture=texture, pos=(self.x + i * ShowBase.size, self.y + j * ShowBase.size), size=(ShowBase.size, ShowBase.size))
-		for i in xrange(self.cols):
-			for j in xrange(self.rows):
+			for i in xrange(self.rows):
+				for j in xrange(self.cols):
+					Rectangle(texture=texture, pos=(self.x + j * ShowBase.size, self.y + i * ShowBase.size), size=(ShowBase.size, ShowBase.size))
+		for i in xrange(self.rows):
+			for j in xrange(self.cols):
 				node = Node(node=floor[i][j])
 				self.add_widget(node)
 
