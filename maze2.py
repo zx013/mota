@@ -46,7 +46,7 @@ class MazeBase:
 
 class MazeSetting:
 	#层数
-	floor = 1
+	floor = 100
 	#行
 	rows = 13
 	#列
@@ -79,57 +79,38 @@ class Maze2:
 	def __iter__(self):
 		return ((k, i, j) for k in xrange(MazeSetting.floor) for i in xrange(MazeSetting.rows + 2) for j in xrange(MazeSetting.cols + 2))
 
-	def get_around(self, pos, type):
-		around = set()
+	def get_beside(self, pos, type):
 		z, x, y = pos
-		if x > 0:
-			around.add((z, x - 1, y))
-		if x < MazeSetting.rows + 1:
-			around.add((z, x + 1, y))
-		if y > 0:
-			around.add((z, x, y - 1))
-		if y < MazeSetting.cols + 1:
-			around.add((z, x, y + 1))
+		beside = ((z, x - 1, y), (z, x + 1, y), (z, x, y - 1), (z, x, y + 1))
+		return {(z, x, y) for z, x, y in beside if self.maze[z][x][y].Type == type}
+
+	def get_around(self, pos, type):
+		z, x, y = pos
+		around = ((z, x - 1, y - 1), (z, x - 1, y), (z, x - 1, y + 1), (z, x, y - 1), (z, x, y + 1), (z, x + 1, y - 1), (z, x + 1, y), (z, x + 1, y + 1))
 		return {(z, x, y) for z, x, y in around if self.maze[z][x][y].Type == type}
 
-	def is_pure(self, pos, num):
-		around_wall = self.get_around(pos, MazeBase.Type.Static.wall)
-		if len(around_wall) != 1:
-			return False
-		z, x, y = pos
-		z_wall, x_wall, y_wall = around_wall.pop()
-		x_min = max(x, 0) if x > x_wall else max(x - num, 0)
-		x_max = min(x, MazeSetting.rows + 1) if x < x_wall else min(x + num, MazeSetting.rows + 1)
-		y_min = max(y, 0) if y > y_wall else max(y - num, 0)
-		y_max = min(y, MazeSetting.cols + 1) if y < y_wall else min(y + num, MazeSetting.cols + 1)
+	#在floor层的type类型的区域中寻找符合func要求的点
+	def find_pos(self, floor, type, func):
+		return {(floor, i, j) for i in xrange(1, MazeSetting.rows + 1) for j in xrange(1, MazeSetting.cols + 1) if self[(floor, i, j)].Type == type and func((floor, i, j))}
 
-		for i in xrange(x_min, x_max + 1):
-			for j in xrange(y_min, y_max + 1):
-				if self.maze[z][i][j].Type == MazeBase.Type.Static.wall:
-					return False
+	def is_pure(self, pos):
+		if len(self.get_beside(pos, MazeBase.Type.Static.wall)) != 1:
+			return False
+		z, x, y = zip(*self.get_around(pos, MazeBase.Type.Static.wall))
+		if len(set(x)) != 1 and len(set(y)) != 1:
+			return False
 		return True
 
-	#检查邻边的点周围几格内没有其它的边
-	def pure_num(self, pos):
-		for num in xrange(1, max(MazeSetting.rows, MazeSetting.cols)):
-			if not self.is_pure(pos, num):
-				return num - 1
-
-	def get_pure(self, floor, num):
-		pure = set()
-		for i in xrange(MazeSetting.rows + 2):
-			for j in xrange(MazeSetting.cols + 2):
-				if self.pure_num((floor, i, j)) >= num:
-					pure.add((floor, i, j))
-		return pure
+	def get_pure(self, floor):
+		return self.find_pos(floor, MazeBase.Type.Static.ground, self.is_pure)
 
 	#给出一个被墙三面包围的点，获取该点延伸区域的所有点
-	def get_end_area(self, pos):
+	def get_endarea(self, pos):
 		area = set()
-		if len(self.get_around(pos, MazeBase.Type.Static.wall)) != 3:
+		if len(self.get_beside(pos, MazeBase.Type.Static.wall)) != 3:
 			return area
 		while True:
-			around = self.get_around(pos, MazeBase.Type.Static.ground)
+			around = self.get_beside(pos, MazeBase.Type.Static.ground)
 			if len(around) > 2:
 				break
 			area.add(pos)
@@ -141,10 +122,10 @@ class Maze2:
 
 	def add_wall(self, pos, num):
 		length = 0
-		while self.pure_num(pos) >= num:
+		while self.is_pure(pos):
 			self[pos].Type = MazeBase.Type.Static.wall
 			z, x, y = pos
-			z_wall, x_wall, y_wall = self.get_around(pos, MazeBase.Type.Static.wall).pop()
+			z_wall, x_wall, y_wall = self.get_beside(pos, MazeBase.Type.Static.wall).pop()
 			pos = (z, 2 * x - x_wall, 2 * y - y_wall)
 			length += 1
 		if length == 0:
@@ -152,8 +133,8 @@ class Maze2:
 		#如果长度为1的墙生成了大小为1的区域
 		if length == 1:
 			pos_set = set()
-			for pos in self.get_around((z, x, y), MazeBase.Type.Static.ground):
-				if len(self.get_end_area(pos)) == 1:
+			for pos in self.get_beside((z, x, y), MazeBase.Type.Static.ground):
+				if len(self.get_endarea(pos)) == 1:
 					pos_set.add(pos)
 			if pos_set:
 				return (z, x, y)
@@ -163,7 +144,7 @@ class Maze2:
 		for floor in xrange(MazeSetting.floor):
 			clear_wall = set()
 			while True:
-				pure = self.get_pure(floor, 1)
+				pure = self.get_pure(floor)
 				if not pure:
 					break
 				pos = random.choice(tuple(pure))
@@ -175,11 +156,12 @@ class Maze2:
 	def show(self):
 		for i in xrange(MazeSetting.rows + 2):
 			for j in xrange(MazeSetting.cols + 2):
-				if maze[(0, i, j)].Type == MazeBase.Type.Static.ground:
+				if self[(0, i, j)].Type == MazeBase.Type.Static.ground:
 					print ' ',
-				elif maze[(0, i, j)].Type == MazeBase.Type.Static.wall:
+				elif self[(0, i, j)].Type == MazeBase.Type.Static.wall:
 					print 1,
 			print
+		print
 
 if __name__ == '__main__':
 	maze = Maze2()
