@@ -123,27 +123,64 @@ class Maze2:
 					pure.add((floor, i, j))
 		return pure
 
-	def increase_wall(self, pos, num):
+	#给出一个被墙三面包围的点，获取该点延伸区域的所有点
+	def get_end_area(self, pos):
+		area = set()
+		if len(self.get_around(pos, MazeBase.Type.Static.wall)) != 3:
+			return area
+		while True:
+			around = self.get_around(pos, MazeBase.Type.Static.ground)
+			if len(around) > 2:
+				break
+			area.add(pos)
+			for around_pos in around:
+				if around_pos not in area:
+					pos = around_pos
+					break
+		return area
+
+	def add_wall(self, pos, num):
+		length = 0
 		while self.pure_num(pos) >= num:
 			self[pos].Type = MazeBase.Type.Static.wall
 			z, x, y = pos
 			z_wall, x_wall, y_wall = self.get_around(pos, MazeBase.Type.Static.wall).pop()
 			pos = (z, 2 * x - x_wall, 2 * y - y_wall)
+			length += 1
+		if length == 0:
+			return
+		#如果长度为1的墙生成了大小为1的区域
+		if length == 1:
+			pos_set = set()
+			for pos in self.get_around((z, x, y), MazeBase.Type.Static.ground):
+				if len(self.get_end_area(pos)) == 1:
+					pos_set.add(pos)
+			if pos_set:
+				return (z, x, y)
 
 	def create(self):
-		from show import logging
-		while True:
-			num = 1
-			pure = self.get_pure(0, num)
-			if not pure:
-				return
-			pos = random.choice(tuple(pure))
-			self.increase_wall(pos, num)
+		#from show import logging
+		for floor in xrange(MazeSetting.floor):
+			clear_wall = set()
+			while True:
+				pure = self.get_pure(floor, 1)
+				if not pure:
+					break
+				pos = random.choice(tuple(pure))
+				clear_wall.add(self.add_wall(pos, 1))
+			for pos in clear_wall:
+				if pos:
+					self[pos].Type = MazeBase.Type.Static.ground
+
+	def show(self):
+		for i in xrange(MazeSetting.rows + 2):
+			for j in xrange(MazeSetting.cols + 2):
+				if maze[(0, i, j)].Type == MazeBase.Type.Static.ground:
+					print ' ',
+				elif maze[(0, i, j)].Type == MazeBase.Type.Static.wall:
+					print 1,
+			print
 
 if __name__ == '__main__':
 	maze = Maze2()
-	maze.increase_wall((0, 3, 1), 2)
-	#for i in xrange(MazeSetting.rows + 2):
-	#	for j in xrange(MazeSetting.cols + 2):
-	#		print maze.pure_num((0, i, j)),
-	#	print
+	maze.show()
