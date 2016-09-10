@@ -55,7 +55,7 @@ class MazeBase:
 
 class MazeSetting:
 	#层数
-	floor = 100
+	floor = 1
 	#行
 	rows = 13
 	#列
@@ -63,6 +63,23 @@ class MazeSetting:
 
 
 class Pos:
+	@staticmethod
+	def add(pos1, pos2):
+		z1, x1, y1 = pos1
+		z2, x2, y2 = pos2
+		return (z1, x1 + x2, y1 + y2)
+
+	@staticmethod
+	def sub(pos1, pos2):
+		z1, x1, y1 = pos1
+		z2, x2, y2 = pos2
+		return (z1, x1 - x2, y1 - y2)
+
+	@staticmethod
+	def mul(pos, num):
+		z, x, y = pos
+		return (z, num * x, num * y)
+
 	@staticmethod
 	def beside(pos):
 		z, x, y = pos
@@ -133,12 +150,30 @@ class Maze2:
 			beside = beside | {beside_pos for beside_pos in self.get_beside(pos, MazeBase.Type.Static.ground) if self.pos_type(beside_pos) in type} - area
 		return area
 
+	#点pos向各个方向移动，最大移动步数
+	def get_forward(self, pos):
+		forward = []
+		for beside in self.get_beside(pos, MazeBase.Type.Static.ground):
+			move = Pos.sub(beside, pos)
+			num = 0
+			while self[beside].Type == MazeBase.Type.Static.ground:
+				beside = Pos.add(beside, move)
+				num += 1
+			forward.append(num)
+		return forward
+
 	def is_pure(self, pos):
 		if len(self.get_beside(pos, MazeBase.Type.Static.wall)) != 1:
 			return False
 		z, x, y = zip(*self.get_around(pos, MazeBase.Type.Static.wall))
 		if len(set(x)) != 1 and len(set(y)) != 1:
 			return False
+		#if min(*self.get_forward(pos)) % 2 == 0:
+		#	return False
+		#z, x, y = map(lambda x: max(x) - min(x) + 1, zip(*self.get_area(pos)))
+		#if x <= 3 or y <= 3:
+		#	return False
+		
 		return True
 
 	def get_pure(self, floor):
@@ -147,9 +182,7 @@ class Maze2:
 	def add_wall(self, pos):
 		while self.is_pure(pos):
 			self[pos].Type = MazeBase.Type.Static.wall
-			z, x, y = pos
-			z_wall, x_wall, y_wall = self.get_beside(pos, MazeBase.Type.Static.wall).pop()
-			pos = (z, 2 * x - x_wall, 2 * y - y_wall)
+			pos = Pos.sub(Pos.mul(pos, 2), self.get_beside(pos, MazeBase.Type.Static.wall).pop())
 
 	def clear_wall(self, floor):
 		func = lambda pos: self.pos_type(pos) == MazeBase.NodeType.road_corner and len(self.get_area(pos)) == 1
@@ -171,9 +204,9 @@ class Maze2:
 		for i in xrange(MazeSetting.rows + 2):
 			for j in xrange(MazeSetting.cols + 2):
 				if self[(0, i, j)].Type == MazeBase.Type.Static.ground:
-					print self.pos_type((0, i, j)),
+					print ' ',
 				elif self[(0, i, j)].Type == MazeBase.Type.Static.wall:
-					print  ' ',
+					print 1,
 			print
 		print
 
