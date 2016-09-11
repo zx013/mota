@@ -55,7 +55,7 @@ class MazeBase:
 
 class MazeSetting:
 	#层数
-	floor = 1
+	floor = 100
 	#行
 	rows = 13
 	#列
@@ -91,27 +91,41 @@ class Pos:
 		return ((z, x - 1, y - 1), (z, x - 1, y), (z, x - 1, y + 1), (z, x, y - 1), (z, x, y + 1), (z, x + 1, y - 1), (z, x + 1, y), (z, x + 1, y + 1))
 
 class Maze2:
-	maze = []
 	def __init__(self):
+		self.maze = [[[MazeBase.Node() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)] for k in xrange(MazeSetting.floor)]
+
+		self.maze_map = {}
 		for k in xrange(MazeSetting.floor):
-			floor_area = []
+			self.maze_map[k] = {MazeBase.Type.Static.ground: set()}
 			for i in xrange(MazeSetting.rows + 2):
-				rows_area = []
 				for j in xrange(MazeSetting.cols + 2):
-					node = MazeBase.Node()
 					if i in (0, MazeSetting.rows + 1) or j in (0, MazeSetting.cols + 1):
-						node.Type = MazeBase.Type.Static.wall
+						self.maze[k][i][j].Type = MazeBase.Type.Static.wall
 					else:
-						node.Type = MazeBase.Type.Static.ground
-					rows_area.append(node)
-				floor_area.append(rows_area)
-			self.maze.append(floor_area)
+						self.maze[k][i][j].Type = MazeBase.Type.Static.ground
+						self.maze_map[k][MazeBase.Type.Static.ground].add((k, i, j))
 		self.create()
 
-	#maze[(0, 1, 1)].Type
-	def __getitem__(self, key):
-		z, x, y = key
-		return self.maze[z][x][y]
+	def get_type(self, pos):
+		z, x, y = pos
+		return self.maze[z][x][y].Type
+
+	def get_value(self, pos):
+		z, x, y = pos
+		return self.maze[z][x][y].Value
+
+	def set_type(self, pos, value):
+		z, x, y = pos
+		type = self.maze[z][x][y].Type
+		self.maze_map[z].setdefault(type, set())
+		self.maze_map[z].setdefault(value, set())
+		self.maze_map[z][type].remove(pos)
+		self.maze_map[z][value].add(pos)
+		self.maze[z][x][y].Type = value
+
+	def set_value(self, pos, value):
+		z, x, y = pos
+		self.maze[z][x][y].Value = value
 
 	def get_beside(self, pos, type):
 		return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y].Type == type}
@@ -121,7 +135,7 @@ class Maze2:
 
 	#在floor层的type类型的区域中寻找符合func要求的点
 	def find_pos(self, floor, type, func):
-		return {(floor, i, j) for i in xrange(1, MazeSetting.rows + 1) for j in xrange(1, MazeSetting.cols + 1) if self[(floor, i, j)].Type == type and func((floor, i, j))}
+		return {pos for pos in self.maze_map[floor][type] if func(pos)}
 
 	#获取pos的类型area, road, end
 	def pos_type(self, pos):
@@ -134,7 +148,7 @@ class Maze2:
 			(z1, x1, y1), (z2, x2, y2) = beside_ground
 			if x1 == x2 or y1 == y2:
 				return MazeBase.NodeType.road_normal
-			if self[(z2, x2, y1) if pos == (z1, x1, y2) else (z1, x1, y2)].Type == MazeBase.Type.Static.wall:
+			if self.get_type((z2, x2, y1) if pos == (z1, x1, y2) else (z1, x1, y2)) == MazeBase.Type.Static.wall:
 				return MazeBase.NodeType.road_normal
 			return MazeBase.NodeType.area_corner
 		return MazeBase.NodeType.none
@@ -156,7 +170,7 @@ class Maze2:
 		for beside in self.get_beside(pos, MazeBase.Type.Static.ground):
 			move = Pos.sub(beside, pos)
 			num = 0
-			while self[beside].Type == MazeBase.Type.Static.ground:
+			while self.get_type(beside) == MazeBase.Type.Static.ground:
 				beside = Pos.add(beside, move)
 				num += 1
 			forward.append(num)
@@ -173,16 +187,18 @@ class Maze2:
 		#z, x, y = map(lambda x: max(x) - min(x) + 1, zip(*self.get_area(pos)))
 		#if x <= 3 or y <= 3:
 		#	return False
-		
+
 		return True
 
 	def get_pure(self, floor):
 		return self.find_pos(floor, MazeBase.Type.Static.ground, self.is_pure)
 
 	def add_wall(self, pos):
-		while self.is_pure(pos):
-			self[pos].Type = MazeBase.Type.Static.wall
+		wall = []
+		while self.get_type(pos) == MazeBase.Type.Static.ground:
+			self.set_type(pos, MazeBase.Type.Static.wall)
 			pos = Pos.sub(Pos.mul(pos, 2), self.get_beside(pos, MazeBase.Type.Static.wall).pop())
+			wall.append(pos)
 
 	def clear_wall(self, floor):
 		func = lambda pos: self.pos_type(pos) == MazeBase.NodeType.road_corner and len(self.get_area(pos)) == 1
@@ -203,9 +219,9 @@ class Maze2:
 	def show(self):
 		for i in xrange(MazeSetting.rows + 2):
 			for j in xrange(MazeSetting.cols + 2):
-				if self[(0, i, j)].Type == MazeBase.Type.Static.ground:
+				if self.get_type((0, i, j)) == MazeBase.Type.Static.ground:
 					print ' ',
-				elif self[(0, i, j)].Type == MazeBase.Type.Static.wall:
+				elif self.get_type((0, i, j)) == MazeBase.Type.Static.wall:
 					print 1,
 			print
 		print
