@@ -90,6 +90,8 @@ class Pos:
 		z, x, y = pos
 		return ((z, x - 1, y - 1), (z, x - 1, y), (z, x - 1, y + 1), (z, x, y - 1), (z, x, y + 1), (z, x + 1, y - 1), (z, x + 1, y), (z, x + 1, y + 1))
 
+
+
 class Maze2:
 	def __init__(self):
 		self.maze = [[[MazeBase.Node() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)] for k in xrange(MazeSetting.floor)]
@@ -164,49 +166,67 @@ class Maze2:
 			beside = beside | {beside_pos for beside_pos in self.get_beside(pos, MazeBase.Type.Static.ground) if self.pos_type(beside_pos) in type} - area
 		return area
 
-	#点pos向各个方向移动，最大移动步数
-	def get_forward(self, pos):
-		forward = []
-		for beside in self.get_beside(pos, MazeBase.Type.Static.ground):
-			move = Pos.sub(beside, pos)
-			num = 0
-			while self.get_type(beside) == MazeBase.Type.Static.ground:
-				beside = Pos.add(beside, move)
-				num += 1
-			forward.append(num)
-		return forward
-
 	def is_pure(self, pos):
 		if len(self.get_beside(pos, MazeBase.Type.Static.wall)) != 1:
 			return False
 		z, x, y = zip(*self.get_around(pos, MazeBase.Type.Static.wall))
 		if len(set(x)) != 1 and len(set(y)) != 1:
 			return False
-		#if min(*self.get_forward(pos)) % 2 == 0:
-		#	return False
-		#z, x, y = map(lambda x: max(x) - min(x) + 1, zip(*self.get_area(pos)))
-		#if x <= 3 or y <= 3:
-		#	return False
-
 		return True
 
 	def get_pure(self, floor):
+		#如果需要提高速度，每次放置墙时改变该值
 		return self.find_pos(floor, MazeBase.Type.Static.ground, self.is_pure)
 
 	def add_wall(self, pos):
-		wall = []
+		move = Pos.sub(pos, self.get_beside(pos, MazeBase.Type.Static.wall).pop())
 		while self.get_type(pos) == MazeBase.Type.Static.ground:
 			self.set_type(pos, MazeBase.Type.Static.wall)
-			pos = Pos.sub(Pos.mul(pos, 2), self.get_beside(pos, MazeBase.Type.Static.wall).pop())
-			wall.append(pos)
+			pos = Pos.add(pos, move)
 
 	def clear_wall(self, floor):
 		func = lambda pos: self.pos_type(pos) == MazeBase.NodeType.road_corner and len(self.get_area(pos)) == 1
 		for pos in self.find_pos(floor, MazeBase.Type.Static.ground, func):
 			pass
 
+
+	def replace_rect(self, floor, rect1, rect2, x, y, row, col):
+		if x + row > MazeSetting.rows + 2 or y + col > MazeSetting.cols + 2:
+			return False
+		for i in xrange(row):
+			for j in xrange(col):
+				if self.get_type((floor, x + i, y + j)) != rect1[i][j]:
+					return False
+		for i in xrange(row):
+			for j in xrange(col):
+				if rect2[i][j]:
+					self.set_type((floor, x + i, y + j), rect2[i][j])
+		return True
+
+	def find_rect(self, floor, rect1, rect2):
+		_rect1 = zip(*rect1)
+		_rect2 = zip(*rect2)
+		row = len(rect1)
+		col = len(_rect1)
+		for x in xrange(0, MazeSetting.rows + 2):
+			for y in xrange(0, MazeSetting.cols + 2):
+				self.replace_rect(floor, rect1, rect2, x, y, row, col)
+				self.replace_rect(floor, _rect1, _rect2, x, y, col, row)
+
+	def merge(self, floor):
+		rect1 = [[MazeBase.Type.Static.wall, MazeBase.Type.Static.wall, MazeBase.Type.Static.wall, MazeBase.Type.Static.wall],
+				[MazeBase.Type.Static.wall, MazeBase.Type.Static.ground, MazeBase.Type.Static.ground, MazeBase.Type.Static.wall],
+				[MazeBase.Type.Static.wall, MazeBase.Type.Static.wall, MazeBase.Type.Static.wall, MazeBase.Type.Static.wall],
+				[MazeBase.Type.Static.wall, MazeBase.Type.Static.ground, MazeBase.Type.Static.ground, MazeBase.Type.Static.wall],
+				[MazeBase.Type.Static.wall, MazeBase.Type.Static.wall, MazeBase.Type.Static.wall, MazeBase.Type.Static.wall]]
+		rect2 = [[0, 0, 0, 0],
+			[0, 0, 0, 0],
+			[0, MazeBase.Type.Static.ground, MazeBase.Type.Static.ground, 0],
+			[0, 0, 0, 0],
+			[0, 0, 0, 0]]
+		self.find_rect(floor, rect1, rect2)
+
 	def create(self):
-		#from show import logging
 		for floor in xrange(MazeSetting.floor):
 			while True:
 				pure = self.get_pure(floor)
@@ -214,7 +234,8 @@ class Maze2:
 					break
 				pos = random.choice(tuple(pure))
 				self.add_wall(pos)
-			self.clear_wall(floor)
+			#self.clear_wall(floor)
+			self.merge(floor)
 
 	def show(self):
 		for i in xrange(MazeSetting.rows + 2):
