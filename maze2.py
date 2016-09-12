@@ -108,6 +108,7 @@ class Maze2:
 
 		self.maze_map = {}
 		self.maze_info = {}
+		self.maze_tree = None
 		for k in xrange(MazeSetting.floor):
 			self.maze_map[k] = {MazeBase.Type.Static.ground: set()}
 			self.maze_info[k] = {}
@@ -318,10 +319,10 @@ class Maze2:
 					next_area.remove(next)
 					prev_area.remove(prev)
 					self.set_type((z1, x1, y1), MazeBase.Type.Static.stair)
-					self.set_value((z1, x1, y1), MazeBase.Value.Stair.up)
+					self.set_value((z1, x1, y1), MazeBase.Value.Stair.down)
 					info['stair'][MazeBase.Value.Stair.up].add((z1, x1, y1))
 					self.set_type((z2, x2, y2), MazeBase.Type.Static.stair)
-					self.set_value((z2, x2, y2), MazeBase.Value.Stair.down)
+					self.set_value((z2, x2, y2), MazeBase.Value.Stair.up)
 					info['stair'][MazeBase.Value.Stair.down].add((z2, x2, y2))
 				
 			prev_area = next_area
@@ -337,7 +338,18 @@ class Maze2:
 
 	def crack_wall(self):
 		for floor in xrange(MazeSetting.floor):
+			info = self.maze_info[floor]
 			crack = self.get_crack(floor)
+			area_list = reduce(lambda x, y: x + y, info['area'].values())
+			#查找下行楼梯
+			stair = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.down).pop()
+			area = [area for area in area_list if stair in area].pop()
+			while area_list:
+				node = MazeTree.Node()
+				node.Crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack
+				print node.Crack
+				node.Area = area
+				area_list.remove(area)
 
 	def create(self):
 		#创建封闭的墙
