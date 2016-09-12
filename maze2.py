@@ -53,6 +53,16 @@ class MazeBase:
 		Road = (road_normal, road_corner)
 
 
+class MazeTree:
+	class Node:
+		Crack = None
+		Area = set()
+		Forward = {}
+		Backward = {}
+		class Item:
+			Door = 0
+			Key = {MazeBase.Value.Color.yellow: 0, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
+
 class MazeSetting:
 	#层数
 	floor = 3
@@ -177,6 +187,7 @@ class Maze2:
 						self.set_type((floor, x + i, y + j), rect2[i][j])
 		return True
 
+	#查找矩形，设置rect2的话则用rect2替换找到的矩形
 	def find_rect(self, floor, rect1, rect2=None):
 		_rect1 = zip(*rect1)
 		_rect2 = zip(*rect2) if rect2 else None
@@ -205,6 +216,7 @@ class Maze2:
 			return MazeBase.NodeType.area_corner
 		return MazeBase.NodeType.none
 
+	#获取一片区域
 	def get_area(self, pos):
 		area = set()
 		beside = set([pos])
@@ -255,8 +267,6 @@ class Maze2:
 				[0, 0, 0, 0],
 				[0, 0, 0, 0]]
 		self.find_rect(floor, rect1, rect2)
-		#self.get_crack(floor)
-		#print map(len, self.area_map[floor].values())
 
 
 	def create_wall(self):
@@ -325,9 +335,17 @@ class Maze2:
 					info['stair'][MazeBase.Value.Stair.up].add(pos)
 					break
 
+	def crack_wall(self):
+		for floor in xrange(MazeSetting.floor):
+			crack = self.get_crack(floor)
+
 	def create(self):
+		#创建封闭的墙
 		self.create_wall()
+		#创建楼梯
 		self.create_stair()
+		#打通墙，使区域连成一片
+		self.crack_wall()
 
 	def show(self):
 		for k in xrange(MazeSetting.floor):
