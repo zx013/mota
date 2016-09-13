@@ -385,7 +385,9 @@ class Maze2:
 	#±éÀúÊ÷
 	def ergodic(self, node):
 		yield node
-		for crack, forward in node.Forward.items():
+		forwards = node.Forward.items()
+		random.shuffle(forwards)
+		for crack, forward in forwards:
 			for child in self.ergodic(forward):
 				yield child
 

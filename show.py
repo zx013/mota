@@ -121,11 +121,11 @@ class Node(Image):
 			self.texture = Cache.get_image('basic/ground.png', (0, 0))
 		elif node.Type == MazeBase.Type.Static.wall:
 			self.texture = Cache.get_image('basic/wall.png', (0, 1))
-		elif node.Type == MazeBase.Type.Static.stairs:
-			if node.Value == MazeBase.Value.Stairs.start:
-				self.texture = Cache.get_image('basic/stairs.png', (1, 0))
-			elif node.Value == MazeBase.Value.Stairs.end:
-				self.texture = Cache.get_image('basic/stairs.png', (0, 0))
+		elif node.Type == MazeBase.Type.Static.stair:
+			if node.Value == MazeBase.Value.Stair.up:
+				self.texture = Cache.get_image('basic/stair.png', (1, 0))
+			elif node.Value == MazeBase.Value.Stair.down:
+				self.texture = Cache.get_image('basic/stair.png', (0, 0))
 		elif node.Type == MazeBase.Type.Static.door:
 			if node.Value == MazeBase.Value.Color.yellow:
 				self.texture = Cache.get_image('basic/door.png', (0, 0))
