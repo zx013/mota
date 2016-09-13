@@ -55,12 +55,17 @@ class MazeBase:
 
 class MazeTree:
 	class Node:
-		Area = set()
-		Forward = {}
-		Backward = {}
+		def __init__(self, area, crack):
+			self.Area = area
+			self.Crack = crack
+			self.Forward = {}
+			self.Backward = {}
+			self.Item = self.Item()
+
 		class Item:
-			Door = 0
-			Key = {MazeBase.Value.Color.yellow: 0, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
+			def __init__(self):
+				self.Door = 0
+				self.Key = {MazeBase.Value.Color.yellow: 0, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
 
 class MazeSetting:
 	#层数
@@ -107,7 +112,6 @@ class Maze2:
 
 		self.maze_map = {}
 		self.maze_info = {}
-		self.maze_tree = None
 		for k in xrange(MazeSetting.floor):
 			self.maze_map[k] = {MazeBase.Type.Static.ground: set()}
 			self.maze_info[k] = {}
@@ -340,28 +344,42 @@ class Maze2:
 			info = self.maze_info[floor]
 			crack_list = self.get_crack(floor) #可打通的墙
 			area_list = reduce(lambda x, y: x + y, info['area'].values()) #所有区域
-			area_list = [{'area': area, 'crack': reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list} for area in area_list]
+
+			next_node = {MazeTree.Node(area=area, crack=reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list) for area in area_list}
+			prev_node = set()
 			crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
 
-			while area_list:
+			#查找楼梯，下行楼梯为起始点
+			stair_down = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.down).pop()
+			stair_up = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.up).pop()
+			while next_node:
 				if not crack_set:
-					#查找下行楼梯，起始点
-					stair = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.down).pop()
-					area = [area for area in area_list if stair in area['area']].pop()
+					node = [node for node in next_node if stair_down in node.Area].pop()
+					if floor == 0:
+						self.maze_tree = node
+					else:
+						stair_node.Forward[crack] = node
+						node.Backward[crack] = stair_node
 				else:
 					crack = random.choice(list(crack_set))
-					for area in area_list:
-						if crack in area['crack']:
-							break
 					#该区域和上一个区域之间的墙
 					self.set_type(crack, MazeBase.Type.Static.door)
 
-				node = MazeTree.Node()
-				node.Area = area['area']
+					for node in next_node:
+						if crack in node.Crack:
+							break
+					for prev in prev_node:
+						if crack in prev.Crack:
+							break
+					prev.Forward[crack] = node
+					node.Backward[crack] = prev
 
-				crack_set = (crack_set | area['crack']) - (crack_set & area['crack'])
-				area_list.remove(area)
+					if stair_up in node.Area:
+						stair_node = node
 
+				crack_set = (crack_set | node.Crack) - (crack_set & node.Crack)
+				next_node.remove(node)
+				prev_node.add(node)
 
 
 	def create(self):
