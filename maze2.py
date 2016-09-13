@@ -55,7 +55,6 @@ class MazeBase:
 
 class MazeTree:
 	class Node:
-		Crack = None
 		Area = set()
 		Forward = {}
 		Backward = {}
@@ -324,7 +323,7 @@ class Maze2:
 					self.set_type((z2, x2, y2), MazeBase.Type.Static.stair)
 					self.set_value((z2, x2, y2), MazeBase.Value.Stair.up)
 					info['stair'][MazeBase.Value.Stair.down].add((z2, x2, y2))
-				
+
 			prev_area = next_area
 		else:
 			#生成上行楼梯
@@ -339,17 +338,31 @@ class Maze2:
 	def crack_wall(self):
 		for floor in xrange(MazeSetting.floor):
 			info = self.maze_info[floor]
-			crack = self.get_crack(floor)
-			area_list = reduce(lambda x, y: x + y, info['area'].values())
-			#查找下行楼梯
-			stair = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.down).pop()
-			area = [area for area in area_list if stair in area].pop()
+			crack_list = self.get_crack(floor) #可打通的墙
+			area_list = reduce(lambda x, y: x + y, info['area'].values()) #所有区域
+			area_list = [{'area': area, 'crack': reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list} for area in area_list]
+			crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
+
 			while area_list:
+				if not crack_set:
+					#查找下行楼梯，起始点
+					stair = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.down).pop()
+					area = [area for area in area_list if stair in area['area']].pop()
+				else:
+					crack = random.choice(list(crack_set))
+					for area in area_list:
+						if crack in area['crack']:
+							break
+					#该区域和上一个区域之间的墙
+					self.set_type(crack, MazeBase.Type.Static.door)
+
 				node = MazeTree.Node()
-				node.Crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack
-				print node.Crack
-				node.Area = area
+				node.Area = area['area']
+
+				crack_set = (crack_set | area['crack']) - (crack_set & area['crack'])
 				area_list.remove(area)
+
+
 
 	def create(self):
 		#创建封闭的墙
@@ -366,9 +379,11 @@ class Maze2:
 					if self.get_type((k, i, j)) == MazeBase.Type.Static.ground:
 						print ' ',
 					elif self.get_type((k, i, j)) == MazeBase.Type.Static.wall:
-						print 1,
+						print 'x',
+					elif self.get_type((k, i, j)) == MazeBase.Type.Static.door:
+						print 'o',
 					else:
-						print 2,
+						print 9,
 				print
 			print
 			print
