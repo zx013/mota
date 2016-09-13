@@ -382,6 +382,14 @@ class Maze2:
 				prev_node.add(node)
 
 
+	#遍历树
+	def ergodic(self, node):
+		yield node
+		for crack, forward in node.Forward.items():
+			for child in self.ergodic(forward):
+				yield child
+
+
 	def create(self):
 		#创建封闭的墙
 		self.create_wall()
@@ -389,6 +397,8 @@ class Maze2:
 		self.create_stair()
 		#打通墙，使区域连成一片
 		self.crack_wall()
+		for node in self.ergodic(self.maze_tree):
+			print len(node.Area)
 
 	def show(self):
 		for k in xrange(MazeSetting.floor):
