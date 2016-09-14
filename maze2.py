@@ -69,7 +69,7 @@ class MazeTree:
 
 class MazeSetting:
 	#层数
-	floor = 1000
+	floor = 10000
 	#行
 	rows = 13
 	#列
@@ -393,6 +393,8 @@ class Maze2:
 			next_node = set()
 			for area in info['area']:
 				crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
+				if not crack:
+					raise Exception
 				next_node.add(MazeTree.Node(area=area, crack=crack))
 			prev_node = set()
 			crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
@@ -459,12 +461,24 @@ class Maze2:
 		f1.next()
 		f2.next()
 		f3.next()
-		for floor in xrange(MazeSetting.floor + 1):
-			f0.send(floor)
-			f1.send(floor)
-			f2.send(floor)
-			if floor > 0:
-				f3.send(floor - 1)
+		floor = 0
+		while True:
+			try:
+				f0.send(floor)
+				f1.send(floor)
+				f2.send(floor)
+				if floor > 0:
+					f3.send(floor - 1)
+			except Exception as ex:
+				floor -= 1
+				print floor, '(', ex, ')'
+				import sys
+				sys.stdout.flush()
+				continue
+			if floor < 10:
+				floor += 1
+			if floor >= MazeSetting.floor + 1:
+				break
 
 		#放置物品
 		#self.set_item()
