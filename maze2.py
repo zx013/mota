@@ -69,7 +69,7 @@ class MazeTree:
 
 class MazeSetting:
 	#层数
-	floor = 10000
+	floor = 3
 	#行
 	rows = 13
 	#列
@@ -130,24 +130,22 @@ Hero = HeroBase()
 
 class Maze2:
 	def __init__(self):
-		self.create()
-
-	def init(self):
 		self.maze = {}
 		self.maze_map = {}
 		self.maze_info = {}
-		while True:
-			floor = yield
-			self.maze[floor] = [[MazeBase.Node() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)]
-			self.maze_map[floor] = {MazeBase.Type.Static.ground: set()}
-			self.maze_info[floor] = {}
-			for i in xrange(MazeSetting.rows + 2):
-				for j in xrange(MazeSetting.cols + 2):
-					if i in (0, MazeSetting.rows + 1) or j in (0, MazeSetting.cols + 1):
-						self.maze[floor][i][j].Type = MazeBase.Type.Static.wall
-					else:
-						self.maze[floor][i][j].Type = MazeBase.Type.Static.ground
-						self.maze_map[floor][MazeBase.Type.Static.ground].add((floor, i, j))
+		self.create()
+
+	def init(self, floor):
+		self.maze[floor] = [[MazeBase.Node() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)]
+		self.maze_map[floor] = {MazeBase.Type.Static.ground: set()}
+		self.maze_info[floor] = {}
+		for i in xrange(MazeSetting.rows + 2):
+			for j in xrange(MazeSetting.cols + 2):
+				if i in (0, MazeSetting.rows + 1) or j in (0, MazeSetting.cols + 1):
+					self.maze[floor][i][j].Type = MazeBase.Type.Static.wall
+				else:
+					self.maze[floor][i][j].Type = MazeBase.Type.Static.ground
+					self.maze_map[floor][MazeBase.Type.Static.ground].add((floor, i, j))
 
 
 	def inside(self, pos):
@@ -267,16 +265,6 @@ class Maze2:
 			beside = beside | self.get_beside(pos, MazeBase.Type.Static.ground) - area
 		return area
 
-	def area_info(self, floor):
-		info = self.maze_info[floor]
-		info['area'] = []
-		ground = self.find_pos(floor, MazeBase.Type.Static.ground)
-		while ground:
-			pos = ground.pop()
-			area = self.get_area(pos)
-			info['area'].append(area)
-			ground -= area
-
 
 	def is_crack(self, pos):
 		beside = self.get_beside(pos, MazeBase.Type.Static.ground)
@@ -290,6 +278,26 @@ class Maze2:
 	def get_crack(self, floor):
 		return self.find_pos(floor, MazeBase.Type.Static.wall, self.is_crack)
 
+	def node_info(self, floor):
+		info = self.maze_info[floor]
+		info['node'] = set()
+		ground = self.find_pos(floor, MazeBase.Type.Static.ground)
+
+		crack_list = self.get_crack(floor) #可打通的墙
+		while ground:
+			pos = ground.pop()
+			area = self.get_area(pos)
+			crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
+			node = MazeTree.Node(area=area, crack=crack)
+			info['node'].add(node)
+			ground -= area
+
+	def find_node(self, pos, name):
+		z, x, y = pos
+		info = self.maze_info[z]
+		for node in info['node']:
+			if pos in getattr(node, name):
+				return node
 
 	def merge(self, floor):
 		wall = MazeBase.Type.Static.wall
@@ -307,130 +315,119 @@ class Maze2:
 		self.find_rect(floor, rect1, rect2)
 
 
-	def create_wall(self):
+	def create_wall(self, floor):
 		while True:
-			floor = yield
-			while True:
-				pure = self.get_pure(floor)
-				if not pure:
-					break
-				pos = random.choice(tuple(pure))
-				self.add_wall(pos)
-			self.merge(floor)
-			self.area_info(floor)
+			pure = self.get_pure(floor)
+			if not pure:
+				break
+			pos = random.choice(tuple(pure))
+			self.add_wall(pos)
+		self.merge(floor)
+		self.node_info(floor)
 
 
-	def create_stair(self):
-		while True:
-			floor = yield
-			info = self.maze_info[floor]
-			info['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
-			next_area = list(info['area'])
-			random.shuffle(next_area)
-			if floor == 0:
-				#生成下行楼梯
-				area = next_area.pop()
-				for pos in area:
-					if self.pos_type(pos) != MazeBase.NodeType.road_normal:
-						self.set_type(pos, MazeBase.Type.Static.stair)
-						self.set_value(pos, MazeBase.Value.Stair.down)
-						info['stair'][MazeBase.Value.Stair.down].add(pos)
-						break
+		'''
+		出现如下情形时需打通楼梯附近的墙，13*13的图中，平均几千次出现一次
+		x x x x x x
+		x   x 9
+		x   x x x x
+		x 9 x
+		x x x x x x
+		x   x     x
+		'''
+	def crack_wall(self, floor):
+		info = self.maze_info[floor]
+		crack_list = self.get_crack(floor) #可打通的墙
+
+		next_node = list(info['node'])
+		prev_node = set()
+		crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
+
+		#查找楼梯，下行楼梯为起始点
+		#stair_down = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.down).pop()
+		#stair_up = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.up).pop()
+		while next_node:
+			if not crack_set:
+				#node = self.find_node(stair_down, 'Area')
+				node = random.choice(next_node)
 			else:
-				#生成下行楼梯和上一层上行楼梯
-				class StairException(Exception): pass
-				try:
-					for next in next_area: #选取当前楼层的一个区域
-						for prev in prev_area: #选取上一层的一个区域
-							#两个区域重叠的点
-							for z1, x1, y1 in next:
-								if self.pos_type((z1, x1, y1)) == MazeBase.NodeType.road_normal:
-									continue
-								for z2, x2, y2 in prev:
-									if self.pos_type((z2, x2, y2)) == MazeBase.NodeType.road_normal:
-										continue
-									if x1 == x2 and y1 == y2:
-										raise StairException
-					#没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
-					#maze较小时可能触发
-					raise StairException
-				except StairException:
-					next_area.remove(next)
-					prev_area.remove(prev)
-					self.set_type((z1, x1, y1), MazeBase.Type.Static.stair)
-					self.set_value((z1, x1, y1), MazeBase.Value.Stair.down)
-					info['stair'][MazeBase.Value.Stair.up].add((z1, x1, y1))
-					self.set_type((z2, x2, y2), MazeBase.Type.Static.stair)
-					self.set_value((z2, x2, y2), MazeBase.Value.Stair.up)
-					info['stair'][MazeBase.Value.Stair.down].add((z2, x2, y2))
+				crack_pos = random.choice(list(crack_set))
+				#该区域和上一个区域之间的墙
+				self.set_type(crack_pos, MazeBase.Type.Static.door)
+				#self.set_value(crack_pos, MazeBase.Value.Color.yellow)
 
-			prev_area = next_area
+				#node = self.find_node(crack_pos, 'Crack')
+				for node in next_node:
+					if crack_pos in node.Crack:
+						break
+				for prev in prev_node:
+					if crack_pos in prev.Crack:
+						break
+				#prev.Forward[crack_pos] = node
+				#node.Backward[crack_pos] = prev
+
+			crack_set = (crack_set | node.Crack) - (crack_set & node.Crack)
+			next_node.remove(node)
+			prev_node.add(node)
+
+
+	def overlay_pos(self, node_list):
+		pos_list = []
+		for node in node_list: #选取当前楼层的一个区域
+			for pos in node.Area:
+				type = self.pos_type(pos)
+				if type == MazeBase.NodeType.road_normal:
+					continue
+				if self.get_beside(pos, MazeBase.Type.Static.door):
+					continue
+				pos_list.append([node, pos])
+		return pos_list
+
+	def create_stair(self, floor):
+		is_down = False
+		is_up = False
+		info = self.maze_info[floor]
+		info['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
+		down_node = list(info['node'])
+		random.shuffle(down_node)
+		if floor == 0:
+			#生成下行楼梯
+			down, down_pos = self.overlay_pos(down_node).pop()
+			is_down = True
 		else:
-			#生成上行楼梯
-			area = next_area.pop()
-			for pos in area:
-				if self.pos_type(pos) != MazeBase.NodeType.road_normal:
-					self.set_type(pos, MazeBase.Type.Static.stair)
-					self.set_value(pos, MazeBase.Value.Stair.up)
-					info['stair'][MazeBase.Value.Stair.up].add(pos)
-					break
+			up_node = list(self.maze_info[floor - 1]['node'])
+			random.shuffle(up_node)
+			#生成下行楼梯和上一层上行楼梯
+			class StairException(Exception): pass
+			try:
+				#两个区域重叠的点
+				for down, down_pos in self.overlay_pos(down_node):
+					for up, up_pos in self.overlay_pos(up_node):
+						if down_pos[1] == up_pos[1] and down_pos[2] == up_pos[2]:
+							raise StairException
+				#没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
+				#maze较小时可能触发
+				raise StairException
+			except StairException:
+				is_down = True
+				is_up = True
+		
+		if is_down:
+			down_node.remove(down)
+			self.set_type(down_pos, MazeBase.Type.Static.stair)
+			self.set_value(down_pos, MazeBase.Value.Stair.down)
+			info['stair'][MazeBase.Value.Stair.up].add(down_pos)
+		
+		if is_up:
+			up_node.remove(up)
+			self.set_type(up_pos, MazeBase.Type.Static.stair)
+			self.set_value(up_pos, MazeBase.Value.Stair.up)
+			info['stair'][MazeBase.Value.Stair.down].add(up_pos)
 
-	def crack_wall(self):
-		while True:
-			floor = yield
-			info = self.maze_info[floor]
-			crack_list = self.get_crack(floor) #可打通的墙
 
-			'''
-			出现如下情形时需打通楼梯附近的墙，13*13的图中，平均几千次出现一次
-			x x x x x x
-			x   x 9
-			x   x x x x
-			x 9 x
-			x x x x x x
-			x   x     x
-			'''
-			next_node = set()
-			for area in info['area']:
-				crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
-				if not crack:
-					raise Exception
-				next_node.add(MazeTree.Node(area=area, crack=crack))
-			prev_node = set()
-			crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
 
-			#查找楼梯，下行楼梯为起始点
-			stair_down = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.down).pop()
-			stair_up = self.find_pos(floor, MazeBase.Type.Static.stair, lambda pos: self.get_value(pos) == MazeBase.Value.Stair.up).pop()
-			while next_node:
-				if not crack_set:
-					node = [node for node in next_node if stair_down in node.Area].pop()
-					if floor == 0:
-						self.maze_tree = node
-					else:
-						stair_node.Forward[crack_pos] = node
-						node.Backward[crack_pos] = stair_node
-				else:
-					crack_pos = random.choice(list(crack_set))
-					#该区域和上一个区域之间的墙
-					self.set_type(crack_pos, MazeBase.Type.Static.door)
-					#self.set_value(crack_pos, MazeBase.Value.Color.yellow)
-
-					for node in next_node:
-						if crack_pos in node.Crack:
-							break
-					for prev in prev_node:
-						if crack_pos in prev.Crack:
-							break
-					prev.Forward[crack_pos] = node
-					node.Backward[crack_pos] = prev
-
-					if stair_up in node.Area:
-						stair_node = node
-
-				crack_set = (crack_set | node.Crack) - (crack_set & node.Crack)
-				next_node.remove(node)
-				prev_node.add(node)
+	def create_tree(self, floor):
+		info = self.maze_info[floor]
 
 
 	#遍历树
@@ -453,30 +450,19 @@ class Maze2:
 		self.set_door(hero, node_list)
 
 	def create(self):
-		f0 = self.init()
-		f1 = self.create_wall() #创建封闭的墙
-		f2 = self.create_stair() #创建楼梯
-		f3 = self.crack_wall() #打通墙，使区域连成一片
-		f0.next()
-		f1.next()
-		f2.next()
-		f3.next()
 		floor = 0
 		while True:
-			try:
-				f0.send(floor)
-				f1.send(floor)
-				f2.send(floor)
-				if floor > 0:
-					f3.send(floor - 1)
-			except Exception as ex:
-				floor -= 1
-				print floor, '(', ex, ')'
-				import sys
-				sys.stdout.flush()
-				continue
-			if floor < 10:
-				floor += 1
+			#try:
+			self.init(floor)
+			self.create_wall(floor) #创建封闭的墙
+			self.crack_wall(floor) #打通墙，使区域连成一片
+			self.create_stair(floor) #创建楼梯
+			#except Exception as ex:
+			#	print floor, '(', ex, ')'
+			#	import sys
+			#	sys.stdout.flush()
+			#	continue
+			floor += 1
 			if floor >= MazeSetting.floor + 1:
 				break
 
@@ -495,7 +481,7 @@ class Maze2:
 					elif self.get_type((k, i, j)) == MazeBase.Type.Static.door:
 						print 'o',
 					else:
-						print 9,
+						print self.get_value((k, i, j)),
 				print
 			print
 			print
@@ -503,4 +489,4 @@ class Maze2:
 
 if __name__ == '__main__':
 	maze = Maze2()
-	#maze.show()
+	maze.show()
