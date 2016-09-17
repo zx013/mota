@@ -58,6 +58,7 @@ class MazeTree:
 		def __init__(self, area, crack):
 			self.Area = area
 			self.Crack = crack
+
 			self.Forward = {}
 			self.Backward = {}
 
@@ -69,7 +70,7 @@ class MazeTree:
 
 class MazeSetting:
 	#层数
-	floor = 3
+	floor = 1000
 	#行
 	rows = 13
 	#列
@@ -131,8 +132,8 @@ Hero = HeroBase()
 class Maze2:
 	def __init__(self):
 		self.maze = {}
-		self.maze_map = {}
-		self.maze_info = {}
+		self.maze_map = {} #每一层不同点的分类集合
+		self.maze_info = {} #每一层的信息，node, stair等
 		self.create()
 
 	def init(self, floor):
@@ -279,8 +280,7 @@ class Maze2:
 		return self.find_pos(floor, MazeBase.Type.Static.wall, self.is_crack)
 
 	def node_info(self, floor):
-		info = self.maze_info[floor]
-		info['node'] = set()
+		self.maze_info[floor]['node'] = set()
 		ground = self.find_pos(floor, MazeBase.Type.Static.ground)
 
 		crack_list = self.get_crack(floor) #可打通的墙
@@ -289,14 +289,13 @@ class Maze2:
 			area = self.get_area(pos)
 			crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
 			node = MazeTree.Node(area=area, crack=crack)
-			info['node'].add(node)
+			self.maze_info[floor]['node'].add(node)
 			ground -= area
 
-	def find_node(self, pos, name):
+	def find_node(self, pos):
 		z, x, y = pos
-		info = self.maze_info[z]
-		for node in info['node']:
-			if pos in getattr(node, name):
+		for node in self.maze_info[z]['node']:
+			if pos in node.Area:
 				return node
 
 	def merge(self, floor):
@@ -336,11 +335,9 @@ class Maze2:
 		x   x     x
 		'''
 	def crack_wall(self, floor):
-		info = self.maze_info[floor]
 		crack_list = self.get_crack(floor) #可打通的墙
 
-		next_node = list(info['node'])
-		prev_node = set()
+		next_node = list(self.maze_info[floor]['node'])
 		crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
 
 		while next_node:
@@ -355,15 +352,9 @@ class Maze2:
 				for node in next_node:
 					if crack_pos in node.Crack:
 						break
-				for prev in prev_node:
-					if crack_pos in prev.Crack:
-						break
-				#prev.Forward[crack_pos] = node
-				#node.Backward[crack_pos] = prev
 
 			crack_set = (crack_set | node.Crack) - (crack_set & node.Crack)
 			next_node.remove(node)
-			prev_node.add(node)
 
 
 	def overlay_pos(self, node_list):
@@ -379,17 +370,14 @@ class Maze2:
 		return pos_list
 
 	def create_stair(self, floor):
-		is_down = False
-		is_up = False
-		info = self.maze_info[floor]
-		info['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
-		down_node = list(info['node'])
+		self.maze_info[floor]['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
+		down_node = list(self.maze_info[floor]['node'])
 		random.shuffle(down_node)
 		if floor == 0:
 			#生成下行楼梯
 			down, down_pos = self.overlay_pos(down_node).pop()
-			is_down = True
 		else:
+			self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up] = set()
 			up_node = list(self.maze_info[floor - 1]['node'])
 			random.shuffle(up_node)
 			#生成下行楼梯和上一层上行楼梯
@@ -398,76 +386,87 @@ class Maze2:
 				#两个区域重叠的点
 				for down, down_pos in self.overlay_pos(down_node):
 					for up, up_pos in self.overlay_pos(up_node):
+						if self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.down] & up.Area:
+							continue
 						if down_pos[1] == up_pos[1] and down_pos[2] == up_pos[2]:
 							raise StairException
 				#没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
 				#maze较小时可能触发
 				raise StairException
 			except StairException:
-				is_down = True
-				is_up = True
+				up_node.remove(up)
+				self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up].add(up_pos)
 
-		if is_down:
-			down_node.remove(down)
-			self.set_type(down_pos, MazeBase.Type.Static.stair)
-			self.set_value(down_pos, MazeBase.Value.Stair.down)
-			info['stair'][MazeBase.Value.Stair.up].add(down_pos)
+		down_node.remove(down)
+		self.maze_info[floor]['stair'][MazeBase.Value.Stair.down].add(down_pos)
 
-		if is_up:
-			up_node.remove(up)
-			self.set_type(up_pos, MazeBase.Type.Static.stair)
-			self.set_value(up_pos, MazeBase.Value.Stair.up)
-			info['stair'][MazeBase.Value.Stair.down].add(up_pos)
 
 
 	def create_tree(self, floor):
-		info = self.maze_info[floor]
-		info['tree'] = set()
+		self.maze_info[floor]['tree'] = set()
+		for down in self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]: #只有一个
+			node = self.find_node(down)
+			self.maze_info[floor]['tree'].add(node) #每一层起点
+
+			node_list = [node]
+			door_list = self.find_pos(floor, MazeBase.Type.Static.door)
+			while node_list:
+				node = node_list.pop()
+				for door in door_list & node.Crack:
+					beside_pos = (self.get_beside(door, MazeBase.Type.Static.ground) - node.Area).pop()
+					beside_node = self.find_node(beside_pos)
+					node.Forward[door] = beside_node
+					beside_node.Backward[door] = node
+					node_list.append(beside_node)
+				door_list -= node.Crack
 
 
 	#遍历树
-	def ergodic(self, node):
-		yield node
-		forwards = node.Forward.items()
-		random.shuffle(forwards)
-		for crack, forward in forwards:
-			for child in self.ergodic(forward):
-				yield child
+	def ergodic(self, floor):
+		node_list = [set(self.maze_info[floor]['tree']).pop()]
+		while node_list:
+			node = random.choice(node_list)
+			node_list += list(set(node.Forward.values()) - set(node_list))
+			floor = list(node.Area)[0][0]
+			if node.Area & self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]:
+				node_list.append(set(self.maze_info[floor + 1]['tree']).pop())
+			node_list.remove(node)
+			yield node
 
 
 	def set_door(self, hero, node_list):
 		for node in node_list:
 			pass
+			#print node.Area
 
 	def set_item(self):
 		hero = Hero.copy()
-		node_list = self.ergodic(self.maze_tree)
+		node_list = self.ergodic(0)
 		self.set_door(hero, node_list)
 
 	def create(self):
-		floor = 0
-		while True:
+		for floor in xrange(MazeSetting.floor):
 			#try:
 			self.init(floor)
-			self.create_wall(floor) #创建封闭的墙
-			self.crack_wall(floor) #打通墙，使区域连成一片
-			self.create_stair(floor) #创建楼梯
+			self.create_wall(floor)
+			self.crack_wall(floor)
+			self.create_stair(floor)
+			self.create_tree(floor)
 			#except Exception as ex:
 			#	print floor, '(', ex, ')'
 			#	import sys
 			#	sys.stdout.flush()
 			#	continue
-			#print self.maze_info[floor]
-			floor += 1
-			if floor >= MazeSetting.floor + 1:
-				break
+
+			self.show(floor)
 
 		#放置物品
-		#self.set_item()
+		self.set_item()
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
-			if floor: k = floor
+			if floor is not None: k = floor
+			print 'floor :', k
 			for i in xrange(MazeSetting.rows + 2):
 				for j in xrange(MazeSetting.cols + 2):
 					if self.get_type((k, i, j)) == MazeBase.Type.Static.ground:
@@ -481,8 +480,10 @@ class Maze2:
 				print
 			print
 			print
-			if floor: break
+			if floor is not None: break
+		import sys
+		sys.stdout.flush()
 
 if __name__ == '__main__':
 	maze = Maze2()
-	maze.show()
+	#maze.show()
