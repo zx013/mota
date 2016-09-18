@@ -62,13 +62,14 @@ class MazeBase:
 
 class MazeTree:
 	class Node:
-		def __init__(self, area, crack):
+		def __init__(self, area, crack, special=False):
 			self.Area = area
 			self.Crack = crack
 
 			self.Forward = {}
 			self.Backward = {}
 
+			self.Special = special
 			self.Space = len(area)
 
 			self.Item = type('Item', (), {})
@@ -177,6 +178,10 @@ class Maze2:
 
 	def set_type(self, pos, value):
 		z, x, y = pos
+		if x < 1 or x > MazeSetting.rows:
+			return
+		if y < 1 or y > MazeSetting.cols:
+			return
 		type = self.maze[z][x][y].Type
 		self.maze_map[z].setdefault(type, set())
 		self.maze_map[z].setdefault(value, set())
@@ -212,12 +217,18 @@ class Maze2:
 
 	def get_pure(self, floor):
 		#如果需要提高速度，每次放置墙时改变该值
-		return self.find_pos(floor, MazeBase.Type.Static.ground, self.is_pure)
+		ground = set(self.maze_map[floor][MazeBase.Type.Static.ground])
+		for node in self.maze_info[floor]['special']:
+			ground -= node.Area
+		return {pos for pos in ground if self.is_pure(pos)}
+		#return self.find_pos(floor, MazeBase.Type.Static.ground, self.is_pure)
 
 	def add_wall(self, pos):
 		move = Pos.sub(pos, self.get_beside(pos, MazeBase.Type.Static.wall).pop())
 		while self.get_type(pos) == MazeBase.Type.Static.ground:
 			self.set_type(pos, MazeBase.Type.Static.wall)
+			#if len(self.get_beside(pos, MazeBase.Type.Static.wall)) >= 2:
+			#	break
 			pos = Pos.add(pos, move)
 
 
@@ -334,13 +345,22 @@ class Maze2:
 				rect.add((z, i, j))
 		return rect
 
+	def get_rect_crack(self, pos, width, height):
+		z, x, y = pos
+		return self.get_rect((z, x - 1, y - 1), width + 2, height + 2) - self.get_rect(pos, width, height)
+
 	#特殊区域，一块较大的矩形
 	def create_special(self, floor):
 		self.maze_info[floor]['special'] = set()
-		print self.get_rect((floor, 1, 1), 2, 3)
-		#area = self.get_area(pos)
-		#crack = 
-		#node = MazeTree.Node(area=area, crack=crack)
+		pos = (floor, 9, 1)
+		width = 3
+		height = 3
+		area = self.get_rect(pos, width, height)
+		crack = self.get_rect_crack(pos, width, height)
+		for pos in crack:
+			self.set_type(pos, MazeBase.Type.Static.wall)
+		node = MazeTree.Node(area=area, crack=crack, special=True)
+		self.maze_info[floor]['special'].add(node)
 
 
 	def create_wall(self, floor):
