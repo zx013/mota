@@ -24,6 +24,13 @@ class MazeBase:
 		unknown = 99
 
 	class Value:
+		class Special:
+			boss = 1
+			trigger = 2
+			item = 3
+			shop = 4
+			branch = 5
+
 		class Shop:
 			gold = 1
 			experience = 2
@@ -318,6 +325,24 @@ class Maze2:
 		self.find_rect(floor, rect1, rect2)
 
 
+
+	def get_rect(self, pos, width, height):
+		z, x, y = pos
+		rect = set()
+		for i in xrange(x, x + width):
+			for j in xrange(y, y + height):
+				rect.add((z, i, j))
+		return rect
+
+	#特殊区域，一块较大的矩形
+	def create_special(self, floor):
+		self.maze_info[floor]['special'] = set()
+		print self.get_rect((floor, 1, 1), 2, 3)
+		#area = self.get_area(pos)
+		#crack = 
+		#node = MazeTree.Node(area=area, crack=crack)
+
+
 	def create_wall(self, floor):
 		while True:
 			pure = self.get_pure(floor)
@@ -450,6 +475,7 @@ class Maze2:
 	def create(self):
 		for floor in xrange(MazeSetting.floor):
 			self.init(floor)
+			self.create_special(floor)
 			self.create_wall(floor)
 			self.crack_wall(floor)
 			self.create_stair(floor)
@@ -481,4 +507,4 @@ class Maze2:
 
 if __name__ == '__main__':
 	maze = Maze2()
-	maze.show()
+	#maze.show()
