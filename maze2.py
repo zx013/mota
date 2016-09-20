@@ -65,6 +65,7 @@ class MazeTree:
 		def __init__(self, area, crack, special=False):
 			self.Area = area
 			self.Crack = crack
+			self.Cover = self.Area | self.Crack
 
 			self.Forward = {}
 			self.Backward = {}
@@ -80,13 +81,17 @@ class MazeTree:
 		def floor(self):
 			return list(self.Area)[0][0]
 
+		@property
+		def forbid(self):
+			return filter(lambda x: not (Pos.beside(x) & self.Crack), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
+
 class MazeSetting:
 	#层数
 	floor = 3
 	#行
-	rows = 11
+	rows = 13
 	#列
-	cols = 11
+	cols = 13
 
 
 class Pos:
@@ -110,12 +115,19 @@ class Pos:
 	@staticmethod
 	def beside(pos):
 		z, x, y = pos
-		return ((z, x - 1, y), (z, x + 1, y), (z, x, y - 1), (z, x, y + 1))
+		return {(z, x - 1, y), (z, x + 1, y), (z, x, y - 1), (z, x, y + 1)}
+
+	@staticmethod
+	def corner(pos):
+		z, x, y = pos
+		return {(z, x - 1, y - 1), (z, x - 1, y + 1), (z, x + 1, y - 1), (z, x + 1, y + 1)}
 
 	@staticmethod
 	def around(pos):
 		z, x, y = pos
-		return ((z, x - 1, y - 1), (z, x - 1, y), (z, x - 1, y + 1), (z, x, y - 1), (z, x, y + 1), (z, x + 1, y - 1), (z, x + 1, y), (z, x + 1, y + 1))
+		return {(z, x - 1, y - 1), (z, x - 1, y), (z, x - 1, y + 1), (z, x, y - 1), (z, x, y + 1), (z, x + 1, y - 1), (z, x + 1, y), (z, x + 1, y + 1)}
+	
+
 
 
 
@@ -196,8 +208,25 @@ class Maze2:
 	def get_beside(self, pos, type):
 		return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y].Type == type}
 
+	def get_corner(self, pos, type):
+		return {(z, x, y) for z, x, y in Pos.corner(pos) if self.maze[z][x][y].Type == type}
+
 	def get_around(self, pos, type):
 		return {(z, x, y) for z, x, y in Pos.around(pos) if self.maze[z][x][y].Type == type}
+
+
+	def get_extend(self, pos, type):
+		extend = set()
+		for beside in self.get_beside(pos, type):
+			move = Pos.sub(beside, pos)
+			next = beside
+			while self.get_type(next) == type:
+				beside = next
+				next = Pos.add(beside, move)
+			extend.add(beside)
+		return extend
+				
+
 
 	#在floor层的type类型的区域中寻找符合func要求的点
 	def find_pos(self, floor, type, func=None):
@@ -216,10 +245,13 @@ class Maze2:
 		return True
 
 	def get_pure(self, floor):
-		#如果需要提高速度，每次放置墙时改变该值
+		#如果需要提高速度，每次放置wall时改变该值
 		ground = set(self.maze_map[floor][MazeBase.Type.Static.ground])
 		for node in self.maze_info[floor]['special']:
 			ground -= node.Area
+			for pos in node.forbid:
+				if self.inside(pos):
+					ground -= self.get_extend(pos, MazeBase.Type.Static.ground)
 		return {pos for pos in ground if self.is_pure(pos)}
 		#return self.find_pos(floor, MazeBase.Type.Static.ground, self.is_pure)
 
