@@ -513,7 +513,22 @@ class Maze2:
 					node_list.append(beside_node)
 				door_list -= node.Crack
 
-	def merge_corner(self, floor):
+
+
+	#遍历树
+	def ergodic(self, floor, once=False):
+		node_list = [set(self.maze_info[floor]['tree']).pop()]
+		while node_list:
+			node = random.choice(node_list)
+			node_list += list(set(node.Forward.values()) - set(node_list))
+			if not once:
+				if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
+					node_list.append(set(self.maze_info[node.floor + 1]['tree']).pop())
+			node_list.remove(node)
+			yield node
+
+
+	def adjust_corner(self, floor):
 		corner = set()
 		for door in self.find_pos(floor, MazeBase.Type.Static.door):
 			for beside in self.get_beside(door, MazeBase.Type.Static.ground):
@@ -521,29 +536,23 @@ class Maze2:
 					corner.add(beside)
 		#print len(corner), len(self.find_pos(floor, MazeBase.Type.Static.door))
 
-	def test(self, floor):
+	def adjust_trap(self, floor):
 		wall = MazeBase.Type.Static.wall
 		ground = MazeBase.Type.Static.ground
 		rect = [[wall, wall, ground, wall, wall],
 				[wall, ground, ground, ground, wall],
 				[wall, wall, ground, wall, wall]]
 
+	def adjust_crack(self, floor):
+		for node in self.ergodic(floor, False):
+			for pos, forward in node.Forward.items():
+				crack = node.Crack & forward.Crack
+
 	def adjust(self, floor):
-		self.merge_corner(floor)
+		self.adjust_corner(floor)
+		self.adjust_trap(floor)
+		self.adjust_crack(floor)
 
-
-
-	#遍历树
-	def ergodic(self, floor):
-		node_list = [set(self.maze_info[floor]['tree']).pop()]
-		while node_list:
-			node = random.choice(node_list)
-			node_list += list(set(node.Forward.values()) - set(node_list))
-			if floor >= 0:
-				if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
-					node_list.append(set(self.maze_info[node.floor + 1]['tree']).pop())
-			node_list.remove(node)
-			yield node
 
 
 	def set_stair(self, floor):
@@ -575,11 +584,10 @@ class Maze2:
 			self.create_tree(floor)
 			self.adjust(floor)
 
+			#self.show(floor)
 			#print floor
 			#import sys
 			#sys.stdout.flush()
-			#print len(self.find_pos(floor, MazeBase.Type.Static.ground))
-			#print len(self.find_pos(floor, MazeBase.Type.Static.door))
 
 		#放置物品
 		self.set_item()
