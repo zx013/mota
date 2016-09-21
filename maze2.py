@@ -46,6 +46,9 @@ class MazeBase:
 			red = 3
 			green = 4
 
+			prison = 5
+			trap = 6
+
 	class Node:
 		Type = 0
 		Value = 0
@@ -83,18 +86,28 @@ class MazeTree:
 
 		@property
 		def forbid(self):
-			return filter(lambda x: not (Pos.beside(x) & self.Crack), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
+			return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
 class MazeSetting:
 	#层数
 	floor = 3
 	#行
-	rows = 13
+	rows = 11
 	#列
-	cols = 13
+	cols = 11
+	#保存的层数，10时占用20M左右内存，100时占用50M左右内存
+	save_floor = 100
 
 
 class Pos:
+	@staticmethod
+	def inside(pos):
+		z, x, y = pos
+		if 0 < x < MazeSetting.rows + 1:
+			if 0 < y < MazeSetting.cols + 1:
+				return True
+		return False
+
 	@staticmethod
 	def add(pos1, pos2):
 		z1, x1, y1 = pos1
@@ -126,7 +139,7 @@ class Pos:
 	def around(pos):
 		z, x, y = pos
 		return {(z, x - 1, y - 1), (z, x - 1, y), (z, x - 1, y + 1), (z, x, y - 1), (z, x, y + 1), (z, x + 1, y - 1), (z, x + 1, y), (z, x + 1, y + 1)}
-	
+
 
 
 
@@ -161,6 +174,11 @@ class Maze2:
 		self.create()
 
 	def init(self, floor):
+		for key in self.maze.keys():
+			if key < floor - MazeSetting.save_floor:
+				del self.maze[key]
+				del self.maze_map[key]
+				del self.maze_info[key]
 		self.maze[floor] = [[MazeBase.Node() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)]
 		self.maze_map[floor] = {MazeBase.Type.Static.ground: set()}
 		self.maze_info[floor] = {}
@@ -172,13 +190,6 @@ class Maze2:
 					self.maze[floor][i][j].Type = MazeBase.Type.Static.ground
 					self.maze_map[floor][MazeBase.Type.Static.ground].add((floor, i, j))
 
-
-	def inside(self, pos):
-		z, x, y = pos
-		if 0 < x < MazeSetting.rows + 1:
-			if 0 < y < MazeSetting.cols + 1:
-				return True
-		return False
 
 	def get_type(self, pos):
 		z, x, y = pos
@@ -225,7 +236,7 @@ class Maze2:
 				next = Pos.add(beside, move)
 			extend.add(beside)
 		return extend
-				
+
 
 
 	#在floor层的type类型的区域中寻找符合func要求的点
@@ -249,20 +260,21 @@ class Maze2:
 		ground = set(self.maze_map[floor][MazeBase.Type.Static.ground])
 		for node in self.maze_info[floor]['special']:
 			ground -= node.Area
-			for pos in node.forbid:
-				if self.inside(pos):
-					ground -= self.get_extend(pos, MazeBase.Type.Static.ground)
 		return {pos for pos in ground if self.is_pure(pos)}
-		#return self.find_pos(floor, MazeBase.Type.Static.ground, self.is_pure)
 
-	def add_wall(self, pos):
+	def is_wall(self, wall):
+		for pos in wall[1:-1]:
+			if self.get_beside(pos, MazeBase.Type.Static.wall):
+				return False
+		return True
+
+	def get_wall(self, pos):
+		wall = []
 		move = Pos.sub(pos, self.get_beside(pos, MazeBase.Type.Static.wall).pop())
 		while self.get_type(pos) == MazeBase.Type.Static.ground:
-			self.set_type(pos, MazeBase.Type.Static.wall)
-			#if len(self.get_beside(pos, MazeBase.Type.Static.wall)) >= 2:
-			#	break
+			wall.append(pos)
 			pos = Pos.add(pos, move)
-
+		return wall
 
 
 	def is_rect(self, pos, rect1, rect2, row, col):
@@ -277,7 +289,11 @@ class Maze2:
 			for i in xrange(row):
 				for j in xrange(col):
 					if rect2[i][j]:
-						self.set_type((floor, x + i, y + j), rect2[i][j])
+						type, value = rect2[i][j]
+						if type:
+							self.set_type((floor, x + i, y + j), type)
+						if value:
+							self.set_value((floor, x + i, y + j), value)
 		return True
 
 	#查找矩形，设置rect2的话则用rect2替换找到的矩形
@@ -352,7 +368,7 @@ class Maze2:
 			if pos in node.Area:
 				return node
 
-	def merge(self, floor):
+	def merge_rect(self, floor):
 		wall = MazeBase.Type.Static.wall
 		ground = MazeBase.Type.Static.ground
 		rect1 = [[wall, wall, wall, wall],
@@ -362,7 +378,7 @@ class Maze2:
 				[wall, wall, wall, wall]]
 		rect2 = [[0, 0, 0, 0],
 				[0, 0, 0, 0],
-				[0, ground, ground, 0],
+				[0, (ground, 0), (ground, 0), 0],
 				[0, 0, 0, 0],
 				[0, 0, 0, 0]]
 		self.find_rect(floor, rect1, rect2)
@@ -396,13 +412,19 @@ class Maze2:
 
 
 	def create_wall(self, floor):
-		while True:
+		pure = True
+		while pure:
 			pure = self.get_pure(floor)
-			if not pure:
-				break
-			pos = random.choice(tuple(pure))
-			self.add_wall(pos)
-		self.merge(floor)
+			while pure:
+				pos = random.choice(tuple(pure))
+				wall = self.get_wall(pos)
+				if self.is_wall(wall):
+					for pos in wall:
+						self.set_type(pos, MazeBase.Type.Static.wall)
+					break
+				else:
+					pure -= set(wall)
+		self.merge_rect(floor)
 		self.node_info(floor)
 
 
@@ -491,6 +513,25 @@ class Maze2:
 					node_list.append(beside_node)
 				door_list -= node.Crack
 
+	def merge_corner(self, floor):
+		corner = set()
+		for door in self.find_pos(floor, MazeBase.Type.Static.door):
+			for beside in self.get_beside(door, MazeBase.Type.Static.ground):
+				if self.pos_type(beside) == MazeBase.NodeType.road_corner:
+					corner.add(beside)
+		#print len(corner), len(self.find_pos(floor, MazeBase.Type.Static.door))
+
+	def test(self, floor):
+		wall = MazeBase.Type.Static.wall
+		ground = MazeBase.Type.Static.ground
+		rect = [[wall, wall, ground, wall, wall],
+				[wall, ground, ground, ground, wall],
+				[wall, wall, ground, wall, wall]]
+
+	def adjust(self, floor):
+		self.merge_corner(floor)
+
+
 
 	#遍历树
 	def ergodic(self, floor):
@@ -532,6 +573,13 @@ class Maze2:
 			self.crack_wall(floor)
 			self.create_stair(floor)
 			self.create_tree(floor)
+			self.adjust(floor)
+
+			#print floor
+			#import sys
+			#sys.stdout.flush()
+			#print len(self.find_pos(floor, MazeBase.Type.Static.ground))
+			#print len(self.find_pos(floor, MazeBase.Type.Static.door))
 
 		#放置物品
 		self.set_item()
