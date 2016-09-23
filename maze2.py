@@ -90,13 +90,15 @@ class MazeTree:
 
 class MazeSetting:
 	#层数
-	floor = 3
+	floor = 7
 	#行
 	rows = 11
 	#列
 	cols = 11
 	#保存的层数，10时占用20M左右内存，100时占用50M左右内存
 	save_floor = 100
+	#每几层一个单元
+	base_floor = 3
 
 
 class Pos:
@@ -139,6 +141,13 @@ class Pos:
 	def around(pos):
 		z, x, y = pos
 		return {(z, x - 1, y - 1), (z, x - 1, y), (z, x - 1, y + 1), (z, x, y - 1), (z, x, y + 1), (z, x + 1, y - 1), (z, x + 1, y), (z, x + 1, y + 1)}
+
+	@staticmethod
+	def inline(pos_list):
+		z, x, y = map(lambda x: len(set(x)), zip(*pos_list))
+		if z == 1 and (x == 1 or y == 1):
+			return True
+		return False
 
 
 
@@ -516,12 +525,12 @@ class Maze2:
 
 
 	#遍历树
-	def ergodic(self, floor, once=False):
+	def ergodic(self, floor, across=1):
 		node_list = [set(self.maze_info[floor]['tree']).pop()]
 		while node_list:
 			node = random.choice(node_list)
 			node_list += list(set(node.Forward.values()) - set(node_list))
-			if not once:
+			if floor + across > node.floor + 1:
 				if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
 					node_list.append(set(self.maze_info[node.floor + 1]['tree']).pop())
 			node_list.remove(node)
@@ -544,9 +553,20 @@ class Maze2:
 				[wall, wall, ground, wall, wall]]
 
 	def adjust_crack(self, floor):
-		for node in self.ergodic(floor, False):
+		for node in self.ergodic(floor, 1):
 			for pos, forward in node.Forward.items():
 				crack = node.Crack & forward.Crack
+				if len(crack) <= 1:
+					continue
+				if not Pos.inline(crack):
+					continue
+				if not len(crack) % 2:
+					continue
+				if node in self.maze_info[floor]['special']:
+					print True
+				if forward in self.maze_info[floor]['special']:
+					print True
+				#print crack
 
 	def adjust(self, floor):
 		self.adjust_corner(floor)
@@ -565,14 +585,16 @@ class Maze2:
 
 	def set_door(self, hero, node_list):
 		for node in node_list:
-			pass
+			pass #print node.Area
 
-	def set_item(self):
+	def set_item(self, floor):
 		hero = Hero.copy()
-		for floor in xrange(MazeSetting.floor):
-			self.set_stair(floor)
-		node_list = self.ergodic(0)
-		self.set_door(hero, node_list)
+		if floor and not floor % MazeSetting.base_floor:
+			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
+				self.set_stair(f)
+			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
+			self.set_door(hero, node_list)
+
 
 	def create(self):
 		for floor in xrange(MazeSetting.floor):
@@ -584,13 +606,12 @@ class Maze2:
 			self.create_tree(floor)
 			self.adjust(floor)
 
+			self.set_item(floor)
+			
 			#self.show(floor)
 			#print floor
 			#import sys
 			#sys.stdout.flush()
-
-		#放置物品
-		self.set_item()
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
@@ -615,4 +636,4 @@ class Maze2:
 
 if __name__ == '__main__':
 	maze = Maze2()
-	#maze.show()
+	maze.show()
