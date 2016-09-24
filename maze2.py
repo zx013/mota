@@ -250,6 +250,8 @@ class Maze2:
 
 	#在floor层的type类型的区域中寻找符合func要求的点
 	def find_pos(self, floor, type, func=None):
+		if not self.maze_map[floor].has_key(type):
+			return set()
 		if func:
 			return {pos for pos in self.maze_map[floor][type] if func(pos)}
 		else:
@@ -266,9 +268,7 @@ class Maze2:
 
 	def get_pure(self, floor):
 		#如果需要提高速度，每次放置wall时改变该值
-		ground = set(self.maze_map[floor][MazeBase.Type.Static.ground])
-		for node in self.maze_info[floor]['special']:
-			ground -= node.Area
+		ground = self.maze_map[floor][MazeBase.Type.Static.ground] - self.maze_info[floor]['special']
 		return {pos for pos in ground if self.is_pure(pos)}
 
 	def is_wall(self, wall):
@@ -367,7 +367,7 @@ class Maze2:
 			pos = ground.pop()
 			area = self.get_area(pos)
 			crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
-			node = MazeTree.Node(area=area, crack=crack)
+			node = MazeTree.Node(area=area, crack=crack, special=pos in self.maze_info[floor]['special'])
 			self.maze_info[floor]['node'].add(node)
 			ground -= area
 
@@ -392,6 +392,16 @@ class Maze2:
 				[0, 0, 0, 0]]
 		self.find_rect(floor, rect1, rect2)
 
+	def is_start_floor(self, floor):
+		if floor:
+			return False
+		return True
+
+	def is_boss_floor(self, floor):
+		if not floor % MazeSetting.base_floor:
+			return True
+		return False
+
 
 
 	def get_rect(self, pos, width, height):
@@ -409,15 +419,18 @@ class Maze2:
 	#特殊区域，一块较大的矩形
 	def create_special(self, floor):
 		self.maze_info[floor]['special'] = set()
-		pos = (floor, 9, 1)
-		width = 3
-		height = 3
-		area = self.get_rect(pos, width, height)
-		crack = self.get_rect_crack(pos, width, height)
-		for pos in crack:
-			self.set_type(pos, MazeBase.Type.Static.wall)
-		node = MazeTree.Node(area=area, crack=crack, special=True)
-		self.maze_info[floor]['special'].add(node)
+		if self.is_start_floor(floor):
+			pass
+		elif self.is_boss_floor(floor): #boss层只有一个特殊区域
+			pos_list = [(floor, 1, 1)]
+			width = 7
+			height = 7
+			for pos in pos_list:
+				area = self.get_rect(pos, width, height)
+				crack = self.get_rect_crack(pos, width, height)
+				for pos in crack:
+					self.set_type(pos, MazeBase.Type.Static.wall)
+				self.maze_info[floor]['special'] |= area
 
 
 	def create_wall(self, floor):
@@ -438,16 +451,18 @@ class Maze2:
 
 
 	def crack_wall(self, floor):
+		#special区域只开一个口
 		crack_list = self.get_crack(floor) #可打通的墙
 
 		next_node = list(self.maze_info[floor]['node'])
 		crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
+		special_set = set()
 
 		while next_node:
 			if not crack_set:
-				node = random.choice(next_node)
+				node = random.choice(filter(lambda x: not x.Special, next_node))
 			else:
-				crack_pos = random.choice(list(crack_set))
+				crack_pos = random.choice(list(crack_set - special_set))
 				#该区域和上一个区域之间的墙
 				self.set_type(crack_pos, MazeBase.Type.Static.door)
 				#self.set_value(crack_pos, MazeBase.Value.Color.yellow)
@@ -455,6 +470,8 @@ class Maze2:
 				for node in next_node:
 					if crack_pos in node.Crack:
 						break
+			if node.Special:
+				special_set |= node.Crack
 
 			crack_set = (crack_set | node.Crack) - (crack_set & node.Crack)
 			next_node.remove(node)
@@ -463,6 +480,8 @@ class Maze2:
 	def overlay_pos(self, node_list):
 		pos_list = []
 		for node in node_list: #选取当前楼层的一个区域
+			if node.Special:
+				continue
 			for pos in node.Area:
 				type = self.pos_type(pos)
 				if type == MazeBase.NodeType.road_normal:
@@ -474,33 +493,38 @@ class Maze2:
 
 	def create_stair(self, floor):
 		self.maze_info[floor]['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
+		if self.is_start_floor(floor):
+			return
 		down_node = list(self.maze_info[floor]['node'])
 		random.shuffle(down_node)
-		if floor == 0:
-			#生成下行楼梯
-			down, down_pos = self.overlay_pos(down_node).pop()
-		else:
-			self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up] = set()
-			up_node = list(self.maze_info[floor - 1]['node'])
-			random.shuffle(up_node)
-			#生成下行楼梯和上一层上行楼梯
-			class StairException(Exception): pass
-			try: #两个区域重叠的点
-				for down, down_pos in self.overlay_pos(down_node):
-					for up, up_pos in self.overlay_pos(up_node):
-						if self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.down] & up.Area:
-							continue
-						if down_pos[1] == up_pos[1] and down_pos[2] == up_pos[2]:
-							raise StairException
-				#没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
-				#maze较小时可能触发
-				raise StairException
-			except StairException:
+		up_node = list(self.maze_info[floor - 1]['node'])
+		random.shuffle(up_node)
+		#生成下行楼梯和上一层上行楼梯
+		#两个区域重叠的点，尽可能避开特殊区域，如果没有合适的点，则楼梯不在同一位置
+		class StairException(Exception): pass
+		try:
+			down_overlay = self.overlay_pos(down_node)
+			up_overlay = self.overlay_pos(up_node)
+			if not down_overlay:
+				down_overlay = map(lambda x: (x, random.choice(list(x.Area))), down_node)
+			if not up_overlay:
+				up_overlay = map(lambda x: (x, random.choice(list(x.Area))), up_node)
+			for down, down_pos in down_overlay:
+				for up, up_pos in up_overlay:
+					if self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.down] & up.Area:
+						continue
+					if down_pos[1] == up_pos[1] and down_pos[2] == up_pos[2]:
+						raise StairException
+			#没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
+			#maze较小时可能触发
+			raise StairException
+		except StairException:
+			if not self.is_boss_floor(floor - 1):
 				up_node.remove(up)
 				self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up].add(up_pos)
 
-		down_node.remove(down)
-		self.maze_info[floor]['stair'][MazeBase.Value.Stair.down].add(down_pos)
+			down_node.remove(down)
+			self.maze_info[floor]['stair'][MazeBase.Value.Stair.down].add(down_pos)
 
 
 
@@ -562,13 +586,11 @@ class Maze2:
 					continue
 				if not len(crack) % 2:
 					continue
-				if node in self.maze_info[floor]['special']:
-					print True
-				if forward in self.maze_info[floor]['special']:
-					print True
 				#print crack
 
 	def adjust(self, floor):
+		if self.is_start_floor(floor):
+			return
 		self.adjust_corner(floor)
 		self.adjust_trap(floor)
 		self.adjust_crack(floor)
@@ -587,14 +609,26 @@ class Maze2:
 		for node in node_list:
 			pass #print node.Area
 
+	def set_start_area(self, floor):
+		pass
+
+	def set_boss_area(self, floor):
+		pass
+
 	def set_item(self, floor):
 		hero = Hero.copy()
-		if floor and not floor % MazeSetting.base_floor:
+		if self.is_start_floor(floor):
+			pass
+		elif self.is_boss_floor(floor):
 			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 				self.set_stair(f)
 			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
 			self.set_door(hero, node_list)
 
+			self.set_start_area(floor)
+			self.set_boss_area(floor)
+			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
+				self.show(f)
 
 	def create(self):
 		for floor in xrange(MazeSetting.floor):
@@ -607,11 +641,13 @@ class Maze2:
 			self.adjust(floor)
 
 			self.set_item(floor)
-			
-			#self.show(floor)
+
 			#print floor
 			#import sys
 			#sys.stdout.flush()
+		self.show(0)
+		for floor in xrange(MazeSetting.floor):
+			print floor, self.maze_info[floor]['stair']
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
@@ -636,4 +672,3 @@ class Maze2:
 
 if __name__ == '__main__':
 	maze = Maze2()
-	maze.show()
