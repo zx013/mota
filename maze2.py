@@ -493,38 +493,39 @@ class Maze2:
 
 	def create_stair(self, floor):
 		self.maze_info[floor]['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
-		if self.is_start_floor(floor):
-			return
 		down_node = list(self.maze_info[floor]['node'])
 		random.shuffle(down_node)
-		up_node = list(self.maze_info[floor - 1]['node'])
-		random.shuffle(up_node)
-		#生成下行楼梯和上一层上行楼梯
-		#两个区域重叠的点，尽可能避开特殊区域，如果没有合适的点，则楼梯不在同一位置
-		class StairException(Exception): pass
-		try:
+		if self.is_start_floor(floor - 1) or self.is_boss_floor(floor - 1):
 			down_overlay = self.overlay_pos(down_node)
-			up_overlay = self.overlay_pos(up_node)
-			if not down_overlay:
-				down_overlay = map(lambda x: (x, random.choice(list(x.Area))), down_node)
-			if not up_overlay:
-				up_overlay = map(lambda x: (x, random.choice(list(x.Area))), up_node)
-			for down, down_pos in down_overlay:
-				for up, up_pos in up_overlay:
-					if self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.down] & up.Area:
-						continue
-					if down_pos[1] == up_pos[1] and down_pos[2] == up_pos[2]:
-						raise StairException
-			#没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
-			#maze较小时可能触发
-			raise StairException
-		except StairException:
-			if not self.is_boss_floor(floor - 1):
+			down, down_pos = down_overlay.pop()
+		else:
+			up_node = list(self.maze_info[floor - 1]['node'])
+			random.shuffle(up_node)
+			#生成下行楼梯和上一层上行楼梯
+			#两个区域重叠的点，尽可能避开特殊区域，如果没有合适的点，则楼梯不在同一位置
+			class StairException(Exception): pass
+			try:
+				down_overlay = self.overlay_pos(down_node)
+				up_overlay = self.overlay_pos(up_node)
+				if not down_overlay:
+					down_overlay = map(lambda x: (x, random.choice(list(x.Area))), down_node)
+				if not up_overlay:
+					up_overlay = map(lambda x: (x, random.choice(list(x.Area))), up_node)
+				for down, down_pos in down_overlay:
+					for up, up_pos in up_overlay:
+						if self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.down] & up.Area:
+							continue
+						if down_pos[1] == up_pos[1] and down_pos[2] == up_pos[2]:
+							raise StairException
+				#没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
+				#maze较小时可能触发
+				raise StairException
+			except StairException:
 				up_node.remove(up)
 				self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up].add(up_pos)
 
-			down_node.remove(down)
-			self.maze_info[floor]['stair'][MazeBase.Value.Stair.down].add(down_pos)
+		down_node.remove(down)
+		self.maze_info[floor]['stair'][MazeBase.Value.Stair.down].add(down_pos)
 
 
 
@@ -589,8 +590,6 @@ class Maze2:
 				#print crack
 
 	def adjust(self, floor):
-		if self.is_start_floor(floor):
-			return
 		self.adjust_corner(floor)
 		self.adjust_trap(floor)
 		self.adjust_crack(floor)
@@ -630,9 +629,25 @@ class Maze2:
 			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 				self.show(f)
 
+
+	def fast_save(self, floor):
+		pass
+
+	def fast_load(self, floor):
+		pass
+
+	def save(self, floor):
+		pass
+
+	def load(self, floor):
+		pass
+
+
 	def create(self):
 		for floor in xrange(MazeSetting.floor):
 			self.init(floor)
+			if self.is_start_floor(floor):
+				continue
 			self.create_special(floor)
 			self.create_wall(floor)
 			self.crack_wall(floor)
@@ -647,7 +662,7 @@ class Maze2:
 			#sys.stdout.flush()
 		self.show(0)
 		for floor in xrange(MazeSetting.floor):
-			print floor, self.maze_info[floor]['stair']
+			print floor, self.maze_info[floor].keys()
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
