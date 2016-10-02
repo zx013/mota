@@ -1,4 +1,4 @@
-
+import types
 import importlib
 
 
@@ -33,21 +33,27 @@ def dict_to_inst(dictionary):
 
 	instance = class_type()
 	for key, val in dictionary.items():
+		if key[:2] == '__' and key[-2:] == '__':
+			continue
 		setattr(instance, key, val)
-	return instance
 
 	return instance
 
 
-def adjust_list(iteration):
+def adjust_iter(iteration):
+	dictionary = {}
+	dictionary['__type__'] = type(iteration)
 	if isinstance(iteration, list):
-		pass
+		dictionary['__value__'] = list(iteration)
 	elif isinstance(iteration, tuple):
-		pass
+		dictionary['__value__'] = tuple(iteration)
 	elif isinstance(iteration, dict):
-		pass
-	elif isinstance(iteration, instance):
-		pass
+		dictionary.update(iteration)
+	elif type(iteration) == types.InstanceType:
+		dictionary.update(inst_to_dict(iteration))
+	else:
+		dictionary['__value__'] = iteration
+	return dictionary
 
 class Save:
 	@staticmethod
@@ -75,3 +81,8 @@ if __name__ == '__main__':
 	d = inst_to_dict(a)
 	i = dict_to_inst(d)
 	print d, dir(i), i.a, i.b
+	print adjust_iter(range(10))
+	print adjust_iter(tuple(range(10)))
+	print adjust_iter(a)
+	print adjust_iter(d)
+	print adjust_iter(1)
