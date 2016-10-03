@@ -58,10 +58,6 @@ class MazeBase:
 			prison = 5
 			trap = 6
 
-	class Node:
-		Type = 0
-		Value = 0
-
 	class NodeType:
 		none = 0
 		area_normal = 1
@@ -71,33 +67,37 @@ class MazeBase:
 		road_corner = 4
 		Road = (road_normal, road_corner)
 
+#为了使用pickle模块，MazeNode, TreeNode两个类需在最顶级定义
+class MazeNode:
+	Type = 0
+	Value = 0
 
-class MazeTree:
-	class Node:
-		def __init__(self, area, crack, special=False):
-			self.Area = area
-			self.Crack = crack
-			self.Cover = self.Area | self.Crack
 
-			self.Forward = {}
-			self.Backward = {}
+class TreeNode:
+	def __init__(self, area, crack, special=False):
+		self.Area = area
+		self.Crack = crack
+		self.Cover = self.Area | self.Crack
 
-			self.Special = special
-			self.Space = len(area)
+		self.Forward = {}
+		self.Backward = {}
 
-			self.Item.Door = 0
-			self.Item.Key = {MazeBase.Value.Color.yellow: 0, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
+		self.Special = special
+		self.Space = len(area)
 
-		class Item:
-			pass
+		self.Item.Door = 0
+		self.Item.Key = {MazeBase.Value.Color.yellow: 0, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
 
-		@property
-		def floor(self):
-			return list(self.Area)[0][0]
+	class Item:
+		pass
 
-		@property
-		def forbid(self):
-			return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
+	@property
+	def floor(self):
+		return list(self.Area)[0][0]
+
+	@property
+	def forbid(self):
+		return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
 class MazeSetting:
 	#层数
@@ -207,7 +207,7 @@ class Maze2:
 				del self.maze[key]
 				del self.maze_map[key]
 				del self.maze_info[key]
-		self.maze[floor] = [[MazeBase.Node() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)]
+		self.maze[floor] = [[MazeNode() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)]
 		self.maze_map[floor] = {MazeBase.Type.Static.ground: set()}
 		self.maze_info[floor] = {}
 		for i in xrange(MazeSetting.rows + 2):
@@ -386,7 +386,7 @@ class Maze2:
 			pos = ground.pop()
 			area = self.get_area(pos)
 			crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
-			node = MazeTree.Node(area=area, crack=crack, special=pos in self.maze_info[floor]['special'])
+			node = TreeNode(area=area, crack=crack, special=pos in self.maze_info[floor]['special'])
 			self.maze_info[floor]['node'].add(node)
 			ground -= area
 
@@ -645,8 +645,8 @@ class Maze2:
 
 			self.set_start_area(floor)
 			self.set_boss_area(floor)
-			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
-				self.show(f)
+			#for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
+			#	self.show(f)
 
 
 	def fast_save(self, floor):
@@ -659,14 +659,21 @@ class Maze2:
 		maze = pickle.dumps(self.maze)
 		maze_map = pickle.dumps(self.maze_map)
 		maze_info = pickle.dumps(self.maze_info)
-		save = pickle.dumps({'maze': maze, 'maze_map': maze_map, 'maze_info': maze_info})
-		print MazeSetting.save_format
+		maze_record = {'maze': maze, 'maze_map': maze_map, 'maze_info': maze_info}
+		record = pickle.dumps(maze_record)
+
 		with open(MazeSetting.save_format.format(num), 'w+') as fp:
-			fp.write(save)
+			fp.write(record)
 
 
-	def load(self, floor):
-		pass
+	def load(self, num):
+		with open(MazeSetting.save_format.format(num), 'r+') as fp:
+			record = fp.read()
+
+		maze_record = pickle.loads(record)
+		self.maze = pickle.loads(maze_record['maze'])
+		self.maze_map = pickle.loads(maze_record['maze_map'])
+		self.maze_info = pickle.loads(maze_record['maze_info'])
 
 
 	def create(self):
@@ -686,10 +693,12 @@ class Maze2:
 			#print floor
 			#import sys
 			#sys.stdout.flush()
-		self.show(0)
-		for floor in xrange(MazeSetting.floor):
-			print floor, self.maze_info[floor].keys()
-		self.save(0)
+		#self.show(0)
+		#for floor in xrange(MazeSetting.floor):
+		#	print floor, self.maze_info[floor]
+		#self.save(0)
+		#self.load(0)
+		#self.show()
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
