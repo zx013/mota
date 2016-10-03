@@ -3,6 +3,13 @@ import random
 import pickle
 
 
+
+class staticproperty(property):
+	def __get__(self, cls, owner):
+		return staticmethod(self.fget).__get__(owner)()
+
+
+
 class MazeBase:
 	class Type:
 		class Static:
@@ -103,6 +110,10 @@ class MazeSetting:
 	save_dir = 'save'
 	#保存的文件
 	save_file = 'save'
+	
+	@staticproperty
+	def save_format():
+		return '{save_dir}/{{0}}.{save_file}'.format(save_dir=MazeSetting.save_dir, save_file=MazeSetting.save_file)
 	#保存的层数，10时占用20M左右内存，100时占用50M左右内存
 	save_floor = 100
 	#每几层一个单元
@@ -648,8 +659,9 @@ class Maze2:
 		maze = pickle.dumps(self.maze)
 		maze_map = pickle.dumps(self.maze_map)
 		maze_info = pickle.dumps(self.maze_info)
-		save = pickle.dumps({'maze': maze, 'maze_map': maze_map, 'maze_map': maze_map})
-		with open('{0}/{1}.{2}'.format(MazeSetting.save_dir, num, MazeSetting.save_file), 'w+') as fp:
+		save = pickle.dumps({'maze': maze, 'maze_map': maze_map, 'maze_info': maze_info})
+		print MazeSetting.save_format
+		with open(MazeSetting.save_format.format(num), 'w+') as fp:
 			fp.write(save)
 
 
