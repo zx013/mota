@@ -1,6 +1,7 @@
 #-*- coding:utf-8 -*-
 import random
 import pickle
+import copy
 
 
 
@@ -110,7 +111,7 @@ class MazeSetting:
 	save_dir = 'save'
 	#保存的文件
 	save_file = 'save'
-	
+
 	@staticproperty
 	def save_format():
 		return '{save_dir}/{{0}}.{save_file}'.format(save_dir=MazeSetting.save_dir, save_file=MazeSetting.save_file)
@@ -199,6 +200,7 @@ class Maze2:
 		self.maze = {}
 		self.maze_map = {} #每一层不同点的分类集合
 		self.maze_info = {} #每一层的信息，node, stair等
+		self.record = {}
 		self.create()
 
 	def init(self, floor):
@@ -649,17 +651,23 @@ class Maze2:
 			#	self.show(f)
 
 
+	def set_record(self, *args):
+		for arg in args:
+			self.record[arg] = {}
+		self.record['info'] = args
+
 	def fast_save(self, floor):
-		pass
+		for arg in self.record['info']:
+			self.record[arg][floor] = getattr(self, arg)[floor]
 
 	def fast_load(self, floor):
-		pass
+		for arg in self.record['info']:
+			getattr(self, arg)[floor] = self.record[arg][floor]
 
 	def save(self, num):
-		maze = pickle.dumps(self.maze)
-		maze_map = pickle.dumps(self.maze_map)
-		maze_info = pickle.dumps(self.maze_info)
-		maze_record = {'maze': maze, 'maze_map': maze_map, 'maze_info': maze_info}
+		maze_record = {}
+		for arg in self.record['info']:
+			maze_record[arg] = pickle.dumps(self.record[arg])
 		record = pickle.dumps(maze_record)
 
 		with open(MazeSetting.save_format.format(num), 'w+') as fp:
@@ -671,12 +679,12 @@ class Maze2:
 			record = fp.read()
 
 		maze_record = pickle.loads(record)
-		self.maze = pickle.loads(maze_record['maze'])
-		self.maze_map = pickle.loads(maze_record['maze_map'])
-		self.maze_info = pickle.loads(maze_record['maze_info'])
+		for arg in self.record['info']:
+			self.record[arg] = pickle.loads(maze_record[arg])
 
 
 	def create(self):
+		self.set_record('maze', 'maze_map', 'maze_info')
 		for floor in xrange(MazeSetting.floor):
 			self.init(floor)
 			if self.is_start_floor(floor):
@@ -691,9 +699,14 @@ class Maze2:
 			self.set_item(floor)
 
 		#self.show(0)
+		#for floor in xrange(MazeSetting.floor):
+		#	self.fast_save(floor)
 		#self.save(0)
-		#self.load(0)
-		#self.show()
+
+		self.load(0)
+		for floor in xrange(MazeSetting.floor):
+			self.fast_load(floor)
+		self.show()
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
