@@ -690,12 +690,7 @@ class Maze2:
 
 			self.set_item(floor)
 
-			#print floor
-			#import sys
-			#sys.stdout.flush()
 		#self.show(0)
-		#for floor in xrange(MazeSetting.floor):
-		#	print floor, self.maze_info[floor]
 		#self.save(0)
 		#self.load(0)
 		#self.show()
