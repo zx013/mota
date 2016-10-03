@@ -1,5 +1,7 @@
 #-*- coding:utf-8 -*-
 import random
+import pickle
+
 
 class MazeBase:
 	class Type:
@@ -76,9 +78,11 @@ class MazeTree:
 			self.Special = special
 			self.Space = len(area)
 
-			self.Item = type('Item', (), {})
 			self.Item.Door = 0
 			self.Item.Key = {MazeBase.Value.Color.yellow: 0, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
+
+		class Item:
+			pass
 
 		@property
 		def floor(self):
@@ -95,6 +99,10 @@ class MazeSetting:
 	rows = 11
 	#列
 	cols = 11
+	#保存的目录
+	save_dir = 'save'
+	#保存的文件
+	save_file = 'save'
 	#保存的层数，10时占用20M左右内存，100时占用50M左右内存
 	save_floor = 100
 	#每几层一个单元
@@ -636,8 +644,14 @@ class Maze2:
 	def fast_load(self, floor):
 		pass
 
-	def save(self, floor):
-		pass
+	def save(self, num):
+		maze = pickle.dumps(self.maze)
+		maze_map = pickle.dumps(self.maze_map)
+		maze_info = pickle.dumps(self.maze_info)
+		save = pickle.dumps({'maze': maze, 'maze_map': maze_map, 'maze_map': maze_map})
+		with open('{0}/{1}.{2}'.format(MazeSetting.save_dir, num, MazeSetting.save_file), 'w+') as fp:
+			fp.write(save)
+
 
 	def load(self, floor):
 		pass
@@ -663,6 +677,7 @@ class Maze2:
 		self.show(0)
 		for floor in xrange(MazeSetting.floor):
 			print floor, self.maze_info[floor].keys()
+		self.save(0)
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
