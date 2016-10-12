@@ -662,7 +662,8 @@ class Maze2:
 
 	def fast_load(self, floor):
 		for arg in self.record['info']:
-			getattr(self, arg)[floor] = self.record[arg][floor]
+			if self.record[arg].has_key(floor):
+				getattr(self, arg)[floor] = self.record[arg][floor]
 
 	def save(self, num):
 		maze_record = {}
@@ -685,10 +686,12 @@ class Maze2:
 
 	def create(self):
 		self.set_record('maze', 'maze_map', 'maze_info')
+		self.load(0)
 		for floor in xrange(MazeSetting.floor):
-			self.init(floor)
 			if self.is_start_floor(floor):
+				self.fast_load(floor)
 				continue
+			self.init(floor)
 			self.create_special(floor)
 			self.create_wall(floor)
 			self.crack_wall(floor)
@@ -702,10 +705,6 @@ class Maze2:
 		#for floor in xrange(MazeSetting.floor):
 		#	self.fast_save(floor)
 		#self.save(0)
-
-		self.load(0)
-		for floor in xrange(MazeSetting.floor):
-			self.fast_load(floor)
 		self.show()
 
 	def show(self, floor=None):
