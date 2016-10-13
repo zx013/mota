@@ -51,6 +51,7 @@ class MazeBase:
 
 		#key和door的颜色
 		class Color:
+			none = 0
 			yellow = 1
 			blue = 2
 			red = 3
@@ -87,7 +88,12 @@ class TreeNode:
 		self.Space = len(area)
 
 		self.Item.Door = 0
-		self.Item.Key = {MazeBase.Value.Color.yellow: 0, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
+		self.Item.Key = {
+			MazeBase.Value.Color.yellow: 0,
+			MazeBase.Value.Color.blue: 0,
+			MazeBase.Value.Color.red: 0,
+			MazeBase.Value.Color.green: 0
+		}
 
 	class Item:
 		pass
@@ -186,7 +192,12 @@ class HeroBase:
 			self.attack = 10
 			self.defence = 10
 
-			self.key = {MazeBase.Value.Color.yellow: 1, MazeBase.Value.Color.blue: 0, MazeBase.Value.Color.red: 0, MazeBase.Value.Color.green: 0}
+			self.key = {
+				MazeBase.Value.Color.yellow: 1,
+				MazeBase.Value.Color.blue: 0,
+				MazeBase.Value.Color.red: 0,
+				MazeBase.Value.Color.green: 0
+			}
 
 	def copy(self):
 		return HeroBase(self)
@@ -616,6 +627,17 @@ class Maze2:
 		self.adjust_crack(floor)
 
 
+	def choice_dict(self, d):
+		total = sum(d.values())
+		if total < 1:
+			return
+		rand = random.randint(1, total)
+		for key, val in d.items():
+			rand -= val
+			if rand <= 0:
+				return key
+
+
 
 	def set_stair(self, floor):
 		for up in self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]:
@@ -626,8 +648,21 @@ class Maze2:
 			self.set_value(down, MazeBase.Value.Stair.down)
 
 	def set_door(self, hero, node_list):
+		key_choice = {
+			MazeBase.Value.Color.none: 20, #monster
+			MazeBase.Value.Color.yellow: 65,
+			MazeBase.Value.Color.blue: 10,
+			MazeBase.Value.Color.red: 4, 
+			MazeBase.Value.Color.green: 1
+		}
+		key_list = dict(hero.key)
 		for node in node_list:
-			pass #print node.Area
+			if not node.Backward: #起始点
+				continue
+			if node.Special: #特殊区域
+				continue
+			print list(node.Area)[0], node.Space, node.Special
+				
 
 	def set_start_area(self, floor):
 		pass
@@ -705,7 +740,7 @@ class Maze2:
 		#for floor in xrange(MazeSetting.floor):
 		#	self.fast_save(floor)
 		#self.save(0)
-		self.show()
+		#self.show()
 
 	def show(self, floor=None):
 		for k in xrange(MazeSetting.floor):
