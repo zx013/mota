@@ -10,6 +10,37 @@ class staticproperty(property):
 		return staticmethod(self.fget).__get__(owner)()
 
 
+import itertools
+
+class Tools:
+	#从目录中选出一个值
+	@staticmethod
+	def dict_choice(dictionary):
+		total = sum(dictionary.values())
+		if total < 1:
+			return
+		rand = random.randint(1, total)
+		for key, val in dictionary.items():
+			rand -= val
+			if rand <= 0:
+				return key
+
+	#迭代当前值和上一个值
+	@staticmethod
+	def iter_record(iterator):
+		iterator1 = iter(iterator)
+		iterator1.next()
+		iterator2 = iter(iterator)
+		return zip(iterator1, iterator2)
+
+	#迭代当前值和之前所有值
+	@staticmethod
+	def iter_record_all(iterator):
+		iterator1 = iter(iterator)
+		iterator2 = iter(iterator)
+		return
+
+
 
 class MazeBase:
 	class Type:
@@ -87,16 +118,13 @@ class TreeNode:
 		self.Special = special
 		self.Space = len(area)
 
-		self.Item.Door = 0
-		self.Item.Key = {
+		self.ItemDoor = 0
+		self.ItemKey = {
 			MazeBase.Value.Color.yellow: 0,
 			MazeBase.Value.Color.blue: 0,
 			MazeBase.Value.Color.red: 0,
 			MazeBase.Value.Color.green: 0
 		}
-
-	class Item:
-		pass
 
 	@property
 	def floor(self):
@@ -193,7 +221,7 @@ class HeroBase:
 			self.defence = 10
 
 			self.key = {
-				MazeBase.Value.Color.yellow: 1,
+				MazeBase.Value.Color.yellow: 0,
 				MazeBase.Value.Color.blue: 0,
 				MazeBase.Value.Color.red: 0,
 				MazeBase.Value.Color.green: 0
@@ -583,6 +611,7 @@ class Maze2:
 
 	#遍历树
 	def ergodic(self, floor, across=1):
+		ergodic_list = []
 		node_list = [set(self.maze_info[floor]['tree']).pop()]
 		while node_list:
 			node = random.choice(node_list)
@@ -591,7 +620,8 @@ class Maze2:
 				if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
 					node_list.append(set(self.maze_info[node.floor + 1]['tree']).pop())
 			node_list.remove(node)
-			yield node
+			ergodic_list.append(node)
+		return ergodic_list
 
 
 	def adjust_corner(self, floor):
@@ -627,18 +657,6 @@ class Maze2:
 		self.adjust_crack(floor)
 
 
-	def choice_dict(self, d):
-		total = sum(d.values())
-		if total < 1:
-			return
-		rand = random.randint(1, total)
-		for key, val in d.items():
-			rand -= val
-			if rand <= 0:
-				return key
-
-
-
 	def set_stair(self, floor):
 		for up in self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]:
 			self.set_type(up, MazeBase.Type.Static.stair)
@@ -648,21 +666,31 @@ class Maze2:
 			self.set_value(down, MazeBase.Value.Stair.down)
 
 	def set_door(self, hero, node_list):
-		key_choice = {
+		door_choice_normal = {
 			MazeBase.Value.Color.none: 20, #monster
 			MazeBase.Value.Color.yellow: 65,
 			MazeBase.Value.Color.blue: 10,
-			MazeBase.Value.Color.red: 4, 
+			MazeBase.Value.Color.red: 4,
 			MazeBase.Value.Color.green: 1
 		}
-		key_list = dict(hero.key)
-		for node in node_list:
-			if not node.Backward: #起始点
+		door_choice_special = {
+			MazeBase.Value.Color.red: 80,
+			MazeBase.Value.Color.green: 20
+		}
+		for forward_node, backward_node in Tools.iter_record(node_list):
+			if not backward_node.Backward: #起始点
 				continue
-			if node.Special: #特殊区域
-				continue
-			print list(node.Area)[0], node.Space, node.Special
-				
+			if backward_node.Special: #特殊区域
+				door_choice = door_choice_special
+			else:
+				door_choice = door_choice_normal
+
+			key = Tools.dict_choice(door_choice)
+			if key:
+				forward_node.ItemKey[key] += 1
+				backward_node.ItemDoor = key
+				forward_node.Space -= 1
+
 
 	def set_start_area(self, floor):
 		pass
@@ -679,6 +707,10 @@ class Maze2:
 				self.set_stair(f)
 			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
 			self.set_door(hero, node_list)
+
+			print node_list
+			for node in node_list:
+				print node.ItemKey.values(), node.ItemDoor
 
 			self.set_start_area(floor)
 			self.set_boss_area(floor)
