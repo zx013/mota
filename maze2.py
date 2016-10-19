@@ -132,6 +132,10 @@ class TreeNode:
 		return list(self.Area)[0][0]
 
 	@property
+	def boss_floor(self):
+		return ((self.floor - 1) / MazeSetting.base_floor + 1) * MazeSetting.base_floor
+
+	@property
 	def forbid(self):
 		return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
@@ -206,6 +210,12 @@ class Pos:
 
 
 
+
+class Monster:
+	def __init__(self, **kwargs):
+		self.health = kwargs['health']
+		self.attack = kwargs['attack']
+		self.defence = kwargs['defence']
 
 
 class HeroBase:
@@ -700,6 +710,15 @@ class Maze2:
 
 		#如果必要，可将部分key移动到之前的node
 
+	#生成monster列表
+	def init_monster(self, boss_floor, hero):
+		self.maze_info[boss_floor]['monster'] = {}
+		#Monster()
+
+	#依次从monster中选出monster放在node中
+	def set_monster(self, hero, node_list):
+		for node in node_list:
+			node.boss_floor
 
 	def set_start_area(self, floor):
 		pass
@@ -712,10 +731,12 @@ class Maze2:
 		if self.is_start_floor(floor):
 			self.set_start_area(floor)
 		elif self.is_boss_floor(floor):
+			self.init_monster(floor, hero)
 			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 				self.set_stair(f)
 			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
 			self.set_door(hero, node_list)
+			self.set_monster(hero, node_list)
 
 			#print node_list
 			for node in node_list:
