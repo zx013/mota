@@ -27,18 +27,19 @@ class Tools:
 
 	#迭代当前值和上一个值
 	@staticmethod
-	def iter_record(iterator):
-		iterator1 = iter(iterator)
-		iterator1.next()
-		iterator2 = iter(iterator)
-		return zip(iterator1, iterator2)
+	def iter_previous(iterator):
+		for number, element in enumerate(iterator):
+			if number > 0:
+				yield previous, element
+			previous = element
 
 	#迭代当前值和之前所有值
 	@staticmethod
-	def iter_record_all(iterator):
-		iterator1 = iter(iterator)
-		iterator2 = iter(iterator)
-		return
+	def iter_record(iterator):
+		record = []
+		for element in iterator:
+			yield record, element
+			record.append(element)
 
 
 
@@ -613,6 +614,7 @@ class Maze2:
 	def ergodic(self, floor, across=1):
 		ergodic_list = []
 		node_list = [set(self.maze_info[floor]['tree']).pop()]
+		boss_node = None #boss区域放在最后
 		while node_list:
 			node = random.choice(node_list)
 			node_list += list(set(node.Forward.values()) - set(node_list))
@@ -620,7 +622,12 @@ class Maze2:
 				if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
 					node_list.append(set(self.maze_info[node.floor + 1]['tree']).pop())
 			node_list.remove(node)
-			ergodic_list.append(node)
+			if self.is_boss_floor(node.floor) and node.Special:
+				boss_node = node
+			else:
+				ergodic_list.append(node)
+		if boss_node:
+			ergodic_list.append(boss_node)
 		return ergodic_list
 
 
@@ -677,7 +684,7 @@ class Maze2:
 			MazeBase.Value.Color.red: 80,
 			MazeBase.Value.Color.green: 20
 		}
-		for forward_node, backward_node in Tools.iter_record(node_list):
+		for forward_node, backward_node in Tools.iter_previous(node_list):
 			if not backward_node.Backward: #起始点
 				continue
 			if backward_node.Special: #特殊区域
@@ -691,6 +698,8 @@ class Maze2:
 				backward_node.ItemDoor = key
 				forward_node.Space -= 1
 
+		#如果必要，可将部分key移动到之前的node
+
 
 	def set_start_area(self, floor):
 		pass
@@ -701,18 +710,17 @@ class Maze2:
 	def set_item(self, floor):
 		hero = Hero.copy()
 		if self.is_start_floor(floor):
-			pass
+			self.set_start_area(floor)
 		elif self.is_boss_floor(floor):
 			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 				self.set_stair(f)
 			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
 			self.set_door(hero, node_list)
 
-			print node_list
+			#print node_list
 			for node in node_list:
-				print node.ItemKey.values(), node.ItemDoor
+				print node.floor, node.ItemKey.values(), node.ItemDoor, node.Space
 
-			self.set_start_area(floor)
 			self.set_boss_area(floor)
 			#for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 			#	self.show(f)
