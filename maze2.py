@@ -4,6 +4,16 @@ import pickle
 import copy
 
 
+'''
+设计
+每过10层属性提升至当前的1.1-1.4倍，楼层越高，数值越小
+每10层放置10-20个宝石，楼层越高，数值越小，每100层减1
+宝石提升的属性为总属性的0.01-0.02，楼层越高，数值越小，每100层减0.001
+300层时属性在10万级
+1000层时属性在100亿级
+'''
+
+
 
 class staticproperty(property):
 	def __get__(self, cls, owner):
@@ -711,9 +721,40 @@ class Maze2:
 		#如果必要，可将部分key移动到之前的node
 
 	#生成monster列表
+	#monster设计, low(l), normal(n), high(h)
+	#					health(H)	attack(A)	defence(D)	skill(S)
+	#slime:				1.0			1.1			0.1			-
+	#bat:				1.2			1.2			0.2			-
+	#skeleton:			0.6			1.8			0.1			-
+	#knight:			2.0			1.3			0.5			-
+	#mage:				1.5			0.2			0.5			o
+	#orcish:			3.0			1.5			0.3			-
+	#guard:				1.2			1.2			0.8			-
+	#wizard:			1.8			0.5			0.5			o
+	#quicksilver:		0.8			1.6			0.6			-
+	#rock:				0.5			1.0			1.0			-
+	#swordman:			1.0			2.0			0.5			-
+	#ghost:				1.5			1.6			0.7			-
+	#boss:				5.0			2.0			1.0			-
+	#
+	#每个宝石增加的属性为hero属性的1-2%，向上取整
+	#获取hero初始值，提高一定的比例得到最终值，保证增加的值为宝石的10-20倍
+	#根据hero初始值和最终值获取monster初始值和最终值，计算方法为，根据hero的攻防，增加或减少一定比例
+	#关键monster
+	#高防，强制加攻
+	#高攻低血，秒杀
+	#高血，防杀
+	#关键monster在关键路径上，关键路径为通往下一层的必经道路
+	#两个关键monster在通关路径上应间隔若干个区域，以便放置宝石
+	#关键monster和上一个关键monster之间的属性增加值（任意配点）足够击败该关键monster，但不足以击败下一个关键monster
 	def init_monster(self, boss_floor, hero):
 		self.maze_info[boss_floor]['monster'] = {}
-		#Monster()
+		monster_type = {
+		}
+		attack = hero.defence
+		defence = hero.attack
+		health = attack + defence
+		Monster(health=health, attack=attack, defence=defence)
 
 	#依次从monster中选出monster放在node中
 	def set_monster(self, hero, node_list):
@@ -739,8 +780,8 @@ class Maze2:
 			self.set_monster(hero, node_list)
 
 			#print node_list
-			for node in node_list:
-				print node.floor, node.ItemKey.values(), node.ItemDoor, node.Space
+			#for node in node_list:
+			#	print node.floor, node.ItemKey.values(), node.ItemDoor, node.Space
 
 			self.set_boss_area(floor)
 			#for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
