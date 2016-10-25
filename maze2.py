@@ -629,6 +629,36 @@ class Maze2:
 				door_list -= node.Crack
 
 
+	#从起点到boss区域的最短路径
+	def fast_way(self, floor):
+		down = set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]).pop()
+		down_node = self.find_node(down)
+		if self.is_boss_floor(floor):
+			for up_node in self.maze_info[floor]['node']:
+				if up_node.Special:
+					break
+		else:
+			up = set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]).pop()
+			up_node = self.find_node(up)
+
+		level = 0
+		node_info = {level: set([down_node])}
+		while True:
+			node_info[level + 1] = set()
+			for node in node_info[level]:
+				node_info[level + 1] |= set(node.Forward.values())
+			level += 1
+			if up_node in node_info[level] or not node_info[level]:
+				break
+
+		node_list = [up_node]
+		node = up_node
+		for i in range(level)[::-1]:
+			node = (node_info[i] & set(node.Backward.values())).pop()
+			node_list.append(node)
+
+		for node in node_list[::-1]:
+			pass #print node.Area
 
 	#遍历树
 	def ergodic(self, floor, across=1):
@@ -722,6 +752,10 @@ class Maze2:
 
 	#生成monster列表
 	#monster设计, low(l), normal(n), high(h)
+	#health(H), attack(A), defence(D), gem_attack(a), gem_defence(d), shop(s)
+	#10000      120        80          40 * 1         20 * 1          40 * 1
+	#monster	attack: 80->100->140, defence: 120->160->200
+	#
 	#					health(H)	attack(A)	defence(D)	skill(S)
 	#slime:				1.0			1.1			0.1			-
 	#bat:				1.2			1.2			0.2			-
@@ -749,17 +783,13 @@ class Maze2:
 	#关键monster和上一个关键monster之间的属性增加值（任意配点）足够击败该关键monster，但不足以击败下一个关键monster
 	def init_monster(self, boss_floor, hero):
 		self.maze_info[boss_floor]['monster'] = {}
-		monster_type = {
-		}
-		attack = hero.defence
-		defence = hero.attack
-		health = attack + defence
-		Monster(health=health, attack=attack, defence=defence)
+		#important = {'health': {'orcish': 1, 'guard': 2, 'ghost': 3}, 'attack': {'skeleton': 1, 'knight': 2, 'swordman': 3}, 'defence': {'rock': 1, 'quicksilver': 2}}
+
 
 	#依次从monster中选出monster放在node中
 	def set_monster(self, hero, node_list):
 		for node in node_list:
-			node.boss_floor
+			pass #print node.ItemDoor, node.ItemKey
 
 	def set_start_area(self, floor):
 		pass
@@ -778,6 +808,8 @@ class Maze2:
 			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
 			self.set_door(hero, node_list)
 			self.set_monster(hero, node_list)
+			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
+				self.fast_way(f)
 
 			#print node_list
 			#for node in node_list:
