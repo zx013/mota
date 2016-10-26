@@ -51,6 +51,44 @@ class Tools:
 			yield record, element
 			record.append(element)
 
+	#输入一个float，返回一个接近的int
+	@staticmethod
+	def float_offset(number):
+		r = random.random()
+		decimal = number - int(number)
+		if decimal < 0.5:
+			if r < 0.25 - 0.5 * decimal:
+				offset = int(number) - 1
+			elif r < 0.5:
+				offset = int(number) + 1
+			else:
+				offset = int(number)
+		else:
+			if r < 0.25 - 0.5 * (1 - decimal):
+				offset = int(number) + 2
+			elif r < 0.5:
+				offset = int(number)
+			else:
+				offset = int(number) + 1
+		return offset
+
+	#将一个数较为平均的分成几份
+	@staticmethod
+	def random_average(total, number):
+		average = [0] * number
+		for i in xrange(total):
+			average[random.randrange(number)] += 1
+		return average
+
+	#从range(floor)的楼层中选出几层出来
+	@staticmethod
+	def random_floor(floor, number):
+		average = Tools.random_average(floor - number, number + 1)
+		s = [-1] * (number + 1)
+		for i in xrange(number):
+			s[i + 1] = s[i] + average[i + 1] + 1
+		return s[1:floor + 1] #number > floor时保留floor个元素
+
 
 
 class MazeBase:
@@ -168,6 +206,11 @@ class MazeSetting:
 	save_floor = 100
 	#每几层一个单元
 	base_floor = 3
+
+	#精英怪物的数量
+	@staticproperty
+	def elite_number():
+		return Tools.float_offset(MazeSetting.base_floor ** 0.5 * 0.5 + MazeSetting.base_floor * 0.25)
 
 
 class Pos:
@@ -629,8 +672,8 @@ class Maze2:
 				door_list -= node.Crack
 
 
-	#从起点到boss区域的最短路径
-	def fast_way(self, floor):
+	#从下行楼梯到上行楼梯的最短路径
+	def get_fast_way(self, floor):
 		down = set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]).pop()
 		down_node = self.find_node(down)
 		if self.is_boss_floor(floor):
@@ -657,8 +700,17 @@ class Maze2:
 			node = (node_info[i] & set(node.Backward.values())).pop()
 			node_list.append(node)
 
-		for node in node_list[::-1]:
-			pass #print node.Area
+		return node_list[::-1]
+
+	#从起点到boss区域的最短路径
+	def get_fast_boss(self, floor):
+		node_list = []
+		while True:
+			node_list += self.get_fast_way(floor)
+			if self.is_boss_floor(floor):
+				break
+			floor += 1
+		return node_list
 
 	#遍历树
 	def ergodic(self, floor, across=1):
@@ -783,6 +835,8 @@ class Maze2:
 	#关键monster和上一个关键monster之间的属性增加值（任意配点）足够击败该关键monster，但不足以击败下一个关键monster
 	def init_monster(self, boss_floor, hero):
 		self.maze_info[boss_floor]['monster'] = {}
+		for floor in Tools.random_floor(MazeSetting.base_floor - 1, MazeSetting.elite_number):
+			print boss_floor, boss_floor - MazeSetting.base_floor + floor + 1
 		#important = {'health': {'orcish': 1, 'guard': 2, 'ghost': 3}, 'attack': {'skeleton': 1, 'knight': 2, 'swordman': 3}, 'defence': {'rock': 1, 'quicksilver': 2}}
 
 
@@ -808,8 +862,8 @@ class Maze2:
 			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
 			self.set_door(hero, node_list)
 			self.set_monster(hero, node_list)
-			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
-				self.fast_way(f)
+
+			#print self.get_fast_boss(floor - MazeSetting.base_floor + 1)
 
 			#print node_list
 			#for node in node_list:
