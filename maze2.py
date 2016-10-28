@@ -221,6 +221,11 @@ class MazeSetting:
 	def elite_number():
 		return Tools.float_offset(MazeSetting.base_floor ** 0.5 * 0.5 + MazeSetting.base_floor * 0.25)
 
+	#两个精英怪物之间的最小间隔数
+	@staticproperty
+	def elite_interval():
+		return (MazeSetting.rows * MazeSetting.cols) ** 0.5 / 1.5
+
 
 class Pos:
 	@staticmethod
@@ -864,15 +869,28 @@ class Maze2:
 	def get_elite_level(self):
 		pass
 
-	def get_elite(self, start_floor):
-		elite_floor = self.get_elite_floor(start_floor)
+	def get_elite(self, start_floor, node_list):
+		while True:
+			elite_floor = self.get_elite_floor(start_floor)
+			elite_node = [self.find_node(set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]).pop()) for floor in elite_floor]
+			number = 0
+			for node in node_list:
+				if node in elite_node:
+					#保证两个elite之间的间距不能太小，去除该点或重新分配
+					if number < MazeSetting.elite_interval:
+						break
+					number = 0
+				number += 1
+			else:
+				break
+			print 'elite interval reset.'
+
 		elite_type = self.get_elite_type(elite_floor)
-		print elite_floor, elite_type
+		print elite_floor, elite_node
 
 
-	#依次从monster中选出monster放在node中
 	def set_monster(self, hero, node_list):
-		self.get_elite(node_list[0].start_floor)
+		self.get_elite(node_list[0].start_floor, node_list)
 		for node in node_list:
 			pass #print node.ItemDoor, node.ItemKey
 
