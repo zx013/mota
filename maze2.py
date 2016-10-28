@@ -140,6 +140,11 @@ class MazeBase:
 			prison = 5
 			trap = 6
 
+	class EliteType:
+		health = 0
+		attack = 1
+		defence = 2
+
 	class NodeType:
 		none = 0
 		area_normal = 1
@@ -180,6 +185,10 @@ class TreeNode:
 		return list(self.Area)[0][0]
 
 	@property
+	def start_floor(self):
+		return self.boss_floor - MazeSetting.base_floor + 1
+
+	@property
 	def boss_floor(self):
 		return ((self.floor - 1) / MazeSetting.base_floor + 1) * MazeSetting.base_floor
 
@@ -189,7 +198,7 @@ class TreeNode:
 
 class MazeSetting:
 	#层数
-	floor = 7
+	floor = 21
 	#行
 	rows = 11
 	#列
@@ -205,7 +214,7 @@ class MazeSetting:
 	#保存的层数，10时占用20M左右内存，100时占用50M左右内存
 	save_floor = 100
 	#每几层一个单元
-	base_floor = 3
+	base_floor = 10
 
 	#精英怪物的数量
 	@staticproperty
@@ -516,7 +525,7 @@ class Maze2:
 				[0, 0, 0, 0]]
 		self.find_rect(floor, rect1, rect2)
 
-	def is_start_floor(self, floor):
+	def is_initial_floor(self, floor):
 		if floor:
 			return False
 		return True
@@ -543,7 +552,7 @@ class Maze2:
 	#特殊区域，一块较大的矩形
 	def create_special(self, floor):
 		self.maze_info[floor]['special'] = set()
-		if self.is_start_floor(floor):
+		if self.is_initial_floor(floor):
 			pass
 		elif self.is_boss_floor(floor): #boss层只有一个特殊区域
 			pos_list = [(floor, 1, 1)]
@@ -619,7 +628,7 @@ class Maze2:
 		self.maze_info[floor]['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
 		down_node = list(self.maze_info[floor]['node'])
 		random.shuffle(down_node)
-		if self.is_start_floor(floor - 1) or self.is_boss_floor(floor - 1):
+		if self.is_initial_floor(floor - 1) or self.is_boss_floor(floor - 1):
 			down_overlay = self.overlay_pos(down_node)
 			down, down_pos = down_overlay.pop()
 		else:
@@ -833,15 +842,37 @@ class Maze2:
 	#关键monster在关键路径上，关键路径为通往下一层的必经道路
 	#两个关键monster在通关路径上应间隔若干个区域，以便放置宝石
 	#关键monster和上一个关键monster之间的属性增加值（任意配点）足够击败该关键monster，但不足以击败下一个关键monster
-	def init_monster(self, boss_floor, hero):
-		self.maze_info[boss_floor]['monster'] = {}
-		for floor in Tools.random_floor(MazeSetting.base_floor - 1, MazeSetting.elite_number):
-			print boss_floor, boss_floor - MazeSetting.base_floor + floor + 1
-		#important = {'health': {'orcish': 1, 'guard': 2, 'ghost': 3}, 'attack': {'skeleton': 1, 'knight': 2, 'swordman': 3}, 'defence': {'rock': 1, 'quicksilver': 2}}
+	#
+	#
+	#slime(4), bat(4), skeleton(5), knight(4), mage(3), orcish(2), guard(3),
+	#wizard(2), quicksilver(2), rock(2), swordman(2), ghost(1), boss(5)
+
+	def get_elite_floor(self, floor):
+		return [floor + f for f in Tools.random_floor(MazeSetting.base_floor - 1, MazeSetting.elite_number)]
+
+	def get_elite_type(self, elite_floor):
+		elite_choice = {MazeBase.EliteType.health: 1, MazeBase.EliteType.attack: 1, MazeBase.EliteType.defence: 1}
+		elite_type = []
+		for floor in elite_floor:
+			tp = Tools.dict_choice(elite_choice)
+			for key in elite_choice.keys():
+				if key != tp:
+					elite_choice[key] += 1
+			elite_type.append(tp)
+		return elite_type
+
+	def get_elite_level(self):
+		pass
+
+	def get_elite(self, start_floor):
+		elite_floor = self.get_elite_floor(start_floor)
+		elite_type = self.get_elite_type(elite_floor)
+		print elite_floor, elite_type
 
 
 	#依次从monster中选出monster放在node中
 	def set_monster(self, hero, node_list):
+		self.get_elite(node_list[0].start_floor)
 		for node in node_list:
 			pass #print node.ItemDoor, node.ItemKey
 
@@ -853,10 +884,9 @@ class Maze2:
 
 	def set_item(self, floor):
 		hero = Hero.copy()
-		if self.is_start_floor(floor):
+		if self.is_initial_floor(floor):
 			self.set_start_area(floor)
 		elif self.is_boss_floor(floor):
-			self.init_monster(floor, hero)
 			for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 				self.set_stair(f)
 			node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
@@ -911,7 +941,7 @@ class Maze2:
 		self.set_record('maze', 'maze_map', 'maze_info')
 		self.load(0)
 		for floor in xrange(MazeSetting.floor):
-			if self.is_start_floor(floor):
+			if self.is_initial_floor(floor):
 				self.fast_load(floor)
 				continue
 			self.init(floor)
