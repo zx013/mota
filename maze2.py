@@ -197,6 +197,8 @@ class TreeNode:
 	def forbid(self):
 		return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
+
+#注意，出现random的属性，每次获取时值将不同
 class MazeSetting:
 	#层数
 	floor = 21
@@ -216,6 +218,14 @@ class MazeSetting:
 	save_floor = 100
 	#每几层一个单元
 	base_floor = 10
+
+	#经过一个单元获取的宝石数量
+	@staticproperty
+	def attribute_number():
+		return int(2 * (0.5 + random.random()) / MazeSetting.attribute_value)
+
+	#每个宝石增加的属性值（总属性百分比）
+	attribute_value = 0.01
 
 	#精英怪物的数量
 	@staticproperty
@@ -867,8 +877,13 @@ class Maze2:
 			elite_type.append(tp)
 		return elite_type
 
-	def get_elite_level(self):
-		pass
+	def set_elite(self, elite_number, elite_type):
+		attribute_number = MazeSetting.attribute_number
+		elite_sum = sum(elite_number)
+		for number, type in zip(elite_number, elite_type):
+			 attribute_total = attribute_number * number / elite_sum #总和会略小于attribute_number
+			 print number, type, attribute_total
+		print
 
 	def get_elite(self, start_floor, boss_floor, node_list):
 		while True:
@@ -890,11 +905,12 @@ class Maze2:
 
 		elite_type = self.get_elite_type(elite_floor)
 
+		#add boss as elite
 		elite_floor.append(boss_floor)
 		elite_node.append(self.find_node(set(self.maze_info[boss_floor]['special']).pop()))
 		elite_number.append(number)
 		elite_type.append(MazeBase.EliteType.boss)
-		print elite_floor, elite_number
+		self.set_elite(elite_number, elite_type)
 
 
 	def set_monster(self, hero, node_list):
