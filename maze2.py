@@ -141,9 +141,10 @@ class MazeBase:
 			trap = 6
 
 	class EliteType:
-		health = 0
-		attack = 1
-		defence = 2
+		boss = 0
+		health = 1
+		attack = 2
+		defence = 3
 
 	class NodeType:
 		none = 0
@@ -869,16 +870,18 @@ class Maze2:
 	def get_elite_level(self):
 		pass
 
-	def get_elite(self, start_floor, node_list):
+	def get_elite(self, start_floor, boss_floor, node_list):
 		while True:
 			elite_floor = self.get_elite_floor(start_floor)
 			elite_node = [self.find_node(set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]).pop()) for floor in elite_floor]
+			elite_number = []
 			number = 0
 			for node in node_list:
 				if node in elite_node:
 					#保证两个elite之间的间距不能太小，去除该点或重新分配
 					if number < MazeSetting.elite_interval:
 						break
+					elite_number.append(number)
 					number = 0
 				number += 1
 			else:
@@ -886,11 +889,18 @@ class Maze2:
 			print 'elite interval reset.'
 
 		elite_type = self.get_elite_type(elite_floor)
-		print elite_floor, elite_node
+
+		elite_floor.append(boss_floor)
+		elite_node.append(self.find_node(set(self.maze_info[boss_floor]['special']).pop()))
+		elite_number.append(number)
+		elite_type.append(MazeBase.EliteType.boss)
+		print elite_floor, elite_number
 
 
 	def set_monster(self, hero, node_list):
-		self.get_elite(node_list[0].start_floor, node_list)
+		start_floor = node_list[0].start_floor
+		boss_floor = node_list[0].boss_floor
+		self.get_elite(start_floor, boss_floor, node_list)
 		for node in node_list:
 			pass #print node.ItemDoor, node.ItemKey
 
