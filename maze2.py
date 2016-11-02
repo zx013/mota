@@ -13,6 +13,18 @@ import copy
 1000层时属性在100亿级
 '''
 
+#限制随机，防止S/L，S/L时需存取__staticrandom
+__random = random._inst.random
+__staticrandom = []
+def staticrandom(number=0):
+	for i in xrange(number):
+		__staticrandom.append(__random())
+	def new_random():
+		r = __random()
+		__staticrandom.append(r)
+		return __staticrandom.pop(0)
+	random.random = random._inst.random = new_random
+
 
 import itertools
 
@@ -218,7 +230,7 @@ class Cache:
 
 	#两个reloadcache之间获取的值相同
 	@classmethod
-	def recount(self):
+	def staticrecount(self):
 		for cache in self.__staticcache.values():
 			cache['check'] = True
 
@@ -252,7 +264,9 @@ class MazeSetting:
 	attribute_value = 0.01
 
 	#宝石获取的属性占比（不能改变的增加值）
-	attribute_ratio = 0.5
+	@Cache.static
+	def attribute_ratio():
+		return 0.4 + random.random() * 0.2
 
 	#精英怪物的数量
 	@Cache.static
@@ -913,7 +927,7 @@ class Maze2:
 			MazeBase.EliteType.boss: {
 				MazeBase.EliteType.health: 40,
 				MazeBase.EliteType.attack: 30,
-				MazeBase.EliteType.defence: 30					
+				MazeBase.EliteType.defence: 30
 			},
 			MazeBase.EliteType.health: {
 				MazeBase.EliteType.health: 80,
@@ -932,11 +946,12 @@ class Maze2:
 			}
 		}
 		attribute_number = MazeSetting.attribute_number
-		print attribute_number
 		elite_sum = sum(elite_number)
 		for number, type in zip(elite_number, elite_type):
 			 attribute_total = attribute_number * number / elite_sum #总和会略小于attribute_number
-			 print number, type, attribute_total
+			 static = int(attribute_total * MazeSetting.attribute_ratio)
+			 dynamic = attribute_total - static
+			 print number, type, static, dynamic
 		print
 
 	def get_elite(self, start_floor, boss_floor, node_list):
@@ -1000,7 +1015,7 @@ class Maze2:
 			self.set_boss_area(floor)
 			#for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 			#	self.show(f)
-			Cache.recount()
+			Cache.staticrecount()
 
 
 	def set_record(self, *args):
