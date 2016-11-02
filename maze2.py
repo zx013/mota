@@ -14,12 +14,6 @@ import copy
 '''
 
 
-
-class staticproperty(property):
-	def __get__(self, cls, owner):
-		return staticmethod(self.fget).__get__(owner)()
-
-
 import itertools
 
 class Tools:
@@ -198,6 +192,36 @@ class TreeNode:
 		return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
 
+
+class Cache:
+	class staticproperty(property):
+		def __get__(self, cls, owner):
+			return staticmethod(self.fget).__get__(owner)()
+
+	__staticcache = {}
+	@classmethod
+	def staticcache(self, func):
+		self.__staticcache.setdefault(func, {'check': True, 'result': None})
+		cache = self.__staticcache[func]
+		def run(*args, **kwargs):
+			if cache['check']:
+				cache['result'] = func(*args, **kwargs)
+				cache['check'] = False
+			return cache['result']
+		return run
+
+	@classmethod
+	def static(self, func):
+		func = self.staticcache(func)
+		func = self.staticproperty(func)
+		return func
+
+	#两个reloadcache之间获取的值相同
+	@classmethod
+	def recount(self):
+		for cache in self.__staticcache.values():
+			cache['check'] = True
+
 #注意，出现random的属性，每次获取时值将不同
 class MazeSetting:
 	#层数
@@ -211,7 +235,7 @@ class MazeSetting:
 	#保存的文件
 	save_file = 'save'
 
-	@staticproperty
+	@Cache.static
 	def save_format():
 		return '{save_dir}/{{0}}.{save_file}'.format(save_dir=MazeSetting.save_dir, save_file=MazeSetting.save_file)
 	#保存的层数，10时占用20M左右内存，100时占用50M左右内存
@@ -220,20 +244,23 @@ class MazeSetting:
 	base_floor = 10
 
 	#经过一个单元获取的宝石数量
-	@staticproperty
+	@Cache.static
 	def attribute_number():
 		return int(2 * (0.5 + random.random()) / MazeSetting.attribute_value)
 
 	#每个宝石增加的属性值（总属性百分比）
 	attribute_value = 0.01
 
+	#宝石获取的属性占比（不能改变的增加值）
+	attribute_ratio = 0.5
+
 	#精英怪物的数量
-	@staticproperty
+	@Cache.static
 	def elite_number():
 		return Tools.float_offset(MazeSetting.base_floor ** 0.5 * 0.5 + MazeSetting.base_floor * 0.25)
 
 	#两个精英怪物之间的最小间隔数
-	@staticproperty
+	@Cache.static
 	def elite_interval():
 		return (MazeSetting.rows * MazeSetting.cols) ** 0.5 / 1.5
 
@@ -867,7 +894,11 @@ class Maze2:
 		return [floor + f for f in Tools.random_floor(MazeSetting.base_floor - 1, MazeSetting.elite_number)]
 
 	def get_elite_type(self, elite_floor):
-		elite_choice = {MazeBase.EliteType.health: 1, MazeBase.EliteType.attack: 1, MazeBase.EliteType.defence: 1}
+		elite_choice = {
+			MazeBase.EliteType.health: 1,
+			MazeBase.EliteType.attack: 1,
+			MazeBase.EliteType.defence: 1
+		}
 		elite_type = []
 		for floor in elite_floor:
 			tp = Tools.dict_choice(elite_choice)
@@ -878,7 +909,30 @@ class Maze2:
 		return elite_type
 
 	def set_elite(self, elite_number, elite_type):
+		attribute_choice = {
+			MazeBase.EliteType.boss: {
+				MazeBase.EliteType.health: 40,
+				MazeBase.EliteType.attack: 30,
+				MazeBase.EliteType.defence: 30					
+			},
+			MazeBase.EliteType.health: {
+				MazeBase.EliteType.health: 80,
+				MazeBase.EliteType.attack: 10,
+				MazeBase.EliteType.defence: 10
+			},
+			MazeBase.EliteType.attack: {
+				MazeBase.EliteType.health: 10,
+				MazeBase.EliteType.attack: 80,
+				MazeBase.EliteType.defence: 10
+			},
+			MazeBase.EliteType.defence: {
+				MazeBase.EliteType.health: 10,
+				MazeBase.EliteType.attack: 10,
+				MazeBase.EliteType.defence: 80
+			}
+		}
 		attribute_number = MazeSetting.attribute_number
+		print attribute_number
 		elite_sum = sum(elite_number)
 		for number, type in zip(elite_number, elite_type):
 			 attribute_total = attribute_number * number / elite_sum #总和会略小于attribute_number
@@ -946,6 +1000,7 @@ class Maze2:
 			self.set_boss_area(floor)
 			#for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
 			#	self.show(f)
+			Cache.recount()
 
 
 	def set_record(self, *args):
