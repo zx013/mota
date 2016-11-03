@@ -948,10 +948,16 @@ class Maze2:
 		attribute_number = MazeSetting.attribute_number
 		elite_sum = sum(elite_number)
 		for number, type in zip(elite_number, elite_type):
-			 attribute_total = attribute_number * number / elite_sum #总和会略小于attribute_number
-			 static = int(attribute_total * MazeSetting.attribute_ratio)
-			 dynamic = attribute_total - static
-			 print number, type, static, dynamic
+			attribute_total = attribute_number * number / elite_sum #总和会略小于attribute_number
+			attribute_static = int(attribute_total * MazeSetting.attribute_ratio)
+			attribute_dynamic = attribute_total - attribute_static
+			print number, type, attribute_static, attribute_dynamic
+			#attribute_static平均分配
+			#attribute_dynamic根据type分配
+			#分配attribute_static，获得属性提高顺序
+			#将分配的attribute_static分组，每一组视为小节点，设置该级别的monster（依据初始时的属性）
+			if type == MazeBase.EliteType.health:
+				pass
 		print
 
 	def get_elite(self, start_floor, boss_floor, node_list):
@@ -962,7 +968,7 @@ class Maze2:
 			number = 0
 			for node in node_list:
 				if node in elite_node:
-					#保证两个elite之间的间距不能太小，去除该点或重新分配
+					#保证两个elite之间的间距不能太小，去除该点或重新分配，有极小概率出现死循环状况
 					if number < MazeSetting.elite_interval:
 						break
 					elite_number.append(number)
