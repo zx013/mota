@@ -95,6 +95,16 @@ class Tools:
 			s[i + 1] = s[i] + average[i + 1] + 1
 		return s[1:floor + 1] #number > floor时保留floor个元素
 
+	#将一个列表中的元素按顺序分配到number个盒子中，每个盒子最多分配maximum个，如果func(element)的返回值为True，则该元素只能单独放在一个盒子中
+	@staticmethod
+	def random_distribute(element_list, number, maximum=2, func=None):
+		element_number = len(element_list)
+		if element_number > number:
+			special_number = element_number - number
+		random_list = [[]] * number
+
+		float(element_number)
+
 
 
 class MazeBase:
@@ -145,6 +155,11 @@ class MazeBase:
 
 			prison = 5
 			trap = 6
+
+		class Gem:
+			small = 1
+			big = 3
+			large = 10
 
 	class EliteType:
 		boss = 0
@@ -922,6 +937,49 @@ class Maze2:
 			elite_type.append(tp)
 		return elite_type
 
+	def set_elite_attribute_static(self, attribute_static):
+		gem_number = {
+			MazeBase.EliteType.attack: 0,
+			MazeBase.EliteType.defence: 0
+		}
+		gem_value = {
+			MazeBase.Value.Gem.small: 80,
+			MazeBase.Value.Gem.big: 15,
+			MazeBase.Value.Gem.large: 5
+		}
+
+		attribute_list = []
+
+		while True:
+			if attribute_static < MazeBase.Value.Gem.large:
+				if gem_value.has_key(MazeBase.Value.Gem.large):
+					del gem_value[MazeBase.Value.Gem.large]
+			if attribute_static < MazeBase.Value.Gem.big:
+				if gem_value.has_key(MazeBase.Value.Gem.big):
+					del gem_value[MazeBase.Value.Gem.big]
+			if attribute_static < MazeBase.Value.Gem.small:
+				break
+
+			distance = gem_number[MazeBase.EliteType.attack] - gem_number[MazeBase.EliteType.defence]
+			if distance > 0:
+				gem_key = {
+					MazeBase.EliteType.attack: 1,
+					MazeBase.EliteType.defence: 1 + distance
+				}
+			else:
+				gem_key = {
+					MazeBase.EliteType.attack: 1 - distance,
+					MazeBase.EliteType.defence: 1
+				}
+
+			key = Tools.dict_choice(gem_key)
+			value = Tools.dict_choice(gem_value)
+			gem_number[key] += value
+			attribute_static -= value
+			attribute_list.append((key, value))
+		return attribute_list
+
+
 	def set_elite(self, elite_number, elite_type):
 		attribute_choice = {
 			MazeBase.EliteType.boss: {
@@ -952,6 +1010,7 @@ class Maze2:
 			attribute_static = int(attribute_total * MazeSetting.attribute_ratio)
 			attribute_dynamic = attribute_total - attribute_static
 			print number, type, attribute_static, attribute_dynamic
+			print len(self.set_elite_attribute_static(attribute_static))
 			#attribute_static平均分配
 			#attribute_dynamic根据type分配
 			#分配attribute_static，获得属性提高顺序
