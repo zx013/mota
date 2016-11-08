@@ -99,8 +99,11 @@ class Tools:
 	@staticmethod
 	def random_distribute(element_list, number, maximum=2, func=None):
 		element_number = len(element_list)
-		if element_number > number:
-			special_number = element_number - number
+		special_number = len(filter(func, element_list))
+		#(number - special_number) * maximum + special_number为最大数量
+		remain_number = (number - special_number) * maximum + special_number - element_number
+		if remain_number < 0:
+			return False
 		random_list = [[]] * number
 
 		float(element_number)
