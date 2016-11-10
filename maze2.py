@@ -100,11 +100,14 @@ class Tools:
 	def random_distribute(element_list, number, maximum=2, func=None):
 		element_number = len(element_list)
 		special_number = len(filter(func, element_list))
+		if special_number > number:
+			return False
 		#(number - special_number) * maximum + special_number为最大数量
-		remain_number = (number - special_number) * maximum + special_number - element_number
-		if remain_number < 0:
+		if (number - special_number) * maximum + special_number < element_number:
 			return False
 		random_list = [[]] * number
+		#element_number - special_number个元素放在number - special_number个盒子中
+		#每个盒子取值范围为[0, maximum]，当element_number - special_number为0时，1.0的概率取0，当element_number - special_number为(number - special_number) * maximum时，1.0的概率为maximum，每个盒子的期望为(element_number - special_number) / (number - special_number)
 
 		float(element_number)
 
