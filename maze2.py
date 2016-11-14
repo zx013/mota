@@ -97,19 +97,44 @@ class Tools:
 
 	#将一个列表中的元素按顺序分配到number个盒子中，每个盒子最多分配maximum个，如果func(element)的返回值为True，则该元素只能单独放在一个盒子中
 	@staticmethod
-	def random_distribute(element_list, number, maximum=2, func=None):
+	def random_distribute(element_list, number, maximum=2, func=lambda x: False):
 		element_number = len(element_list)
 		special_number = len(filter(func, element_list))
-		if special_number > number:
+
+		remain_number = element_number - special_number
+		remain_index = number - special_number
+		if remain_index <  0:
 			return False
 		#(number - special_number) * maximum + special_number为最大数量
-		if (number - special_number) * maximum + special_number < element_number:
+		if remain_index * maximum < remain_number:
 			return False
 		random_list = [[]] * number
 		#element_number - special_number个元素放在number - special_number个盒子中
 		#每个盒子取值范围为[0, maximum]，当element_number - special_number为0时，1.0的概率取0，当element_number - special_number为(number - special_number) * maximum时，1.0的概率为maximum，每个盒子的期望为(element_number - special_number) / (number - special_number)
 
-		float(element_number)
+		number_list = []
+		while remain_index > 0:
+			#最小值，剩余的全部放满
+			min_num = remain_number - (remain_index - 1) * maximum
+			min_num = 0 if min_num < 0 else min_num
+			#最大值，剩余的全部放空
+			max_num = remain_number
+			max_num = maximum if max_num > maximum else max_num
+
+			if remain_index == 0:
+				num = min_num
+			else:
+				average_number = float(remain_number) / float(remain_index)
+				d = dict([(number, int(1000 / (abs(average_number - number) + 0.01))) for number in range(min_num, max_num + 1)])
+				num = Tools.dict_choice(d)
+				print d
+				num = random.randint(min_num, max_num)
+
+			number_list.append(num)
+			remain_number -= num
+			remain_index -= 1
+		print number_list
+			
 
 
 
@@ -1168,3 +1193,4 @@ class Maze2:
 
 if __name__ == '__main__':
 	maze = Maze2()
+	print Tools.random_distribute(range(9), 10, maximum=2, func=lambda x: False)
