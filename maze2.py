@@ -98,8 +98,9 @@ class Tools:
 	#将一个列表中的元素按顺序分配到number个盒子中，每个盒子最多分配maximum个，如果func(element)的返回值为True，则该元素只能单独放在一个盒子中
 	@staticmethod
 	def random_distribute(element_list, number, maximum=2, func=lambda x: False):
+		special_list = map(func, element_list)
 		element_number = len(element_list)
-		special_number = len(filter(func, element_list))
+		special_number = len(filter(lambda x: x, special_list))
 
 		remain_number = element_number - special_number
 		remain_index = number - special_number
@@ -108,32 +109,42 @@ class Tools:
 		#(number - special_number) * maximum + special_number为最大数量
 		if remain_index * maximum < remain_number:
 			return False
-		random_list = [[]] * number
 		#element_number - special_number个元素放在number - special_number个盒子中
 		#每个盒子取值范围为[0, maximum]，当element_number - special_number为0时，1.0的概率取0，当element_number - special_number为(number - special_number) * maximum时，1.0的概率为maximum，每个盒子的期望为(element_number - special_number) / (number - special_number)
 
-		number_list = []
-		while remain_index > 0:
-			#最小值，剩余的全部放满
-			min_num = remain_number - (remain_index - 1) * maximum
-			min_num = 0 if min_num < 0 else min_num
-			#最大值，剩余的全部放空
-			max_num = remain_number
-			max_num = maximum if max_num > maximum else max_num
-
-			if remain_index == 0:
-				num = min_num
+		random_list = []
+		random_index = 0
+		while remain_index > 0 and random_index < element_number:
+			for special_index in xrange(random_index, element_number):
+				if special_list[special_index]:
+					break
+			random_number = special_index - random_index
+			if random_number == 0:
+				num = 1
 			else:
-				average_number = float(remain_number) / float(remain_index)
-				d = dict([(number, int(1000 / (abs(average_number - number) + 0.01))) for number in range(min_num, max_num + 1)])
-				num = Tools.dict_choice(d)
-				print d
-				num = random.randint(min_num, max_num)
+				#最小值，剩余的全部放满
+				min_num = max(0, remain_number - (remain_index - 1) * maximum)
+				#最大值，剩余的全部放空
+				max_num = min(maximum, remain_number, random_number)
+	
+				print min_num, max_num, float(remain_number) / float(remain_index)
+				if remain_index == 0:
+					num = min_num
+				else:
+					average_number = float(remain_number) / float(remain_index)
+					print random_list
+					d = dict([(n, int(1000 / (abs(average_number - n) ** 1.2 + 0.1))) for n in range(min_num, max_num + 1)]) #指数越大越均匀
+					print d
+					num = Tools.dict_choice(d)
 
-			number_list.append(num)
-			remain_number -= num
-			remain_index -= 1
-		print number_list
+				remain_number -= num
+				remain_index -= 1
+			random_index += num
+			random_list.append(element_list[random_index - num:random_index])
+		for i in xrange(number - len(random_list)):
+			random_list.insert(random.randint(0, len(random_list)), [])
+		return random_list
+		
 			
 
 
@@ -1051,6 +1062,7 @@ class Maze2:
 		print
 
 	def get_elite(self, start_floor, boss_floor, node_list):
+		check = 0
 		while True:
 			elite_floor = self.get_elite_floor(start_floor)
 			elite_node = [self.find_node(set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]).pop()) for floor in elite_floor]
@@ -1058,7 +1070,7 @@ class Maze2:
 			number = 0
 			for node in node_list:
 				if node in elite_node:
-					#保证两个elite之间的间距不能太小，去除该点或重新分配，有极小概率出现死循环状况
+					#保证两个elite之间的间距不能太小，去除该点或重新分配，有极小概率出现死循环状况，出现过1次
 					if number < MazeSetting.elite_interval:
 						break
 					elite_number.append(number)
@@ -1067,6 +1079,9 @@ class Maze2:
 			else:
 				break
 			print 'elite interval reset.'
+			check += 1
+			if check > 100:
+				raise Exception
 
 		elite_type = self.get_elite_type(elite_floor)
 
@@ -1193,4 +1208,4 @@ class Maze2:
 
 if __name__ == '__main__':
 	maze = Maze2()
-	print Tools.random_distribute(range(9), 10, maximum=2, func=lambda x: False)
+	print Tools.random_distribute(range(8) + [4] * 8, 10, maximum=2, func=lambda x: not x % 6)
