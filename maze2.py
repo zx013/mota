@@ -124,8 +124,8 @@ class Tools:
 			random_list.append(element_list[element_number - remain_number - num:element_number - remain_number])
 
 		return random_list
-		
-			
+
+
 
 
 
@@ -224,6 +224,10 @@ class TreeNode:
 			MazeBase.Value.Color.green: 0
 		}
 
+		self.IsEmpty = False
+		self.IsDoor = False
+		self.IsMonster = False
+
 	@property
 	def floor(self):
 		return list(self.Area)[0][0]
@@ -304,6 +308,9 @@ class MazeSetting:
 	@Cache.static
 	def attribute_ratio():
 		return 0.4 + random.random() * 0.2
+
+	#怪物的比例，值越高，门后出现怪物的可能性越大
+	monster_ratio = 0.5
 
 	#精英怪物的数量
 	@Cache.static
@@ -900,6 +907,7 @@ class Maze2:
 			key = Tools.dict_choice(door_choice)
 			if key:
 				forward_node.ItemKey[key] += 1
+				backward_node.IsDoor = True
 				backward_node.ItemDoor = key
 				forward_node.Space -= 1
 
@@ -1032,9 +1040,9 @@ class Maze2:
 			attribute_static = int(attribute_total * MazeSetting.attribute_ratio)
 			attribute_dynamic = attribute_total - attribute_static
 
-			attribute_list = self.set_elite_attribute_static(attribute_static)
-			#print Tools.random_distribute(attribute_list, number)
-			print number, type, attribute_static, attribute_dynamic, len(attribute_list)
+			attribute_static_list = self.set_elite_attribute_static(attribute_static)
+			#print Tools.random_distribute(attribute_static_list, number)
+			print number, type, attribute_static, attribute_dynamic, len(attribute_static_list)
 			#attribute_static平均分配
 			#attribute_dynamic根据type分配
 			#分配attribute_static，获得属性提高顺序
@@ -1076,11 +1084,21 @@ class Maze2:
 
 
 	def set_monster(self, hero, node_list):
+		for node in node_list:
+			if node.IsDoor:
+				if random.random() < MazeSetting.monster_ratio * (float(node.Space) - 1) / (float(node.Space) * MazeSetting.monster_ratio + 1):
+					node.IsMonster = True
+			else:
+				node.IsMonster = True
+			if node.IsMonster:
+				node.Space -= 1
+
+		for node in node_list:
+			print len(node.Area), node.IsDoor, node.IsMonster, node.Space, sum(node.ItemKey.values())
 		start_floor = node_list[0].start_floor
 		boss_floor = node_list[0].boss_floor
 		self.get_elite(start_floor, boss_floor, node_list)
-		for node in node_list:
-			pass #print node.ItemDoor, node.ItemKey
+
 
 	def set_start_area(self, floor):
 		pass
