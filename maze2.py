@@ -98,37 +98,31 @@ class Tools:
 	#将一个列表中的元素按顺序分配到number个盒子中，每个盒子最多分配maximum个
 	@staticmethod
 	def random_distribute(element_list, number, maximum=2):
-		remain_number = len(element_list)
+		element_number = len(element_list)
+		remain_number = element_number
 		remain_index = number
 		if remain_index <  0:
 			return False
-		#(number - special_number) * maximum + special_number为最大数量
 		if remain_index * maximum < remain_number:
 			return False
-		#element_number - special_number个元素放在number - special_number个盒子中
-		#每个盒子取值范围为[0, maximum]，当element_number - special_number为0时，1.0的概率取0，当element_number - special_number为(number - special_number) * maximum时，1.0的概率为maximum，每个盒子的期望为(element_number - special_number) / (number - special_number)
+		#element_number个元素放在number个盒子中
+		#每个盒子取值范围为[0, maximum]，当element_number为0时，1.0的概率取0，当element_number为number * maximum时，1.0的概率为maximum，每个盒子的期望为element_number / number
 
 		random_list = []
-		random_index = 0
 		while remain_index > 0:
 			#最小值，剩余的全部放满
 			min_num = max(0, remain_number - (remain_index - 1) * maximum)
 			#最大值，剩余的全部放空
 			max_num = min(maximum, remain_number)
 
-			if remain_index == 0:
-				num = min_num
-			else:
-				average_number = float(remain_number) / float(remain_index)
-				d = dict([(n, int(1000 / (abs(average_number - n) ** 1.2 + 0.1))) for n in range(min_num, max_num + 1)]) #指数越大越均匀
-				num = Tools.dict_choice(d)
+			average_number = float(remain_number) / float(remain_index)
+			d = dict([(n, int(1000 / (abs(average_number - n) ** 2 + 0.01))) for n in range(min_num, max_num + 1)]) #指数越大越均匀
+			num = Tools.dict_choice(d)
 
 			remain_number -= num
 			remain_index -= 1
-			random_index += num
-			random_list.append(element_list[random_index - num:random_index])
-		for i in xrange(number - len(random_list)):
-			random_list.insert(random.randint(0, len(random_list)), [])
+			random_list.append(element_list[element_number - remain_number - num:element_number - remain_number])
+
 		return random_list
 		
 			
@@ -1037,8 +1031,10 @@ class Maze2:
 			attribute_total = attribute_number * number / elite_sum #总和会略小于attribute_number
 			attribute_static = int(attribute_total * MazeSetting.attribute_ratio)
 			attribute_dynamic = attribute_total - attribute_static
-			print number, type, attribute_static, attribute_dynamic
-			print len(self.set_elite_attribute_static(attribute_static))
+
+			attribute_list = self.set_elite_attribute_static(attribute_static)
+			#print Tools.random_distribute(attribute_list, number)
+			print number, type, attribute_static, attribute_dynamic, len(attribute_list)
 			#attribute_static平均分配
 			#attribute_dynamic根据type分配
 			#分配attribute_static，获得属性提高顺序
@@ -1194,4 +1190,3 @@ class Maze2:
 
 if __name__ == '__main__':
 	maze = Maze2()
-	print Tools.random_distribute(range(8) + [4] * 8, 10, maximum=2)
