@@ -1060,7 +1060,7 @@ class Maze2:
 			number = 0
 			for node in node_list:
 				if node in elite_node:
-					#保证两个elite之间的间距不能太小，去除该点或重新分配，有极小概率出现死循环状况，出现过1次
+					#保证两个elite之间的间距不能太小，去除该点或重新分配，有极小概率出现死循环状况，出现过2次
 					if number < MazeSetting.elite_interval:
 						break
 					elite_number.append(number)
