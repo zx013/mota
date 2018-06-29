@@ -649,8 +649,7 @@ class Maze2:
 
         crack_list = self.get_crack(floor) #可打通的墙
         while ground:
-            pos = ground.pop()
-            area = self.get_area(pos)
+            area = self.get_area(ground.pop())
             crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
             node = TreeNode(area=area, crack=crack, special=pos in self.maze_info[floor]['special'])
             self.maze_info[floor]['node'].add(node)
@@ -737,7 +736,7 @@ class Maze2:
 
     def crack_wall(self, floor):
         #special区域只开一个口
-        crack_list = self.get_crack(floor) #可打通的墙
+        #crack_list = self.get_crack(floor) #可打通的墙
 
         next_node = list(self.maze_info[floor]['node'])
         crack_set = set() #已设置墙和未设置墙区域之间可打通的墙
@@ -1019,6 +1018,7 @@ class Maze2:
                 if sum(key_number.values()) == 0:
                     break
 
+        #没有door的需要放置monster
         for node in node_list:
             if not node.IsDoor:
                 node.IsMonster = True
@@ -1027,6 +1027,23 @@ class Maze2:
                 if random.random() < 0.3 * (node.Space - 2):
                     node.IsMonster = True
                     node.Space -= 1
+
+        gem_choice = {
+            MazeBase.Value.Gem.small: 90,
+            MazeBase.Value.Gem.big: 9,
+            MazeBase.Value.Gem.large: 1
+        }
+
+        n = 0
+        for node in node_list:
+            if sum(node.ItemKey.values()) <= 1:
+                if random.random() < 0.5:
+                    itemgem = node.ItemAttackGem
+                else:
+                    itemgem = node.ItemDefenceGem
+                gem = Tools.dict_choice(gem_choice)
+                n += 1
+        print n
 
     '''
     每个单元提升25%-50%
@@ -1222,7 +1239,7 @@ class Maze2:
         pass
 
     def set_item(self, floor):
-        hero = Hero.copy()
+        #hero = Hero.copy()
         if self.is_initial_floor(floor):
             self.set_start_area(floor)
         elif self.is_boss_floor(floor):
