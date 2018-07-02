@@ -965,7 +965,7 @@ class Maze2:
             MazeBase.Value.Color.green: 0
         }
         for number, node in enumerate(node_list):
-            #有key时，可以设置门
+            #如果到达该区域还有有key时，可以设置门
             if sum(key_number.values()) > 0:
                 if random.random() < 0.3 * (node.Space - 2):
                     door = Tools.dict_choice(key_number)
@@ -988,6 +988,7 @@ class Maze2:
                             break
             else:
                 if node.Special:
+                    #到达特殊区域但没有钥匙，目前没出现过
                     print('speciel has no door')
 
             key_sum = sum(key_number.values())
@@ -997,6 +998,8 @@ class Maze2:
             else:
                 number = 0
 
+            #一定概率放置多把，不超过空间减一（只放一把时，需放置其他奖励）
+            #没有门时，需放置怪物
             while number <= node.Space - 1:
                 if random.random() < key_chance:
                     number += 1
@@ -1012,7 +1015,7 @@ class Maze2:
                 node.ItemKey[key] += 1
                 node.Space -= 1
 
-        #删除多余的key
+        #删除多余的key，从后往前
         if sum(key_number.values()) > 0:
             for node in node_list[::-1]:
                 for key in key_number.keys():
@@ -1022,68 +1025,52 @@ class Maze2:
                         node.Space += 1
                 if sum(key_number.values()) == 0:
                     break
-
+    
+    def set_monster(self, node_list):
         #没有door的需要放置monster
+        #若空间小于等于1，不能放怪物
         for node in node_list:
+            if node.Space == 0:
+                continue
+            ismonster = False
             if not node.IsDoor:
+                ismonster = True
+            elif random.random() < 0.3 * (node.Space - 2):
+                ismonster = True
+            if ismonster:
                 node.IsMonster = True
                 node.Space -= 1
-            else:
-                if random.random() < 0.3 * (node.Space - 2):
-                    node.IsMonster = True
-                    node.Space -= 1
-
+        
+    #每个单元提升25%-50%
+    def set_gem(self, node_list):
         gem_choice = {
             MazeBase.Value.Gem.small: 90,
             MazeBase.Value.Gem.big: 9,
             MazeBase.Value.Gem.large: 1
         }
-
+        gem_number = 0 #已放置的gem数量
         n = 0
+
+        #有门且放置的钥匙数小于等于1，必须放置宝物
         for node in node_list:
-            if sum(node.ItemKey.values()) <= 1:
+            if node.Space == 0:
+                continue
+            isgem = False
+            if node.IsDoor and sum(node.ItemKey.values()) <= 1:
+                isgem = True
+            elif random.random() < 0.1 + 0.1 * node.Space:
+                isgem = True
+            if isgem:
                 if random.random() < 0.5:
                     itemgem = node.ItemAttackGem
                 else:
                     itemgem = node.ItemDefenceGem
                 gem = Tools.dict_choice(gem_choice)
+                itemgem[gem] += 1
+                node.Space -= 1
+                gem_number += gem
                 n += 1
-        print(n)
-
-    '''
-    每个单元提升25%-50%
-    '''
-    def set_gem(self, node_list):
-        gem_number = {
-            MazeBase.EliteType.attack: 0,
-            MazeBase.EliteType.defence: 0
-        }
-        gem_value = {
-            MazeBase.Value.Gem.small: 80,
-            MazeBase.Value.Gem.big: 15,
-            MazeBase.Value.Gem.large: 5
-        }
-        gem_key = {
-            MazeBase.EliteType.attack: 1,
-            MazeBase.EliteType.defence: 1
-        }
-
-        '''
-        self.ItemAttackGem = {
-            MazeBase.Value.Gem.small: 0,
-            MazeBase.Value.Gem.big: 0,
-            MazeBase.Value.Gem.large: 0,
-        }
-
-        self.ItemDefenceGem
-        '''
-        global gnode
-        gnode = node_list
-        print([[node.Space, node.IsDoor, node.IsMonster] for node in node_list if node.Space == 1])
-        for i in range(MazeSetting.attribute_number):
-            key = Tools.dict_choice(gem_key)
-            value = Tools.dict_choice(gem_value)
-            gem_number[key] += value
+        print(n, gem_number)
 
 
     def get_elite_floor(self, floor):
@@ -1220,7 +1207,7 @@ class Maze2:
         self.set_elite(elite_number, elite_type)
 
 
-    def set_monster(self, node_list):
+    def __set_monster(self, node_list):
         for node in node_list:
             if node.IsDoor:
                 if random.random() < MazeSetting.monster_ratio * (float(node.Space) - 1) / (float(node.Space) * MazeSetting.monster_ratio + 1):
@@ -1252,8 +1239,8 @@ class Maze2:
                 self.set_stair(f)
             node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
             self.set_door(node_list)
-            self.set_gem(node_list)
             self.set_monster(node_list)
+            self.set_gem(node_list)
 
             #print(self.get_fast_boss(floor - MazeSetting.base_floor + 1))
 
