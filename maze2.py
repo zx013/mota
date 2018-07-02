@@ -1,6 +1,7 @@
 #-*- coding:utf-8 -*-
 import random
 import pickle
+from functools import reduce
 #import copy
 
 
@@ -55,7 +56,7 @@ import pickle
 __random = random._inst.random
 __staticrandom = []
 def staticrandom(number=0):
-    for i in xrange(number):
+    for i in range(number):
         __staticrandom.append(__random())
     def new_random():
         r = __random()
@@ -121,7 +122,7 @@ class Tools:
     @staticmethod
     def random_average(total, number):
         average = [0] * number
-        for i in xrange(total):
+        for i in range(total):
             average[random.randrange(number)] += 1
         return average
 
@@ -130,7 +131,7 @@ class Tools:
     def random_floor(floor, number):
         average = Tools.random_average(floor - number, number + 1)
         s = [-1] * (number + 1)
-        for i in xrange(number):
+        for i in range(number):
             s[i + 1] = s[i] + average[i + 1] + 1
         return s[1:floor + 1] #number > floor时保留floor个元素
 
@@ -289,7 +290,7 @@ class TreeNode:
 
     @property
     def boss_floor(self):
-        return ((self.floor - 1) / MazeSetting.base_floor + 1) * MazeSetting.base_floor
+        return int((self.floor - 1) / MazeSetting.base_floor + 1) * MazeSetting.base_floor
 
     @property
     def forbid(self):
@@ -473,11 +474,11 @@ class Maze2:
                 del self.maze[key]
                 del self.maze_map[key]
                 del self.maze_info[key]
-        self.maze[floor] = [[MazeNode() for j in xrange(MazeSetting.cols + 2)] for i in xrange(MazeSetting.rows + 2)]
+        self.maze[floor] = [[MazeNode() for j in range(MazeSetting.cols + 2)] for i in range(MazeSetting.rows + 2)]
         self.maze_map[floor] = {MazeBase.Type.Static.ground: set()}
         self.maze_info[floor] = {}
-        for i in xrange(MazeSetting.rows + 2):
-            for j in xrange(MazeSetting.cols + 2):
+        for i in range(MazeSetting.rows + 2):
+            for j in range(MazeSetting.cols + 2):
                 if i in (0, MazeSetting.rows + 1) or j in (0, MazeSetting.cols + 1):
                     self.maze[floor][i][j].Type = MazeBase.Type.Static.wall
                 else:
@@ -535,7 +536,7 @@ class Maze2:
 
     #在floor层的type类型的区域中寻找符合func要求的点
     def find_pos(self, floor, type, func=None):
-        if not self.maze_map[floor].has_key(type):
+        if type not in self.maze_map[floor]:
             return set()
         if func:
             return {pos for pos in self.maze_map[floor][type] if func(pos)}
@@ -575,13 +576,13 @@ class Maze2:
         floor, x, y = pos
         if x + row > MazeSetting.rows + 2 or y + col > MazeSetting.cols + 2:
             return False
-        for i in xrange(row):
-            for j in xrange(col):
+        for i in range(row):
+            for j in range(col):
                 if self.get_type((floor, x + i, y + j)) != rect1[i][j]:
                     return False
         if rect2:
-            for i in xrange(row):
-                for j in xrange(col):
+            for i in range(row):
+                for j in range(col):
                     if rect2[i][j]:
                         type, value = rect2[i][j]
                         if type:
@@ -592,11 +593,11 @@ class Maze2:
 
     #查找矩形，设置rect2的话则用rect2替换找到的矩形
     def find_rect(self, floor, rect1, rect2=None):
-        _rect1 = zip(*rect1)
-        _rect2 = zip(*rect2) if rect2 else None
+        _rect1 = list(zip(*rect1))
+        _rect2 = list(zip(*rect2) if rect2 else None)
         row = len(rect1)
         col = len(_rect1)
-        pos_list = [(floor, i, j) for i in xrange(0, MazeSetting.rows + 2) for j in xrange(0, MazeSetting.cols + 2)]
+        pos_list = [(floor, i, j) for i in range(0, MazeSetting.rows + 2) for j in range(0, MazeSetting.cols + 2)]
         random.shuffle(pos_list)
         for pos in pos_list:
             self.is_rect(pos, rect1, rect2, row, col)
@@ -649,8 +650,12 @@ class Maze2:
 
         crack_list = self.get_crack(floor) #可打通的墙
         while ground:
+            pos = None
+            around = []
             area = self.get_area(ground.pop())
-            crack = reduce(lambda x, y: x | y, [self.get_beside(pos, MazeBase.Type.Static.wall) for pos in area]) & crack_list
+            for pos in area:
+                around.append(self.get_beside(pos, MazeBase.Type.Static.wall))
+            crack = reduce(lambda x, y: x | y, around) & crack_list
             node = TreeNode(area=area, crack=crack, special=pos in self.maze_info[floor]['special'])
             self.maze_info[floor]['node'].add(node)
             ground -= area
@@ -691,8 +696,8 @@ class Maze2:
     def get_rect(self, pos, width, height):
         z, x, y = pos
         rect = set()
-        for i in xrange(x, x + width):
-            for j in xrange(y, y + height):
+        for i in range(x, x + width):
+            for j in range(y, y + height):
                 rect.add((z, i, j))
         return rect
 
@@ -744,7 +749,7 @@ class Maze2:
 
         while next_node:
             if not crack_set:
-                node = random.choice(filter(lambda x: not x.Special, next_node))
+                node = random.choice(list(filter(lambda x: not x.Special, next_node)))
             else:
                 crack_pos = random.choice(list(crack_set - special_set))
                 #该区域和上一个区域之间的墙
@@ -901,7 +906,7 @@ class Maze2:
             for beside in self.get_beside(door, MazeBase.Type.Static.ground):
                 if self.pos_type(beside) == MazeBase.NodeType.road_corner:
                     corner.add(beside)
-        #print len(corner), len(self.find_pos(floor, MazeBase.Type.Static.door))
+        #print(len(corner), len(self.find_pos(floor, MazeBase.Type.Static.door)))
 
     def adjust_trap(self, floor):
         wall = MazeBase.Type.Static.wall
@@ -920,7 +925,7 @@ class Maze2:
                     continue
                 if not len(crack) % 2:
                     continue
-                #print crack
+                #print(crack)
 
     def adjust(self, floor):
         self.adjust_corner(floor)
@@ -972,7 +977,7 @@ class Maze2:
                 #特殊区域使用red或green的key
                 if node.Special:
                     door = node.ItemDoor
-                    for i in xrange(number - 1, -1, -1):
+                    for i in range(number - 1, -1, -1):
                         if node_list[i].ItemKey[door] > 0:
                             node_list[i].ItemKey[door] -= 1
                             key_number[door] -= 1
@@ -983,7 +988,7 @@ class Maze2:
                             break
             else:
                 if node.Special:
-                    print 'speciel has no door'
+                    print('speciel has no door')
 
             key_sum = sum(key_number.values())
             key_chance = 1 / (1.5 * (1.5 + float(key_sum)))
@@ -998,7 +1003,7 @@ class Maze2:
                     continue
                 break
 
-            for i in xrange(number):
+            for i in range(number):
                 key = Tools.dict_choice(key_choice)
                 if not key:
                     continue
@@ -1043,7 +1048,7 @@ class Maze2:
                     itemgem = node.ItemDefenceGem
                 gem = Tools.dict_choice(gem_choice)
                 n += 1
-        print n
+        print(n)
 
     '''
     每个单元提升25%-50%
@@ -1074,8 +1079,8 @@ class Maze2:
         '''
         global gnode
         gnode = node_list
-        print [[node.Space, node.IsDoor, node.IsMonster] for node in node_list if node.Space == 1]
-        for i in xrange(MazeSetting.attribute_number):
+        print([[node.Space, node.IsDoor, node.IsMonster] for node in node_list if node.Space == 1])
+        for i in range(MazeSetting.attribute_number):
             key = Tools.dict_choice(gem_key)
             value = Tools.dict_choice(gem_value)
             gem_number[key] += value
@@ -1114,10 +1119,10 @@ class Maze2:
 
         while True:
             if attribute_static < MazeBase.Value.Gem.large:
-                if gem_value.has_key(MazeBase.Value.Gem.large):
+                if MazeBase.Value.Gem.large in gem_value:
                     del gem_value[MazeBase.Value.Gem.large]
             if attribute_static < MazeBase.Value.Gem.big:
-                if gem_value.has_key(MazeBase.Value.Gem.big):
+                if MazeBase.Value.Gem.big in gem_value:
                     del gem_value[MazeBase.Value.Gem.big]
             if attribute_static < MazeBase.Value.Gem.small:
                 break
@@ -1168,20 +1173,20 @@ class Maze2:
         attribute_number = MazeSetting.attribute_number
         elite_sum = sum(elite_number)
         for number, type in zip(elite_number, elite_type):
-            attribute_total = attribute_number * number / elite_sum #总和会略小于attribute_number
+            attribute_total = int(attribute_number * number / elite_sum) #总和会略小于attribute_number
             attribute_static = int(attribute_total * MazeSetting.attribute_ratio)
             attribute_dynamic = attribute_total - attribute_static
 
             attribute_static_list = self.set_elite_attribute_static(attribute_static)
-            #print Tools.random_distribute(attribute_static_list, number)
-            print number, type, attribute_static, attribute_dynamic, len(attribute_static_list)
+            #print(Tools.random_distribute(attribute_static_list, number))
+            print(number, type, attribute_static, attribute_dynamic, len(attribute_static_list))
             #attribute_static平均分配
             #attribute_dynamic根据type分配
             #分配attribute_static，获得属性提高顺序
             #将分配的attribute_static分组，每一组视为小节点，设置该级别的monster（依据初始时的属性）
             if type == MazeBase.EliteType.health:
                 pass
-        print
+        print()
 
     def get_elite(self, start_floor, boss_floor, node_list):
         check = 0
@@ -1200,7 +1205,7 @@ class Maze2:
                 number += 1
             else:
                 break
-            print 'elite interval reset.'
+            print('elite interval reset.')
             check += 1
             if check > 100:
                 raise Exception
@@ -1226,7 +1231,7 @@ class Maze2:
                 node.Space -= 1
 
         #for node in node_list:
-        #    print len(node.Area), node.IsDoor, node.IsMonster, node.Space, sum(node.ItemKey.values())
+        #    print(len(node.Area), node.IsDoor, node.IsMonster, node.Space, sum(node.ItemKey.values()))
         start_floor = node_list[0].start_floor
         boss_floor = node_list[-1].boss_floor
         self.get_elite(start_floor, boss_floor, node_list)
@@ -1243,21 +1248,21 @@ class Maze2:
         if self.is_initial_floor(floor):
             self.set_start_area(floor)
         elif self.is_boss_floor(floor):
-            for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
+            for f in range(floor - MazeSetting.base_floor + 1, floor + 1):
                 self.set_stair(f)
             node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
             self.set_door(node_list)
             self.set_gem(node_list)
             self.set_monster(node_list)
 
-            #print self.get_fast_boss(floor - MazeSetting.base_floor + 1)
+            #print(self.get_fast_boss(floor - MazeSetting.base_floor + 1))
 
-            #print node_list
+            #print(node_list)
             #for node in node_list:
-            #    print node.floor, node.ItemKey.values(), node.ItemDoor, node.Space
+            #    print(node.floor, node.ItemKey.values(), node.ItemDoor, node.Space)
 
             self.set_boss_area(floor)
-            #for f in xrange(floor - MazeSetting.base_floor + 1, floor + 1):
+            #for f in range(floor - MazeSetting.base_floor + 1, floor + 1):
             #    self.show(f)
             Cache.staticrecount()
 
@@ -1273,21 +1278,22 @@ class Maze2:
 
     def fast_load(self, floor):
         for arg in self.record['info']:
-            if self.record[arg].has_key(floor):
+            if floor in self.record[arg]:
                 getattr(self, arg)[floor] = self.record[arg][floor]
 
+    #python2存储的数据python3无法读取，python3存储的数据python2可以读取
     def save(self, num):
         maze_record = {}
         for arg in self.record['info']:
-            maze_record[arg] = pickle.dumps(self.record[arg])
-        record = pickle.dumps(maze_record)
+            maze_record[arg] = pickle.dumps(self.record[arg], protocol=2)
+        record = pickle.dumps(maze_record, protocol=2)
 
-        with open(MazeSetting.save_format.format(num), 'w+') as fp:
+        with open(MazeSetting.save_format.format(num), 'wb') as fp:
             fp.write(record)
 
 
     def load(self, num):
-        with open(MazeSetting.save_format.format(num), 'r+') as fp:
+        with open(MazeSetting.save_format.format(num), 'rb') as fp:
             record = fp.read()
 
         maze_record = pickle.loads(record)
@@ -1298,7 +1304,7 @@ class Maze2:
     def create(self):
         self.set_record('maze', 'maze_map', 'maze_info')
         self.load(0)
-        for floor in xrange(MazeSetting.floor):
+        for floor in range(MazeSetting.floor):
             if self.is_initial_floor(floor):
                 self.fast_load(floor)
                 continue
@@ -1313,28 +1319,28 @@ class Maze2:
             self.set_item(floor)
 
         #self.show(0)
-        #for floor in xrange(MazeSetting.floor):
+        #for floor in range(MazeSetting.floor):
         #    self.fast_save(floor)
-        self.save(0)
+        #self.save(0)
         #self.show(1)
 
     def show(self, floor=None):
-        for k in xrange(MazeSetting.floor):
+        for k in range(MazeSetting.floor):
             if floor is not None: k = floor
-            print 'floor :', k
-            for i in xrange(MazeSetting.rows + 2):
-                for j in xrange(MazeSetting.cols + 2):
+            print('floor :', k)
+            for i in range(MazeSetting.rows + 2):
+                for j in range(MazeSetting.cols + 2):
                     if self.get_type((k, i, j)) == MazeBase.Type.Static.ground:
-                        print ' ',
+                        print(' ',)
                     elif self.get_type((k, i, j)) == MazeBase.Type.Static.wall:
-                        print 'x',
+                        print('x',)
                     elif self.get_type((k, i, j)) == MazeBase.Type.Static.door:
-                        print 'o',
+                        print('o',)
                     else:
-                        print self.get_value((k, i, j)),
-                print
-            print
-            print
+                        print(self.get_value((k, i, j)),)
+                print()
+            print()
+            print()
             if floor is not None: break
         import sys
         sys.stdout.flush()
