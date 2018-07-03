@@ -218,10 +218,18 @@ class MazeBase:
             prison = 5
             trap = 6
 
+        #起始时对应攻防平均属性的1%
         class Gem:
             small = 1
             big = 3
             large = 10
+        
+        #起始时对应攻防平均属性的1%
+        class Potion:
+            red = 50
+            blue = 200
+            yellow = 600
+            green = 1200
 
     class EliteType:
         boss = 0
@@ -255,6 +263,7 @@ class TreeNode:
 
         self.Special = special
         self.Space = len(area)
+        self.BaseSpace = self.Space
 
         self.ItemDoor = 0
         self.ItemKey = {
@@ -275,10 +284,18 @@ class TreeNode:
             MazeBase.Value.Gem.big: 0,
             MazeBase.Value.Gem.large: 0,
         }
+        
+        self.ItemPotion = {
+        }
 
         self.IsEmpty = False
         self.IsDoor = False
         self.IsMonster = False
+        self.IsElite = False
+        
+        #英雄到达区域时获得的宝石属性总和，该值用来设置怪物
+        self.Attack = 0
+        self.Defence = 0
 
     @property
     def floor(self):
@@ -363,16 +380,6 @@ class MazeSetting:
 
     #怪物的比例，值越高，门后出现怪物的可能性越大
     monster_ratio = 0.5
-
-    #精英怪物的数量
-    @Cache.static
-    def elite_number():
-        return Tools.float_offset(MazeSetting.base_floor ** 0.5 * 0.5 + MazeSetting.base_floor * 0.25)
-
-    #两个精英怪物之间的最小间隔数
-    @Cache.static
-    def elite_interval():
-        return (MazeSetting.rows * MazeSetting.cols) ** 0.5 / 1.5
 
 
 class Pos:
@@ -964,7 +971,10 @@ class Maze2:
             MazeBase.Value.Color.red: 0,
             MazeBase.Value.Color.green: 0
         }
-        for number, node in enumerate(node_list):
+        for number, node in enumerate(node_list[:-1]):
+            #第一个区域不放置
+            if number == 0:
+                continue
             #如果到达该区域还有有key时，可以设置门
             if sum(key_number.values()) > 0:
                 if random.random() < 0.3 * (node.Space - 2):
@@ -1028,8 +1038,8 @@ class Maze2:
     
     def set_monster(self, node_list):
         #没有door的需要放置monster
-        #若空间小于等于1，不能放怪物
-        for node in node_list:
+        #若空间小于等于1，不能放怪物，第一个区域不放置
+        for node in node_list[1:-1]:
             if node.Space == 0:
                 continue
             ismonster = False
@@ -1041,18 +1051,19 @@ class Maze2:
                 node.IsMonster = True
                 node.Space -= 1
         
-    #每个单元提升25%-50%
+    #每个单元提升50%左右
+    #应该根据当前属性分配，攻击高于防御时应提高防御宝石的数量，反之亦然
     def set_gem(self, node_list):
         gem_choice = {
             MazeBase.Value.Gem.small: 90,
             MazeBase.Value.Gem.big: 9,
             MazeBase.Value.Gem.large: 1
         }
-        gem_number = 0 #已放置的gem数量
-        n = 0
+        #确保攻防加成接近
+        gem_chance = 0.5
 
         #有门且放置的钥匙数小于等于1，必须放置宝物
-        for node in node_list:
+        for node in node_list[:-1]:
             if node.Space == 0:
                 continue
             isgem = False
@@ -1061,80 +1072,64 @@ class Maze2:
             elif random.random() < 0.1 + 0.1 * node.Space:
                 isgem = True
             if isgem:
-                if random.random() < 0.5:
+                gem = Tools.dict_choice(gem_choice)
+                if random.random() < gem_chance:
                     itemgem = node.ItemAttackGem
+                    gem_chance -= 0.02 * gem
                 else:
                     itemgem = node.ItemDefenceGem
-                gem = Tools.dict_choice(gem_choice)
+                    gem_chance += 0.02 * gem
                 itemgem[gem] += 1
                 node.Space -= 1
-                gem_number += gem
-                n += 1
-        print(n, gem_number)
 
 
-    def get_elite_floor(self, floor):
-        return [floor + f for f in Tools.random_floor(MazeSetting.base_floor - 1, MazeSetting.elite_number)]
+    def set_elite(self, node_list):
+        #elite总数大致8个左右，可能有靠近或连续的情况
+        elite_number = 0
+        for node in node_list[:-1]:
+            if not node.IsMonster:
+                continue
+            iselite = False
+            if node.ItemAttackGem[MazeBase.Value.Gem.large] > 0 or node.ItemDefenceGem[MazeBase.Value.Gem.large] > 0: #剑盾
+                iselite = True
+            elif node.ItemAttackGem[MazeBase.Value.Gem.big] > 0 or node.ItemDefenceGem[MazeBase.Value.Gem.big] > 0: #大宝石，如果有钥匙增加几率
+                if random.random() < 0.3 + 0.5 * sum(node.ItemKey.values()):
+                    iselite = True
+            elif node.ItemAttackGem[MazeBase.Value.Gem.small] > 0 or node.ItemDefenceGem[MazeBase.Value.Gem.small] > 0: #小宝石，概率取决于钥匙数量
+                if random.random() < 0.2 * sum(node.ItemKey.values()):
+                    iselite = True
+            elif node.ItemKey[MazeBase.Value.Color.red] > 0 or node.ItemKey[            MazeBase.Value.Color.green] > 0: #红绿钥匙
+                iselite = True
+            elif sum(node.ItemKey.values()) >= 3: #大量钥匙
+                iselite = True
+            if iselite:
+                node.IsElite = True
+                elite_number += 1
 
-    def get_elite_type(self, elite_floor):
+        #若elite数量不足时，在空间大的区域设置elite
+        index_list = [v for v in range(len(node_list) - 1)]
+        random.shuffle(index_list)
+        for index in index_list:
+            node = node_list[index]
+            if not node.IsMonster:
+                continue
+            if node.Space > elite_number:
+                node.IsElite = True
+                elite_number += 1
+
+
+    def set_attribute(self, node_list):
+        for pnode, node in Tools.iter_previous(node_list):
+            node.Attack = pnode.Attack + MazeBase.Value.Gem.small * pnode.ItemAttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.ItemAttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.ItemAttackGem[MazeBase.Value.Gem.large]
+            node.Defence = pnode.Defence + MazeBase.Value.Gem.small * pnode.ItemDefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.ItemDefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.ItemDefenceGem[MazeBase.Value.Gem.large]
+            print(node.Space, node.Attack, node.Defence, node.IsMonster, node.IsElite)
+
+    def apply_elite(self):
         elite_choice = {
             MazeBase.EliteType.health: 1,
             MazeBase.EliteType.attack: 1,
             MazeBase.EliteType.defence: 1
         }
-        elite_type = []
-        for floor in elite_floor:
-            tp = Tools.dict_choice(elite_choice)
-            for key in elite_choice.keys():
-                if key != tp:
-                    elite_choice[key] += 1
-            elite_type.append(tp)
-        return elite_type
-
-    def set_elite_attribute_static(self, attribute_static):
-        gem_number = {
-            MazeBase.EliteType.attack: 0,
-            MazeBase.EliteType.defence: 0
-        }
-        gem_value = {
-            MazeBase.Value.Gem.small: 80,
-            MazeBase.Value.Gem.big: 15,
-            MazeBase.Value.Gem.large: 5
-        }
-
-        attribute_list = []
-
-        while True:
-            if attribute_static < MazeBase.Value.Gem.large:
-                if MazeBase.Value.Gem.large in gem_value:
-                    del gem_value[MazeBase.Value.Gem.large]
-            if attribute_static < MazeBase.Value.Gem.big:
-                if MazeBase.Value.Gem.big in gem_value:
-                    del gem_value[MazeBase.Value.Gem.big]
-            if attribute_static < MazeBase.Value.Gem.small:
-                break
-
-            distance = gem_number[MazeBase.EliteType.attack] - gem_number[MazeBase.EliteType.defence]
-            if distance > 0:
-                gem_key = {
-                    MazeBase.EliteType.attack: 1,
-                    MazeBase.EliteType.defence: 1 + distance
-                }
-            else:
-                gem_key = {
-                    MazeBase.EliteType.attack: 1 - distance,
-                    MazeBase.EliteType.defence: 1
-                }
-
-            key = Tools.dict_choice(gem_key)
-            value = Tools.dict_choice(gem_value)
-            gem_number[key] += value
-            attribute_static -= value
-            attribute_list.append((key, value))
-        return attribute_list
-
-
-    def set_elite(self, elite_number, elite_type):
         attribute_choice = {
             MazeBase.EliteType.boss: {
                 MazeBase.EliteType.health: 40,
@@ -1157,54 +1152,6 @@ class Maze2:
                 MazeBase.EliteType.defence: 80
             }
         }
-        attribute_number = MazeSetting.attribute_number
-        elite_sum = sum(elite_number)
-        for number, type in zip(elite_number, elite_type):
-            attribute_total = int(attribute_number * number / elite_sum) #总和会略小于attribute_number
-            attribute_static = int(attribute_total * MazeSetting.attribute_ratio)
-            attribute_dynamic = attribute_total - attribute_static
-
-            attribute_static_list = self.set_elite_attribute_static(attribute_static)
-            #print(Tools.random_distribute(attribute_static_list, number))
-            print(number, type, attribute_static, attribute_dynamic, len(attribute_static_list))
-            #attribute_static平均分配
-            #attribute_dynamic根据type分配
-            #分配attribute_static，获得属性提高顺序
-            #将分配的attribute_static分组，每一组视为小节点，设置该级别的monster（依据初始时的属性）
-            if type == MazeBase.EliteType.health:
-                pass
-        print()
-
-    def get_elite(self, start_floor, boss_floor, node_list):
-        check = 0
-        while True:
-            elite_floor = self.get_elite_floor(start_floor)
-            elite_node = [self.find_node(set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]).pop()) for floor in elite_floor]
-            elite_number = []
-            number = 0
-            for node in node_list:
-                if node in elite_node:
-                    #保证两个elite之间的间距不能太小，去除该点或重新分配，有极小概率出现死循环状况，出现过2次
-                    if number < MazeSetting.elite_interval:
-                        break
-                    elite_number.append(number)
-                    number = 0
-                number += 1
-            else:
-                break
-            print('elite interval reset.')
-            check += 1
-            if check > 100:
-                raise Exception
-
-        elite_type = self.get_elite_type(elite_floor)
-
-        #add boss as elite
-        elite_floor.append(boss_floor)
-        elite_node.append(self.find_node(set(self.maze_info[boss_floor]['special']).pop()))
-        elite_number.append(number)
-        elite_type.append(MazeBase.EliteType.boss)
-        self.set_elite(elite_number, elite_type)
 
 
     def __set_monster(self, node_list):
@@ -1241,6 +1188,8 @@ class Maze2:
             self.set_door(node_list)
             self.set_monster(node_list)
             self.set_gem(node_list)
+            self.set_elite(node_list)
+            self.set_attribute(node_list)
 
             #print(self.get_fast_boss(floor - MazeSetting.base_floor + 1))
 
@@ -1316,16 +1265,17 @@ class Maze2:
             if floor is not None: k = floor
             print('floor :', k)
             for i in range(MazeSetting.rows + 2):
+                line = ''
                 for j in range(MazeSetting.cols + 2):
                     if self.get_type((k, i, j)) == MazeBase.Type.Static.ground:
-                        print(' ',)
+                        line += '  '
                     elif self.get_type((k, i, j)) == MazeBase.Type.Static.wall:
-                        print('x',)
+                        line += 'x '
                     elif self.get_type((k, i, j)) == MazeBase.Type.Static.door:
-                        print('o',)
+                        line += 'o '
                     else:
-                        print(self.get_value((k, i, j)),)
-                print()
+                        line += str(self.get_value((k, i, j))) + ' '
+                print(line)
             print()
             print()
             if floor is not None: break
