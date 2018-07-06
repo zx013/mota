@@ -365,21 +365,103 @@ class MazeSetting:
     #每几层一个单元
     base_floor = 10
 
-    #经过一个单元获取的宝石数量
-    @Cache.static
-    def attribute_number():
-        return int((0.3 + 0.3 * random.random()) / MazeSetting.attribute_value)
-
     #每个宝石增加的属性值（总属性百分比）
     attribute_value = 0.01
 
-    #宝石获取的属性占比（不能改变的增加值）
-    @Cache.static
-    def attribute_ratio():
-        return 0.4 + random.random() * 0.2
-
     #怪物的比例，值越高，门后出现怪物的可能性越大
     monster_ratio = 0.5
+
+
+class MonsterInfo:
+    path = 'data/monster'
+    data_range = 8
+    type_range = 20
+    
+    #name, resource, locate, level, health, attack, defence, skill
+    data = {
+        'slime': {
+            'level':       0,
+            'green':       ('name', '001.png', 0, 0, 5, 5, -2, False),
+            'red':         ('name', '001.png', 1, 0, 5, 5, -2, False),
+            'black':       ('name', '001.png', 2, 0, 5, 5, -2, False),
+            'king':        ('name', '001.png', 3, 0, 5, 5, -2, False)
+        },
+        'bat': {
+            'level':       10,
+            'small':       ('name', '002.png', 0, 0, 5, 5, -2, False),
+            'big':         ('name', '002.png', 1, 0, 5, 5, -2, False),
+            'red':         ('name', '002.png', 2, 0, 5, 5, -2, False),
+            'purple':      ('name', '011.png', 2, 0, 5, 5, -2, False)
+        },
+        'skeleton': {
+            'level':       20,
+            '1':           ('name', '007.png', 1, 0, 5, 5, -2, False),
+            '2':           ('name', '007.png', 2, 0, 5, 5, -2, False),
+            '3':           ('name', '010.png', 3, 0, 5, 5, -2, False),
+            '4':           ('name', '007.png', 3, 0, 5, 5, -2, False),
+            '5':           ('name', '007.png', 3, 0, 5, 5, -2, False)
+        },
+        'knight': {
+            'level':       40,
+            'yellow':      ('name', '007.png', 1, 0, 5, 5, -2, False),
+            'red':         ('name', '007.png', 2, 0, 5, 5, -2, False),
+            'blue':        ('name', '010.png', 3, 0, 5, 5, -2, False),
+            'black':       ('name', '007.png', 3, 0, 5, 5, -2, False)
+        },
+        'mage': {
+            'level':       20,
+            'blue':        ('name', '005.png', 0, 0, 5, 5, -2, True),
+            'yellow':      ('name', '009.png', 0, 0, 5, 5, -2, True),
+            'red':         ('name', '005.png', 1, 0, 5, 5, -2, True)
+        },
+        'orcish': {
+            'level':       30,
+            '1':           ('name', '007.png', 1, 0, 5, 5, -2, False),
+            '2':           ('name', '007.png', 2, 0, 5, 5, -2, False),
+            '3':           ('name', '010.png', 3, 0, 5, 5, -2, False)
+        },
+        'guard': {
+            'level':       30,
+            'yellow':      ('name', '007.png', 1, 0, 5, 5, -2, False),
+            'blue':        ('name', '007.png', 1, 0, 5, 5, -2, False),
+            'red':         ('name', '007.png', 1, 0, 5, 5, -2, False)
+        },
+        'wizard': {
+            'level':       60,
+            'brown':       ('name', '007.png', 1, 0, 5, 5, -2, True),
+            'red':         ('name', '007.png', 1, 0, 5, 5, -2, True)
+        },
+        'quicksilver': {
+            'level':       40,
+            'white':       ('name', '007.png', 1, 0, 5, 5, -2, False),
+            'gray':        ('name', '007.png', 1, 0, 5, 5, -2, False)
+        },
+        'rock': {
+            'level':       50,
+            'brown':       ('name', '004.png', 2, 0, 5, 5, -2, False),
+            'gray':        ('name', '011.png', 3, 0, 5, 5, -2, False)
+        },
+        'swordman': {
+            'level':       70,
+            'brown':       ('name', '007.png', 1, 0, 5, 5, -2, False),
+            'red':         ('name', '007.png', 1, 0, 5, 5, -2, False)
+        },
+        'elite': {
+            'level':       80,
+            'vampire':     ('name', '002.png', 3, 0, 5, 5, -2, False),
+            'darkmage':    ('name', '002.png', 3, 0, 5, 5, -2, True),
+            'silverslime': ('name', '002.png', 3, 0, 5, 5, -2, False),
+            'glodslime':   ('name', '002.png', 3, 0, 5, 5, -2, False),
+        },
+        'boss': {
+            'level':       100,
+            'blue':        ('name', '002.png', 3, 0, 5, 5, -2, False),
+            'green':       ('name', '002.png', 3, 0, 5, 5, -2, False),
+            'yellow':      ('name', '002.png', 3, 0, 5, 5, -2, False),
+            'red':         ('name', '002.png', 3, 0, 5, 5, -2, False),
+            'black':       ('name', '002.png', 3, 0, 5, 5, -2, False)
+        }
+    }
 
 
 class Pos:
@@ -1122,7 +1204,24 @@ class Maze2:
         for pnode, node in Tools.iter_previous(node_list):
             node.Attack = pnode.Attack + MazeBase.Value.Gem.small * pnode.ItemAttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.ItemAttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.ItemAttackGem[MazeBase.Value.Gem.large]
             node.Defence = pnode.Defence + MazeBase.Value.Gem.small * pnode.ItemDefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.ItemDefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.ItemDefenceGem[MazeBase.Value.Gem.large]
-            print(node.Space, node.Attack, node.Defence, node.IsMonster, node.IsElite)
+
+    
+    def apply_monster(self, node_list):
+        for key1, data1 in MonsterInfo.data.items():
+            level = data1['level']
+            for key2, data2 in data1.items():
+                if key2 == 'level':
+                    continue
+                level = data2[3]
+                print((key1, key2), data2)
+        num = 0
+        for node in node_list:
+            if not node.IsMonster:
+                continue
+            num += 1
+            #MonsterInfo.data
+            #print(node.Attack, node.Defence, node.IsElite)
+        print(num)
 
     def apply_elite(self):
         elite_choice = {
@@ -1154,23 +1253,6 @@ class Maze2:
         }
 
 
-    def __set_monster(self, node_list):
-        for node in node_list:
-            if node.IsDoor:
-                if random.random() < MazeSetting.monster_ratio * (float(node.Space) - 1) / (float(node.Space) * MazeSetting.monster_ratio + 1):
-                    node.IsMonster = True
-            else:
-                node.IsMonster = True
-            if node.IsMonster:
-                node.Space -= 1
-
-        #for node in node_list:
-        #    print(len(node.Area), node.IsDoor, node.IsMonster, node.Space, sum(node.ItemKey.values()))
-        start_floor = node_list[0].start_floor
-        boss_floor = node_list[-1].boss_floor
-        self.get_elite(start_floor, boss_floor, node_list)
-
-
     def set_start_area(self, floor):
         pass
 
@@ -1190,12 +1272,9 @@ class Maze2:
             self.set_gem(node_list)
             self.set_elite(node_list)
             self.set_attribute(node_list)
+            self.apply_monster(node_list)
 
             #print(self.get_fast_boss(floor - MazeSetting.base_floor + 1))
-
-            #print(node_list)
-            #for node in node_list:
-            #    print(node.floor, node.ItemKey.values(), node.ItemDoor, node.Space)
 
             self.set_boss_area(floor)
             #for f in range(floor - MazeSetting.base_floor + 1, floor + 1):
