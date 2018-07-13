@@ -376,7 +376,8 @@ class MazeSetting:
 
 class MonsterInfo:
     path = 'data/monster'
-    data_range = 15
+    data_fluctuate = 20
+    data_range = 10
 
     #name, resource, locate, level, health, attack, defence, skill
     data = {
@@ -437,10 +438,10 @@ class MonsterInfo:
             'red':         ('name', '009.png', 1, 90, 5, 5, -2, False)
         },
         'elite': {
-            'vampire':     ('name', '002.png', 3, 85, 5, 5, -2, False),
-            'darkmage':    ('name', '008.png', 2, 95, 5, 5, -2, True),
-            'silverslime': ('name', '008.png', 3, 80, 5, 5, -2, False),
-            'glodslime':   ('name', '011.png', 0, 90, 5, 5, -2, False),
+            'vampire':     ('name', '002.png', 3, 85, 160, 20, 20, False),
+            'darkmage':    ('name', '008.png', 2, 95, 80, -60, 20, True),
+            'silverslime': ('name', '008.png', 3, 80, 100, 20, 10, False),
+            'glodslime':   ('name', '011.png', 0, 90, 120, 30, 10, False),
         },
         'boss': {
             'blue':        ('name', '008.png', 1, 100, 5, 5, -2, False),
@@ -1218,28 +1219,26 @@ class Maze2:
             if key1 in ('elite', 'boss'):
                 continue
             for key2, data2 in data1.items():
-                level = data2[3]
-                minimum = int(float(level - MonsterInfo.data_range) * monster_length / 100)
-                maximum = int(float(level + MonsterInfo.data_range) * monster_length / 100)
-                if minimum < 0:
-                    minimum = 0
-                if maximum > monster_length:
-                    maximum = monster_length
+                level = random.choice(range(max(0, data2[3] - MonsterInfo.data_fluctuate), min(100, data2[3] + MonsterInfo.data_fluctuate)))
+                minimum = max(0, int(float(level - MonsterInfo.data_range) * monster_length / 100))
+                maximum = min(monster_length, int(float(level + MonsterInfo.data_range) * monster_length / 100))
                 for index in range(minimum, maximum):
                     random_list[index].append((key1, key2))
 
+        print(random_list)
         index = 0
         for node in node_list:
             if not node.IsMonster or node.IsElite:
                 continue
             random_data = random_list[index]
+            if not random_data:
+                continue
             node.Monster = random.choice(random_data)
             index += 1
 
 
     #理论上每个elite应该尽量不同，避免elite间隔太大导致的偏差
     def apply_elite(self, node_list):
-        print([number for number, node in enumerate(node_list) if node.IsElite])
         random_list = list(MonsterInfo.data['elite'].keys())
         random.shuffle(random_list)
         for node in node_list:
@@ -1247,6 +1246,26 @@ class Maze2:
                 continue
             node.Monster = ('elite', random_list.pop())
 
+
+    def adjust_monster(self, node_list):
+        print([number for number, node in enumerate(node_list) if node.IsElite])
+        number_enable = [False for node in node_list]
+        for number, node in enumerate(node_list):
+            if not node.IsMonster:
+                continue
+            if number_enable[number] == True:
+                continue
+
+            monster = node.Monster
+            monster_number = []            
+            for number, node in enumerate(node_list):
+                if node.IsMonster and node.Monster == monster:
+                    monster_number.append(number)
+                    number_enable[number] = True
+            #monster_number跨度越大，越偏向于攻击，跨度越小，越偏向于防御
+            print(node_list[monster_number[0]].Attack, node_list[monster_number[0]].Defence)
+            print(node_list[monster_number[-1]].Attack, node_list[monster_number[-1]].Defence)
+            print()
 
 
     def set_start_area(self, floor):
@@ -1270,6 +1289,7 @@ class Maze2:
             self.set_attribute(node_list)
             self.apply_monster(node_list)
             self.apply_elite(node_list)
+            self.adjust_monster(node_list)
 
             #print(self.get_fast_boss(floor - MazeSetting.base_floor + 1))
 
