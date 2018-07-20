@@ -1,56 +1,8 @@
 #-*- coding:utf-8 -*-
 import random
 import pickle
-import math
 from functools import reduce
 #import copy
-
-
-'''
-设计
-每过10层属性提升至当前的1.1-1.4倍，楼层越高，数值越小
-每10层放置10-20个宝石，楼层越高，数值越小，每100层减1
-宝石提升的属性为总属性的0.01-0.02，楼层越高，数值越小，每100层减0.001
-300层时属性在10万级
-1000层时属性在100亿级
-'''
-'''
-    生成monster列表
-    monster设计, low(l), normal(n), high(h)
-    health(H), attack(A), defence(D), gem_attack(a), gem_defence(d), shop(s)
-    10000      120        80          40 * 1         20 * 1          40 * 1
-    monster    attack: 80->100->140, defence: 120->160->200
-
-                        health(H)    attack(A)    defence(D)    skill(S)
-    slime:                1.0          1.1          0.1           -
-    bat:                  1.2          1.2          0.2           -
-    skeleton:             0.6          1.8          0.1           -
-    knight:               2.0          1.3          0.5           -
-    mage:                 1.5          0.2          0.5           o
-    orcish:               3.0          1.5          0.3           -
-    guard:                1.2          1.2          0.8           -
-    wizard:               1.8          0.5          0.5           o
-    quicksilver:          0.8          1.6          0.6           -
-    rock:                 0.5          1.0          1.0           -
-    swordman:             1.0          2.0          0.5           -
-    ghost:                1.5          1.6          0.7           -
-    boss:                 5.0          2.0          1.0           -
-
-    每个宝石增加的属性为hero属性的1-2%，向上取整
-    获取hero初始值，提高一定的比例得到最终值，保证增加的值为宝石的10-20倍
-    根据hero初始值和最终值获取monster初始值和最终值，计算方法为，根据hero的攻防，增加或减少一定比例
-    关键monster
-    高防，强制加攻
-    高攻低血，秒杀
-    高血，防杀
-    关键monster在关键路径上，关键路径为通往下一层的必经道路
-    两个关键monster在通关路径上应间隔若干个区域，以便放置宝石
-    关键monster和上一个关键monster之间的属性增加值（任意配点）足够击败该关键monster，但不足以击败下一个关键monster
-
-
-    slime(4), bat(4), skeleton(5), knight(4), mage(3), orcish(2), guard(3),
-    wizard(2), quicksilver(2), rock(2), swordman(2), ghost(1), boss(5)
-    '''
 
 
 #限制随机，防止S/L，S/L时需存取__staticrandom
@@ -89,85 +41,6 @@ class Tools:
             if number > 0:
                 yield previous, element
             previous = element
-
-    #迭代当前值和之前所有值
-    @staticmethod
-    def iter_record(iterator):
-        record = []
-        for element in iterator:
-            yield record, element
-            record.append(element)
-
-    #输入一个float，返回一个接近的int
-    @staticmethod
-    def float_offset(number):
-        r = random.random()
-        decimal = number - int(number)
-        if decimal < 0.5:
-            if r < 0.25 - 0.5 * decimal:
-                offset = int(number) - 1
-            elif r < 0.5:
-                offset = int(number) + 1
-            else:
-                offset = int(number)
-        else:
-            if r < 0.25 - 0.5 * (1 - decimal):
-                offset = int(number) + 2
-            elif r < 0.5:
-                offset = int(number)
-            else:
-                offset = int(number) + 1
-        return offset
-
-    #将一个数较为平均的分成几份
-    @staticmethod
-    def random_average(total, number):
-        average = [0] * number
-        for i in range(total):
-            average[random.randrange(number)] += 1
-        return average
-
-    #从range(floor)的楼层中选出几层出来
-    @staticmethod
-    def random_floor(floor, number):
-        average = Tools.random_average(floor - number, number + 1)
-        s = [-1] * (number + 1)
-        for i in range(number):
-            s[i + 1] = s[i] + average[i + 1] + 1
-        return s[1:floor + 1] #number > floor时保留floor个元素
-
-    #将一个列表中的元素按顺序分配到number个盒子中，每个盒子最多分配maximum个
-    @staticmethod
-    def random_distribute(element_list, number, maximum=2):
-        element_number = len(element_list)
-        remain_number = element_number
-        remain_index = number
-        if remain_index <  0:
-            return False
-        if remain_index * maximum < remain_number:
-            return False
-        #element_number个元素放在number个盒子中
-        #每个盒子取值范围为[0, maximum]，当element_number为0时，1.0的概率取0，当element_number为number * maximum时，1.0的概率为maximum，每个盒子的期望为element_number / number
-
-        random_list = []
-        while remain_index > 0:
-            #最小值，剩余的全部放满
-            min_num = max(0, remain_number - (remain_index - 1) * maximum)
-            #最大值，剩余的全部放空
-            max_num = min(maximum, remain_number)
-
-            average_number = float(remain_number) / float(remain_index)
-            d = dict([(n, int(1000 / (abs(average_number - n) ** 2 + 0.01))) for n in range(min_num, max_num + 1)]) #指数越大越均匀
-            num = Tools.dict_choice(d)
-
-            remain_number -= num
-            remain_index -= 1
-            random_list.append(element_list[element_number - remain_number - num:element_number - remain_number])
-
-        return random_list
-
-
-
 
 
 class MazeBase:
@@ -264,32 +137,34 @@ class TreeNode:
 
         self.Special = special
         self.Space = len(area)
-        self.BaseSpace = self.Space
 
-        self.ItemDoor = 0
-        self.ItemKey = {
+        self.Door = 0
+        self.Key = {
             MazeBase.Value.Color.yellow: 0,
             MazeBase.Value.Color.blue: 0,
             MazeBase.Value.Color.red: 0,
             MazeBase.Value.Color.green: 0
         }
 
-        self.ItemAttackGem = {
+        self.AttackGem = {
             MazeBase.Value.Gem.small: 0,
             MazeBase.Value.Gem.big: 0,
-            MazeBase.Value.Gem.large: 0,
+            MazeBase.Value.Gem.large: 0
         }
 
-        self.ItemDefenceGem = {
+        self.DefenceGem = {
             MazeBase.Value.Gem.small: 0,
             MazeBase.Value.Gem.big: 0,
-            MazeBase.Value.Gem.large: 0,
+            MazeBase.Value.Gem.large: 0
         }
 
-        self.ItemPotion = {
+        self.Potion = {
+            MazeBase.Value.Potion.red: 0,
+            MazeBase.Value.Potion.blue: 0,
+            MazeBase.Value.Potion.yellow: 0,
+            MazeBase.Value.Potion.green: 0
         }
 
-        self.IsEmpty = False
         self.IsDoor = False
         self.IsMonster = False
         self.IsElite = False
@@ -301,6 +176,9 @@ class TreeNode:
 
         self.Monster = None
         self.Damage = 0
+
+        #圣水，开始时放置，用来调整第一个节点无法放置足够药水的问题
+        self.HolyWater = 0
 
     @property
     def floor(self):
@@ -373,9 +251,6 @@ class MazeSetting:
     #每个宝石增加的属性值（总属性百分比）
     attribute_value = 0.01
 
-    #怪物的比例，值越高，门后出现怪物的可能性越大
-    monster_ratio = 0.5
-
     #第一个怪物造成的最低伤害
     damage_min = 200
 
@@ -399,8 +274,11 @@ class MazeSetting:
 
     damage_total_min = 100
 
-    #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间
-    montecarlo_time = 1000
+    #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
+    montecarlo_time = 3000
+
+    #使用近似最优解通关后至少剩余的额外的血量
+    extra_potion = 100
 
 
 class MonsterInfo:
@@ -946,46 +824,6 @@ class Maze2:
                 door_list -= node.Crack
 
 
-    #从下行楼梯到上行楼梯的最短路径
-    def get_fast_way(self, floor):
-        down = set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]).pop()
-        down_node = self.find_node(down)
-        if self.is_boss_floor(floor):
-            for up_node in self.maze_info[floor]['node']:
-                if up_node.Special:
-                    break
-        else:
-            up = set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]).pop()
-            up_node = self.find_node(up)
-
-        level = 0
-        node_info = {level: set([down_node])}
-        while True:
-            node_info[level + 1] = set()
-            for node in node_info[level]:
-                node_info[level + 1] |= set(node.Forward.values())
-            level += 1
-            if up_node in node_info[level] or not node_info[level]:
-                break
-
-        node_list = [up_node]
-        node = up_node
-        for i in range(level)[::-1]:
-            node = (node_info[i] & set(node.Backward.values())).pop()
-            node_list.append(node)
-
-        return node_list[::-1]
-
-    #从起点到boss区域的最短路径
-    def get_fast_boss(self, floor):
-        node_list = []
-        while True:
-            node_list += self.get_fast_way(floor)
-            if self.is_boss_floor(floor):
-                break
-            floor += 1
-        return node_list
-
     #遍历树
     def ergodic_yield(self, floor, across=1):
         node_list = [set(self.maze_info[floor]['tree']).pop()]
@@ -1082,21 +920,21 @@ class Maze2:
                 if random.random() < 0.3 * (node.Space - 2):
                     door = Tools.dict_choice(key_number)
                     node.IsDoor = True
-                    node.ItemDoor = door
+                    node.Door = door
                     node.Space -= 1
                     key_number[door] -= 1
 
                 #特殊区域使用red或green的key
                 if node.Special:
-                    door = node.ItemDoor
+                    door = node.Door
                     for i in range(number - 1, -1, -1):
-                        if node_list[i].ItemKey[door] > 0:
-                            node_list[i].ItemKey[door] -= 1
+                        if node_list[i].Key[door] > 0:
+                            node_list[i].Key[door] -= 1
                             key_number[door] -= 1
                             door = Tools.dict_choice(key_choice_special)
-                            node_list[i].ItemKey[door] += 1
+                            node_list[i].Key[door] += 1
                             key_number[door] += 1
-                            node.ItemDoor = door
+                            node.Door = door
                             break
             else:
                 if node.Special:
@@ -1124,16 +962,16 @@ class Maze2:
                     continue
 
                 key_number[key] += 1
-                node.ItemKey[key] += 1
+                node.Key[key] += 1
                 node.Space -= 1
 
         #删除多余的key，从后往前
         if sum(key_number.values()) > 0:
             for node in node_list[::-1]:
                 for key in key_number.keys():
-                    while key_number[key] > 0 and node.ItemKey[key] > 0:
+                    while key_number[key] > 0 and node.Key[key] > 0:
                         key_number[key] -= 1
-                        node.ItemKey[key] -= 1
+                        node.Key[key] -= 1
                         node.Space += 1
                 if sum(key_number.values()) == 0:
                     break
@@ -1169,17 +1007,17 @@ class Maze2:
             if node.Space == 0:
                 continue
             isgem = False
-            if node.IsDoor and sum(node.ItemKey.values()) <= 1:
+            if node.IsDoor and sum(node.Key.values()) <= 1:
                 isgem = True
             elif random.random() < 0.1 + 0.1 * node.Space:
                 isgem = True
             if isgem:
                 gem = Tools.dict_choice(gem_choice)
                 if random.random() < gem_chance:
-                    itemgem = node.ItemAttackGem
+                    itemgem = node.AttackGem
                     gem_chance -= 0.02 * gem
                 else:
-                    itemgem = node.ItemDefenceGem
+                    itemgem = node.DefenceGem
                     gem_chance += 0.02 * gem
                 itemgem[gem] += 1
                 node.Space -= 1
@@ -1207,17 +1045,17 @@ class Maze2:
                 iselite = False
 
                 if frequency == 0:
-                    if node.ItemAttackGem[MazeBase.Value.Gem.large] > 0 or node.ItemDefenceGem[MazeBase.Value.Gem.large] > 0: #剑盾
+                    if node.AttackGem[MazeBase.Value.Gem.large] > 0 or node.DefenceGem[MazeBase.Value.Gem.large] > 0: #剑盾
                         iselite = True
-                    elif node.ItemAttackGem[MazeBase.Value.Gem.big] > 0 or node.ItemDefenceGem[MazeBase.Value.Gem.big] > 0: #大宝石，如果有钥匙增加几率
-                        if random.random() < 0.3 + 0.5 * sum(node.ItemKey.values()):
+                    elif node.AttackGem[MazeBase.Value.Gem.big] > 0 or node.DefenceGem[MazeBase.Value.Gem.big] > 0: #大宝石，如果有钥匙增加几率
+                        if random.random() < 0.3 + 0.5 * sum(node.Key.values()):
                             iselite = True
-                    elif node.ItemAttackGem[MazeBase.Value.Gem.small] > 0 or node.ItemDefenceGem[MazeBase.Value.Gem.small] > 0: #小宝石，概率取决于钥匙数量
-                        if random.random() < 0.2 * sum(node.ItemKey.values()):
+                    elif node.AttackGem[MazeBase.Value.Gem.small] > 0 or node.DefenceGem[MazeBase.Value.Gem.small] > 0: #小宝石，概率取决于钥匙数量
+                        if random.random() < 0.2 * sum(node.Key.values()):
                             iselite = True
-                    elif node.ItemKey[MazeBase.Value.Color.red] > 0 or node.ItemKey[            MazeBase.Value.Color.green] > 0: #红绿钥匙
+                    elif node.Key[MazeBase.Value.Color.red] > 0 or node.Key[            MazeBase.Value.Color.green] > 0: #红绿钥匙
                         iselite = True
-                    elif sum(node.ItemKey.values()) >= 3: #大量钥匙
+                    elif sum(node.Key.values()) >= 3: #大量钥匙
                         iselite = True
                 elif frequency == 1:
                     #若elite数量不足时，在空间大的区域设置elite
@@ -1237,8 +1075,8 @@ class Maze2:
 
     def set_attribute(self, node_list):
         for pnode, node in Tools.iter_previous(node_list):
-            node.Attack = pnode.Attack + MazeBase.Value.Gem.small * pnode.ItemAttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.ItemAttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.ItemAttackGem[MazeBase.Value.Gem.large]
-            node.Defence = pnode.Defence + MazeBase.Value.Gem.small * pnode.ItemDefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.ItemDefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.ItemDefenceGem[MazeBase.Value.Gem.large]
+            node.Attack = pnode.Attack + MazeBase.Value.Gem.small * pnode.AttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.AttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.AttackGem[MazeBase.Value.Gem.large]
+            node.Defence = pnode.Defence + MazeBase.Value.Gem.small * pnode.DefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.DefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.DefenceGem[MazeBase.Value.Gem.large]
 
 
     def apply_monster(self, node_list):
@@ -1317,9 +1155,9 @@ class Maze2:
                 for number in monster_number:
                     node = node_list[number]
                     if monster_ismagic:
-                        damage = (math.ceil(monster_health / (node.Attack - defence)) - 1) * attack
+                        damage = (monster_health - 1) // (node.Attack - defence) * attack
                     else:
-                        damage = (math.ceil(monster_health / (node.Attack - defence)) - 1) * (attack - node.Defence)
+                        damage = (monster_health - 1) // (node.Attack - defence) * (attack - node.Defence)
                     damage_list.append(damage)
                     node.Damage = damage
 
@@ -1369,7 +1207,7 @@ class Maze2:
         boss = node_list[-1]
 
         number = 0
-        while True:
+        while number < MazeSetting.montecarlo_time:
             total_damage = 0
             attack = 0
             defence = 0
@@ -1382,16 +1220,18 @@ class Maze2:
 
             node_path = []
             node_list = [set(self.maze_info[floor]['tree']).pop()]
+            node_len = len(node_list)
+            random.shuffle(node_list)
+
             while node_list:
                 node = None
                 damage = 0
-                random.shuffle(node_list)
                 for node in node_list:
                     if node.IsBoss:
                         node = None
                         continue
                     if node.IsDoor:
-                        if key[node.ItemDoor] == 0:
+                        if key[node.Door] == 0:
                             node = None
                             continue
                     if node.IsMonster:
@@ -1408,9 +1248,9 @@ class Maze2:
                             node = None
                             continue
                         if monster_ismagic:
-                            damage = (math.ceil(monster_health / (attack - monster_defence)) - 1) * monster_attack
+                            damage = (monster_health - 1) // (attack - monster_defence) * monster_attack
                         else:
-                            damage = (math.ceil(monster_health / (attack - monster_defence)) - 1) * (monster_attack - defence)
+                            damage = (monster_health - 1) // (attack - monster_defence) * (monster_attack - defence)
                         if damage < 0:
                             damage = 0
 
@@ -1423,22 +1263,30 @@ class Maze2:
                 if node == None:
                     break
 
-                key[MazeBase.Value.Color.yellow] += node.ItemKey[MazeBase.Value.Color.yellow]
-                key[MazeBase.Value.Color.blue] += node.ItemKey[MazeBase.Value.Color.blue]
-                key[MazeBase.Value.Color.red] += node.ItemKey[MazeBase.Value.Color.red]
-                key[MazeBase.Value.Color.green] += node.ItemKey[MazeBase.Value.Color.green]
+                key[MazeBase.Value.Color.yellow] += node.Key[MazeBase.Value.Color.yellow]
+                key[MazeBase.Value.Color.blue] += node.Key[MazeBase.Value.Color.blue]
+                key[MazeBase.Value.Color.red] += node.Key[MazeBase.Value.Color.red]
+                key[MazeBase.Value.Color.green] += node.Key[MazeBase.Value.Color.green]
 
-                attack += MazeBase.Value.Gem.small * node.ItemAttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * node.ItemAttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * node.ItemAttackGem[MazeBase.Value.Gem.large]
-                defence += MazeBase.Value.Gem.small * node.ItemDefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * node.ItemDefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * node.ItemDefenceGem[MazeBase.Value.Gem.large]
+                attack += MazeBase.Value.Gem.small * node.AttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * node.AttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * node.AttackGem[MazeBase.Value.Gem.large]
+                defence += MazeBase.Value.Gem.small * node.DefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * node.DefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * node.DefenceGem[MazeBase.Value.Gem.large]
 
                 total_damage += damage
                 node_path.append(node)
 
-                node_list += list(set(node.Forward.values()) - set(node_list))
+                #随机插入到列表中
+                for __node in list(set(node.Forward.values()) - set(node_list)):
+                    node_list.insert(random.randint(0, node_len), __node)
+                    node_len += 1
+
                 if floor + across > node.floor + 1:
                     if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
-                        node_list.append(set(self.maze_info[node.floor + 1]['tree']).pop())
+                        __node = set(self.maze_info[node.floor + 1]['tree']).pop()
+                        node_list.insert(random.randint(0, node_len), __node)
+                        node_len += 1
+
                 node_list.remove(node)
+                node_len -= 1
 
             number += 1
 
@@ -1449,15 +1297,13 @@ class Maze2:
             if not node_list[0].IsBoss:
                 continue
 
-            node_path.append(boss) 
+            node_path.append(boss)
             #找到更优路径
             if min_damage > total_damage:
-                print('find min %d, old is %d' % (total_damage, min_damage))
+                print('find min %d, old is %d (%d)' % (total_damage, min_damage, number))
                 min_damage = total_damage
                 min_path = node_path
 
-            if number > MazeSetting.montecarlo_time:
-                break
 
         #重设属性值
         self.set_attribute(min_path)
@@ -1474,9 +1320,9 @@ class Maze2:
                 monster_defence = monster_state['defence']
 
                 if monster_ismagic:
-                    damage = (math.ceil(monster_health / (node.Attack - monster_defence)) - 1) * monster_attack
+                    damage = (monster_health - 1) // (node.Attack - monster_defence) * monster_attack
                 else:
-                    damage = (math.ceil(monster_health / (node.Attack - monster_defence)) - 1) * (monster_attack - node.Defence)
+                    damage = (monster_health - 1) // (node.Attack - monster_defence) * (monster_attack - node.Defence)
                 if damage < 0:
                     damage = 0
                 node.Damage = damage
@@ -1485,10 +1331,45 @@ class Maze2:
 
 
     def set_potion(self, node_list):
-        print([number for number, node in enumerate(node_list) if node.IsElite])
-        print([node.Damage for node in node_list if node.IsMonster])
+        #需要的总数
+        potion = MazeSetting.extra_potion
+        for node in node_list[::-1]:
+            while node.Space > 0 and potion > 0:
+                if potion >= MazeBase.Value.Potion.green:
+                    node.Potion[MazeBase.Value.Potion.green] += 1
+                    potion -= MazeBase.Value.Potion.green
+                    node.Space -= 1
+                elif potion >= MazeBase.Value.Potion.yellow:
+                    node.Potion[MazeBase.Value.Potion.yellow] += 1
+                    potion -= MazeBase.Value.Potion.yellow
+                    node.Space -= 1
+                elif potion >= MazeBase.Value.Potion.blue:
+                    node.Potion[MazeBase.Value.Potion.blue] += 1
+                    potion -= MazeBase.Value.Potion.blue
+                    node.Space -= 1
+                else:
+                    node.Potion[MazeBase.Value.Potion.red] += 1
+                    potion -= MazeBase.Value.Potion.red
+                    node.Space -= 1
 
-        #print(MonsterInfo.state)
+            if node.IsMonster:
+                potion += node.Damage
+
+        #第一格空间不够，去除放置的所有血瓶，放置圣水
+        if potion >= 0:
+            node = node_list[0]
+            potion += node.Potion[MazeBase.Value.Potion.red] * MazeBase.Value.Potion.red + node.Potion[MazeBase.Value.Potion.blue] * MazeBase.Value.Potion.blue + node.Potion[MazeBase.Value.Potion.yellow] * MazeBase.Value.Potion.yellow + node.Potion[MazeBase.Value.Potion.green] * MazeBase.Value.Potion.green
+            node.Potion[MazeBase.Value.Potion.red] = 0
+            node.Potion[MazeBase.Value.Potion.blue] = 0
+            node.Potion[MazeBase.Value.Potion.yellow] = 0
+            node.Potion[MazeBase.Value.Potion.green] = 0
+
+            #圣水为100的倍数
+            node.HolyWater = potion + 1
+            node.HolyWater = ((node.HolyWater - 1) // 100 + 1) * 100
+            potion -= node.HolyWater
+            print('set holy: %d' % node.HolyWater)
+        print('beat way: %d' % (MazeSetting.extra_potion - potion))
 
 
     def set_start_area(self, floor):
@@ -1518,8 +1399,6 @@ class Maze2:
 
             node_list = self.montecarlo(node_list, floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
             self.set_potion(node_list)
-
-            #print(self.get_fast_boss(floor - MazeSetting.base_floor + 1))
 
             self.set_boss_area(floor)
             #for f in range(floor - MazeSetting.base_floor + 1, floor + 1):
