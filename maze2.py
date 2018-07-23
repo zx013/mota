@@ -91,12 +91,16 @@ class MazeBase:
 
             prison = 5
             trap = 6
+            
+            total = (yellow, blue, red, green)
 
         #起始时对应攻防平均属性的1%
         class Gem:
             small = 1
             big = 3
             large = 10
+            
+            total = (small, big, large)
 
         #起始时对应攻防平均属性的1%，设置太低会导致空间不够的情况，按初始默认的配置，总需求在30000左右
         class Potion:
@@ -104,12 +108,8 @@ class MazeBase:
             blue = 200
             yellow = 600
             green = 1200
-
-    class EliteType:
-        boss = 0
-        health = 1
-        attack = 2
-        defence = 3
+            
+            total = (red, blue, yellow, green)
 
     class NodeType:
         none = 0
@@ -119,6 +119,7 @@ class MazeBase:
         road_normal = 3
         road_corner = 4
         Road = (road_normal, road_corner)
+
 
 #为了使用pickle模块，MazeNode, TreeNode两个类需在最顶级定义
 class MazeNode:
@@ -277,7 +278,7 @@ class MazeSetting:
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
     montecarlo_time = 3000
 
-    #使用近似最优解通关后至少剩余的额外的血量
+    #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     extra_potion = 100
 
 
@@ -888,9 +889,19 @@ class Maze2:
             self.set_type(down, MazeBase.Type.Static.stair)
             self.set_value(down, MazeBase.Value.Stair.down)
 
-    '''
-    空间小于2不放置key，空间越小放置key概率越小
-    '''
+
+    #重新确定space大小，需要排除掉楼梯的空间
+    def set_space(self, node_list):
+        for node in node_list:
+            space = 0
+            for pos in node.Area:
+                if self.get_type(pos) == MazeBase.Type.Static.stair:
+                    continue
+                space += 1
+            node.Space = space
+
+
+    #空间小于2不放置key，空间越小放置key概率越小
     def set_door(self, node_list):
         key_choice = {
             MazeBase.Value.Color.yellow: 27,
@@ -1075,8 +1086,12 @@ class Maze2:
 
     def set_attribute(self, node_list):
         for pnode, node in Tools.iter_previous(node_list):
-            node.Attack = pnode.Attack + MazeBase.Value.Gem.small * pnode.AttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.AttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.AttackGem[MazeBase.Value.Gem.large]
-            node.Defence = pnode.Defence + MazeBase.Value.Gem.small * pnode.DefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * pnode.DefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * pnode.DefenceGem[MazeBase.Value.Gem.large]
+            node.Attack = pnode.Attack
+            node.Defence = pnode.Defence
+            
+            for gem in MazeBase.Value.Gem.total:
+                node.Attack += gem * pnode.AttackGem[gem]
+                node.Defence += gem * pnode.DefenceGem[gem]
 
 
     def apply_monster(self, node_list):
@@ -1263,13 +1278,13 @@ class Maze2:
                 if node == None:
                     break
 
-                key[MazeBase.Value.Color.yellow] += node.Key[MazeBase.Value.Color.yellow]
-                key[MazeBase.Value.Color.blue] += node.Key[MazeBase.Value.Color.blue]
-                key[MazeBase.Value.Color.red] += node.Key[MazeBase.Value.Color.red]
-                key[MazeBase.Value.Color.green] += node.Key[MazeBase.Value.Color.green]
+                for color in MazeBase.Value.Color.total:
+                    key[color] += node.Key[color]
 
-                attack += MazeBase.Value.Gem.small * node.AttackGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * node.AttackGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * node.AttackGem[MazeBase.Value.Gem.large]
-                defence += MazeBase.Value.Gem.small * node.DefenceGem[MazeBase.Value.Gem.small] + MazeBase.Value.Gem.big * node.DefenceGem[MazeBase.Value.Gem.big] + MazeBase.Value.Gem.large * node.DefenceGem[MazeBase.Value.Gem.large]
+
+                for gem in MazeBase.Value.Gem.total:
+                    attack += gem * node.AttackGem[gem]
+                    defence += gem * node.DefenceGem[gem]
 
                 total_damage += damage
                 node_path.append(node)
@@ -1358,18 +1373,58 @@ class Maze2:
         #第一格空间不够，去除放置的所有血瓶，放置圣水
         if potion >= 0:
             node = node_list[0]
-            potion += node.Potion[MazeBase.Value.Potion.red] * MazeBase.Value.Potion.red + node.Potion[MazeBase.Value.Potion.blue] * MazeBase.Value.Potion.blue + node.Potion[MazeBase.Value.Potion.yellow] * MazeBase.Value.Potion.yellow + node.Potion[MazeBase.Value.Potion.green] * MazeBase.Value.Potion.green
-            node.Potion[MazeBase.Value.Potion.red] = 0
-            node.Potion[MazeBase.Value.Potion.blue] = 0
-            node.Potion[MazeBase.Value.Potion.yellow] = 0
-            node.Potion[MazeBase.Value.Potion.green] = 0
+            for color in MazeBase.Value.Potion.total:
+                potion += color * node.Potion[color]
+                node.Potion[color] = 0
 
             #圣水为100的倍数
             node.HolyWater = potion + 1
             node.HolyWater = ((node.HolyWater - 1) // 100 + 1) * 100
             potion -= node.HolyWater
             print('set holy: %d' % node.HolyWater)
-        print('beat way: %d' % (MazeSetting.extra_potion - potion))
+        print('best way: %d' % (MazeSetting.extra_potion - potion))
+
+
+    def set_maze(self, node_list):
+        self.nl = node_list
+        for node in node_list:
+            for pos in node.Backward:
+                if node.IsDoor:
+                    self.set_type(pos, MazeBase.Type.Static.door)
+                    self.set_value(pos, node.Door)
+                    if node.IsMonster:
+                        beside = self.get_beside(pos, MazeBase.Type.Static.ground)
+                        pos = (beside & node.Area).pop()
+                if node.IsMonster:
+                    self.set_type(pos, MazeBase.Type.Active.monster)
+                    self.set_value(pos, node.Monster)
+
+            pos_set = set()
+            for pos in node.Area:
+                if self.get_type(pos) == MazeBase.Type.Static.ground:
+                    pos_set.add(pos)
+            
+            for color in MazeBase.Value.Color.total:
+                for i in range(node.Key[color]):
+                    pos = pos_set.pop()
+                    self.set_type(pos, MazeBase.Type.Item.key)
+                    self.set_value(pos, color)
+            
+            for gem in MazeBase.Value.Gem.total:
+                for i in range(node.AttackGem[gem]):
+                    pos = pos_set.pop()
+                    self.set_type(pos, MazeBase.Type.Item.attack)
+                    self.set_value(pos, gem)
+                for i in range(node.DefenceGem[gem]):
+                    pos = pos_set.pop()
+                    self.set_type(pos, MazeBase.Type.Item.defence)
+                    self.set_value(pos, gem)
+            
+            for potion in MazeBase.Value.Potion.total:
+                for i in range(node.Potion[potion]):
+                    pos = pos_set.pop()
+                    self.set_type(pos, MazeBase.Type.Item.potion)
+                    self.set_value(pos, potion)
 
 
     def set_start_area(self, floor):
@@ -1387,6 +1442,7 @@ class Maze2:
             for f in range(floor - MazeSetting.base_floor + 1, floor + 1):
                 self.set_stair(f)
             node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
+            self.set_space(node_list)
             self.set_door(node_list)
             self.set_monster(node_list)
             self.set_gem(node_list)
@@ -1399,6 +1455,8 @@ class Maze2:
 
             node_list = self.montecarlo(node_list, floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
             self.set_potion(node_list)
+            
+            self.set_maze(node_list)
 
             self.set_boss_area(floor)
             #for f in range(floor - MazeSetting.base_floor + 1, floor + 1):
@@ -1476,6 +1534,16 @@ class Maze2:
                         line += 'x '
                     elif self.get_type((k, i, j)) == MazeBase.Type.Static.door:
                         line += 'o '
+                    elif self.get_type((k, i, j)) == MazeBase.Type.Active.monster:
+                        line += 'p '
+                    elif self.get_type((k, i, j)) == MazeBase.Type.Item.key:
+                        line += 'k '
+                    elif self.get_type((k, i, j)) == MazeBase.Type.Item.attack:
+                        line += 'a '
+                    elif self.get_type((k, i, j)) == MazeBase.Type.Item.defence:
+                        line += 'd '
+                    elif self.get_type((k, i, j)) == MazeBase.Type.Item.potion:
+                        line += 't '
                     else:
                         line += str(self.get_value((k, i, j))) + ' '
                 print(line)
