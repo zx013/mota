@@ -18,7 +18,19 @@ def staticrandom(number=0):
     random.random = random._inst.random = new_random
 
 
-#import itertools
+#异常时返回默认值
+def except_default(default=None):
+    def run_func(func):
+        def run(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as ex:
+                print(ex)
+                return default
+        run.__name__ = func.__name__
+        return run
+    return run_func
+
 
 class Tools:
     #从目录中选出一个值
@@ -234,12 +246,13 @@ class MazeSetting:
     cols = 11
     #保存的目录
     save_dir = 'save'
-    #保存的文件
-    save_file = 'save'
+    #保存的文件后缀
+    save_ext = 'save'
 
-    @Cache.static
-    def save_format():
-        return '{save_dir}/{{0}}.{save_file}'.format(save_dir=MazeSetting.save_dir, save_file=MazeSetting.save_file)
+    @staticmethod
+    def save_file(num):
+        return '{save_dir}/{num}.{save_ext}'.format(save_dir=MazeSetting.save_dir, num=num, save_ext=MazeSetting.save_ext)
+
     #保存的层数，10时占用20M左右内存，100时占用50M左右内存
     save_floor = 10
     #每几层一个单元
@@ -358,6 +371,12 @@ class MonsterInfo:
 
 
 class Pos:
+    class Move:
+        up = (1, 0)
+        down = (-1, 0)
+        left = (0, 1)
+        right = (0, -1)
+
     @staticmethod
     def inside(pos):
         z, x, y = pos
@@ -367,21 +386,16 @@ class Pos:
         return False
 
     @staticmethod
-    def add(pos1, pos2):
-        z1, x1, y1 = pos1
-        z2, x2, y2 = pos2
+    def add(pos, move):
+        z1, x1, y1 = pos
+        x2, y2 = move
         return (z1, x1 + x2, y1 + y2)
 
     @staticmethod
     def sub(pos1, pos2):
         z1, x1, y1 = pos1
         z2, x2, y2 = pos2
-        return (z1, x1 - x2, y1 - y2)
-
-    @staticmethod
-    def mul(pos, num):
-        z, x, y = pos
-        return (z, num * x, num * y)
+        return (x1 - x2, y1 - y2)
 
     @staticmethod
     def beside(pos):
@@ -406,9 +420,11 @@ class Pos:
         return False
 
 
-class Hero:
+#每一个level的基础数值
+class HeroBase:
     def __init__(self):
-        self.level = 0
+        self.level = -1
+        self.floor = 0
         self.health = 1000
         self.attack = 10
         self.defence = 10
@@ -420,22 +436,47 @@ class Hero:
             MazeBase.Value.Color.green: 0
         }
         self.base = 1
+        
+        self.boss_attack = 0
+        self.boss_defence = 0
 
     def update(self):
         self.level += 1
+        self.floor = self.level * MazeSetting.base_floor + 1
         self.base = int((self.attack + self.defence) * 0.5 * MazeSetting.attribute_value) + 1
+    
+    @property
+    def floor_start(self):
+        return self.level * MazeSetting.base_floor + 1
 
-hero = Hero()
+    @property
+    def floor_end(self):
+        return (self.level + 1) * MazeSetting.base_floor
 
+
+#实时状态
+class HeroState:
+    def __init__(self, herobase):
+        self.pos = (0, 0, 0)
+        self.direction = Pos.Move.down
+        self.floor = herobase.floor
+        self.health = herobase.health
+        self.attack = herobase.attack
+        self.defence = herobase.defence
+
+        self.key = {}
+        for color in MazeBase.Value.Color.total:
+            self.key[color] = herobase.key[color]
 
 
 class Maze2:
-    def __init__(self, hero):
+    def __init__(self):
         self.maze = {}
         self.maze_map = {} #每一层不同点的分类集合
         self.maze_info = {} #每一层的信息，node, stair等
         self.monster = {}
-        self.hero = hero
+        self.herobase = HeroBase()
+        self.herostate = HeroState(self.herobase)
 
     def init(self, floor):
         for key in list(self.maze.keys()):
@@ -486,8 +527,9 @@ class Maze2:
     def get_beside(self, pos, type):
         return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] == type}
 
-    def get_beside_except(self, pos, type):
-        return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] != type}
+    #寻路使用
+    def get_beside_way(self, pos):
+        return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] not in (MazeBase.Type.Static.wall, MazeBase.Type.Static.door, MazeBase.Type.Active.monster)}
 
     def get_corner(self, pos, type):
         return {(z, x, y) for z, x, y in Pos.corner(pos) if self.maze[z][x][y][0] == type}
@@ -909,7 +951,7 @@ class Maze2:
             MazeBase.Value.Color.red: 0,
             MazeBase.Value.Color.green: 0
         }
-        for number, node in enumerate(node_list[:-1]):
+        for number, node in enumerate(node_list):
             #第一个区域不放置
             if number == 0:
                 continue
@@ -932,8 +974,12 @@ class Maze2:
                             door = Tools.dict_choice(key_choice_special)
                             node_list[i].Key[door] += 1
                             key_number[door] += 1
+                            node.IsDoor = True
                             node.Door = door
                             break
+                    #boss区域需要放置门但不放置钥匙
+                    if node.IsBoss:
+                        continue
             else:
                 if node.Special:
                     #到达特殊区域但没有钥匙，目前没出现过
@@ -1123,6 +1169,8 @@ class Maze2:
         node.IsMonster = True
         node.IsBoss = True
         node.Monster = ('boss', random.choice(list(MonsterInfo.data['boss'])))
+        self.herobase.boss_attack = node.Attack
+        self.herobase.boss_defence = node.Defence
 
 
     def adjust_monster(self, node_list):
@@ -1335,7 +1383,8 @@ class Maze2:
     def set_potion(self, node_list):
         #需要的总数
         potion = MazeSetting.extra_potion
-        for node in node_list[::-1]:
+        #boss区域不设置potion
+        for node in node_list[-2::-1]:
             while node.Space > 0 and potion > 0:
                 if potion >= MazeBase.Value.Potion.green:
                     node.Potion[MazeBase.Value.Potion.green] += 1
@@ -1418,14 +1467,15 @@ class Maze2:
                 self.set_value(pos, node.HolyWater)
 
 
-    def set_boss_area(self, floor):
+    def set_boss(self):
         pass
 
     #先确定一个较优路线，再通过蒙特卡洛模拟逼近最优路线
-    def set_item(self, floor):
-        for f in range(floor - MazeSetting.base_floor + 1, floor + 1):
+    def set_item(self):
+        for f in range(self.herobase.floor_start, self.herobase.floor_end + 1):
             self.set_stair(f)
-        node_list = self.ergodic(floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
+        node_list = self.ergodic(self.herobase.floor_start, MazeSetting.base_floor)
+        node_list[-1].IsBoss = True
         self.set_space(node_list)
         self.set_door(node_list)
         self.set_monster(node_list)
@@ -1437,57 +1487,33 @@ class Maze2:
         self.apply_boss(node_list)
         self.adjust_monster(node_list)
 
-        node_list = self.montecarlo(node_list, floor - MazeSetting.base_floor + 1, MazeSetting.base_floor)
+        node_list = self.montecarlo(node_list, self.herobase.floor_start, MazeSetting.base_floor)
         self.set_potion(node_list)
 
         self.set_maze(node_list)
 
 
-    #python2存储的数据python3无法读取，python3存储的数据python2可以读取
-    #Maze.maze, self.monster
-    def save(self, num):
-        maze_record = {}
-        for arg in self.record['info']:
-            maze_record[arg] = pickle.dumps(self.record[arg], protocol=2)
-        record = pickle.dumps(maze_record, protocol=2)
-
-        with open(MazeSetting.save_format.format(num), 'wb') as fp:
-            fp.write(record)
-
-
-    def load(self, num):
-        with open(MazeSetting.save_format.format(num), 'rb') as fp:
-            record = fp.read()
-
-        maze_record = pickle.loads(record)
-        for arg in self.record['info']:
-            self.record[arg] = pickle.loads(maze_record[arg])
-
-
-    #更新具体数值
+    #更新为具体数值
     def update_monster(self):
         for name1, info1 in self.monster.items():
             for name2, info2 in info1.items():
-                info2['health'] *= self.hero.base
-                info2['attack'] *= self.hero.base
+                info2['health'] *= self.herobase.base
+                info2['attack'] *= self.herobase.base
                 if not info2['magic']:
-                    info2['attack'] += self.hero.defence
-                info2['defence'] *= self.hero.base
-                info2['defence'] += self.hero.attack
+                    info2['attack'] += self.herobase.defence
+                info2['defence'] *= self.herobase.base
+                info2['defence'] += self.herobase.attack
 
 
     def update(self):
-        start_floor = self.hero.level * MazeSetting.base_floor + 1
-        end_floor = (self.hero.level + 1) * MazeSetting.base_floor
-        if start_floor > 1:
-            for node in maze.maze_info[start_floor - 1]['node']:
-                if node.Area == maze.maze_info[start_floor - 1]['special']:
-                    self.hero.attack += self.hero.base * node.Attack
-                    self.hero.defence += self.hero.base * node.Defence
+        self.herobase.update() #进入下一个level
+        #set_items该值才会被刷新
+        self.herobase.attack += self.herobase.base * maze.herobase.boss_attack
+        self.herobase.defence += self.herobase.base * maze.herobase.boss_defence
 
         for i in range(3):
             try:
-                for floor in range(start_floor, end_floor + 1):
+                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
                     self.init(floor)
                     self.create_special(floor)
                     self.create_wall(floor)
@@ -1496,8 +1522,8 @@ class Maze2:
                     self.create_tree(floor)
                     self.adjust(floor)
 
-                    if self.is_boss_floor(floor):
-                        self.set_item(floor)
+                self.set_item()
+                self.set_boss()
             except Exception as ex:
                 #生成异常时重新生成
                 print('reset : ', ex)
@@ -1506,12 +1532,11 @@ class Maze2:
 
         self.update_monster()
 
-        self.hero.update()
-
 
     def show(self, floor=None):
-        for k in range(MazeSetting.floor):
-            if floor is not None: k = floor
+        for k in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+            if floor:
+                k = floor
             print('floor :', k)
             for i in range(MazeSetting.rows + 2):
                 line = ''
@@ -1539,12 +1564,125 @@ class Maze2:
                 print(line)
             print()
             print()
-            if floor is not None: break
+            if floor:
+                break
         import sys
         sys.stdout.flush()
+        
+
+    def save(self, num):
+        record_dict = {
+            'maze': self.maze, #迷宫构成
+            'monster': self.monster, #怪物属性
+            'herobase': self.herobase.__dict__, #等级状态
+            'herostate': self.herostate.__dict__ #实时状态
+        }
+
+        record = pickle.dumps(record_dict, protocol=2)
+        with open(MazeSetting.save_file(num), 'wb') as fp:
+            fp.write(record)
+
+
+    def load(self, num):
+        try:
+            with open(MazeSetting.save_file(num), 'rb') as fp:
+                record = fp.read()
+
+            record_dict = pickle.loads(record)
+            self.maze = record_dict['maze']
+            self.monster = record_dict['monster']
+            for k, v in record_dict['herobase'].items():
+                setattr(self, k, v)
+            for k, v in record_dict['herostate'].items():
+                setattr(self, k, v)
+        except Exception as ex:
+            print('load error: ', ex)
+
+
+    #向外扩张，每一圈计数加一
+    def find_around(self, pos_list, num):
+        around = set()
+        for pos in pos_list:
+            around |= self.get_beside_way(pos)
+        around -= pos_list | self.around[num - 1]
+        return around
+
+    @except_default([])
+    def find_path(self, start_pos, end_pos):
+        if self.get_type(end_pos) == MazeBase.Type.Static.wall:
+            return []
+        self.around = {-1: set()}
+        around = set([start_pos])
+        num = 0
+        while around:
+            self.around[num] = around
+            around = self.find_around(around, num)
+            num += 1
+            if end_pos in around:
+                way = []
+                pos = end_pos
+                for i in range(num)[::-1]:
+                    old_z, old_x, old_y = pos
+                    new_z, new_x, new_y = (self.get_beside_way(pos) & self.around[i]).pop()
+                    pos = new_z, new_x, new_y
+                    way.insert(0, (new_x - old_x, new_y - old_y))
+                return way
+        return []
+
+    
+    def move(self, move):
+        move_pos = Pos.add(self.herostate.pos, move)
+        move_type = self.get_type(move_pos)
+        move_value = self.get_value(move_pos)
+        move_enable = True
+
+        if move_type == MazeBase.Type.Static.wall:
+            move_enable = False
+            print('wall')
+        elif move_type == MazeBase.Type.Static.door:
+            if self.herostate.key[move_value] == 0:
+                move_enable = False
+                print('no key')
+            else:
+                self.herostate.key[move_value] -= 1
+                print('open door')
+        elif move_type == MazeBase.Type.Active.monster:
+            print('attack monster')
+        elif move_type == MazeBase.Type.Item.key:
+            self.herostate.key[move_value] += 1
+        elif move_type == MazeBase.Type.Item.attack:
+            self.herostate.attack += self.herobase.base * move_value
+        elif move_type == MazeBase.Type.Item.defence:
+            self.herostate.defence += self.herobase.base * move_value
+        elif move_type == MazeBase.Type.Item.potion:
+            self.herostate.health += self.herobase.base * move_value
+        elif move_type == MazeBase.Type.Static.stair:
+            if move_value == MazeBase.Value.Stair.up:
+                self.herobase.floor += 1
+                self.herostate.floor += 1
+            elif move_value == MazeBase.Value.Stair.down:
+                #if self.herostate.floor:
+                self.herostate.floor -= 1
+            print('stair')
+                
+        if move_enable:
+            self.set_type(move_pos, MazeBase.Type.Static.ground)
+            self.set_value(move_pos, 0)
+            print('move')
+            self.herostate.pos = move_pos
+    
+    def jump(self, type):
+        pass
 
 
 if __name__ == '__main__':
-    maze = Maze2(hero)
+    maze = Maze2()
     maze.update()
+
+    stairs_start = set(maze.maze_info[1]['stair'][MazeBase.Value.Stair.down]).pop()
+    stairs_end = set(maze.maze_info[1]['stair'][MazeBase.Value.Stair.up]).pop()
+    print(stairs_start, stairs_end)
+    #print maze.tree_map[1]['info']['area']
+
+    print(maze.find_path(stairs_start, stairs_end))
 
