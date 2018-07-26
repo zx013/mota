@@ -1,4 +1,5 @@
 #-*- coding:utf-8 -*-
+import os
 import random
 import pickle
 from functools import reduce
@@ -1577,7 +1578,10 @@ class Maze2:
             'herobase': self.herobase.__dict__, #等级状态
             'herostate': self.herostate.__dict__ #实时状态
         }
-
+        
+        if not os.path.exists(MazeSetting.save_dir):
+            os.mkdir(MazeSetting.save_dir)
+            print('save dir not exist.')
         record = pickle.dumps(record_dict, protocol=2)
         with open(MazeSetting.save_file(num), 'wb') as fp:
             fp.write(record)
