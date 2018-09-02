@@ -29,11 +29,11 @@ class Schedule:
 				func(step, **kwargs)
 			del self.event[Clock.frames]
 
-	#func: 定时触发的函数
-	#iterator: 生成器，遍历的值依次传给func
-	#interval: 函数触发间隔，单位为frames的数量
-	#cycle: 循环，负数为无限循环
-	#kwargs: 函数参数
+	#func: 露篓脢卤麓楼路垄碌脛潞炉脢媒
+	#iterator: 脡煤鲁脡脝梅拢卢卤茅脌煤碌脛脰碌脪脌麓脦麓芦赂酶func
+	#interval: 潞炉脢媒麓楼路垄录盲赂么拢卢碌楼脦禄脦陋frames碌脛脢媒脕驴
+	#cycle: 脩颅禄路拢卢赂潞脢媒脦陋脦脼脧脼脩颅禄路
+	#kwargs: 潞炉脢媒虏脦脢媒
 	def trigger(self, func, iterator, interval, cycle, **kwargs):
 		frames = Clock.frames
 		for step in iter(iterator):
@@ -68,8 +68,8 @@ class CacheBase:
 				x_offset = x_size - ShowBase.size
 				y_offset = y_size - ShowBase.size
 				self.data[name] = {}
-				for i in xrange(x_time):
-					for j in xrange(y_time):
+				for i in range(x_time):
+					for j in range(y_time):
 						self.data[name][(i, j)] = texture.get_region(i * x_size + x_offset, j * y_size + y_offset, ShowBase.size, ShowBase.size)
 
 	def get_image(self, name, pos=(0, 0)):
@@ -150,8 +150,8 @@ class Node(Image):
 	def __call__(self, num):
 		Trigger(self.next, range(ShowBase.step)[::-1], 15, -1, num=num)
 
-#先放置地面，再放置其他的物品
-#hero单独使用一个点
+#脧脠路脜脰脙碌脴脙忙拢卢脭脵路脜脰脙脝盲脣没碌脛脦茂脝路
+#hero碌楼露脌脢鹿脫脙脪禄赂枚碌茫
 class Show(FocusBehavior, GridLayout):
 	def __init__(self, **kwargs):
 		#from maze import Level, MazeSetting
@@ -169,15 +169,15 @@ class Show(FocusBehavior, GridLayout):
 
 		texture = Cache.get_image('basic/ground.png', (0, 0))
 		with self.canvas:
-			for i in xrange(self.rows):
-				for j in xrange(self.cols):
+			for i in range(self.rows):
+				for j in range(self.cols):
 					Rectangle(texture=texture, pos=(self.x + j * ShowBase.size, self.y + i * ShowBase.size), size=(ShowBase.size, ShowBase.size))
-		for i in xrange(self.rows):
-			for j in xrange(self.cols):
+		for i in range(self.rows):
+			for j in range(self.cols):
 				node = Node(node=floor[i][j])
 				self.add_widget(node)
 
-		#keyboard_on_key_down的必要条件
+		#keyboard_on_key_down碌脛卤脴脪陋脤玫录镁
 		self.focused = True
 		self.move = Move(pos=(100, 100))
 		#self.add_widget(self.move)
@@ -189,41 +189,41 @@ class Show(FocusBehavior, GridLayout):
 		self.move(key)
 		return True
 
-	#加载图片，取其中某个位置（使用缓存）
+	#录脫脭脴脥录脝卢拢卢脠隆脝盲脰脨脛鲁赂枚脦禄脰脙拢篓脢鹿脫脙禄潞麓忙拢漏
 	def load(self):
 		pass
 
-	#移动到相邻的位置
+	#脪脝露炉碌陆脧脿脕脷碌脛脦禄脰脙
 	def move(self):
-		#依次加载hero动作
-		#将hero放置在两个点之间
+		#脪脌麓脦录脫脭脴hero露炉脳梅
+		#陆芦hero路脜脰脙脭脷脕陆赂枚碌茫脰庐录盲
 		pass
 
-	#原地踏步
+	#脭颅碌脴脤陇虏陆
 	def block(self):
-		#依次加载hero动作
+		#脪脌麓脦录脫脭脴hero露炉脳梅
 		pass
 
-	#怪物的动作
+	#鹿脰脦茂碌脛露炉脳梅
 	def monster(self):
-		#清空点
-		#依次加载monster动作
+		#脟氓驴脮碌茫
+		#脪脌麓脦录脫脭脴monster露炉脳梅
 		pass
 
-	#战斗
+	#脮陆露路
 	def fight(self):
-		#停止fight区域monster的动作
-		#在monster上面弹出数字并显示动画效果
+		#脥拢脰鹿fight脟酶脫貌monster碌脛露炉脳梅
+		#脭脷monster脡脧脙忙碌炉鲁枚脢媒脳脰虏垄脧脭脢戮露炉禄颅脨搂鹿没
 		pass
 
-	#开门
+	#驴陋脙脜
 	def door(self):
-		#依次加载door动作
+		#脪脌麓脦录脫脭脴door露炉脳梅
 		pass
 
-	#清除
+	#脟氓鲁媒
 	def clear(self):
-		#直接用地面覆盖
+		#脰卤陆脫脫脙碌脴脙忙赂虏赂脟
 		pass
 
 	def die(self):
