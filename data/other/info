@@ -1,0 +1,7 @@
+[door-yellow]
+name = door.png
+action = 1-4, 1
+
+[ground]
+name = ground.png
+static = 1, 1

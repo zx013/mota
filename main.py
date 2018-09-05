@@ -14,13 +14,17 @@ if platform.system().lower() == 'windows':
     sys.exit(0)
 '''
 
+import jnius_config
+jnius_config.add_classpath('jars/javaclass.jar')
+from jnius import autoclass
 
-from jnius import autoclass #, cast
+import os
 from kivy.app import App
 from kivy.uix.image import Image
-from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.clock import Clock
+#python2应为from Configparser import ConfigParser
+from configparser import ConfigParser
 
 from maze import Maze
 
@@ -30,15 +34,70 @@ from maze import Maze
 
 动态，动作（移动/消除）
 路径，行，列，方向（按行还是按列）
+只能从左到右或者从上到下
 '''
+
+def analyseconfig(string):
+    if '-' in string:
+        start, stop = string.split('-')
+        num = range(int(start) - 1, int(stop))
+    else:
+        num = int(string) - 1
+    return num
+
+def readconfig(path):
+    config = ConfigParser()
+    config.read(os.path.join(path, 'info'))
+
+    info = dict(config._sections)
+    for key in info:
+        info[key] = dict(info[key])
+        for k, v in info[key].items():
+            if ',' not in v:
+                continue
+            row, col = v.split(',')
+
+            row = analyseconfig(row)
+            col = analyseconfig(col)
+
+            info[key][k] = (row, col)
+
+    return info
+
+global g_config
+g_config = {}
+
+try:
+    for path, _, filelist in os.walk('data'):
+        if 'info' not in filelist:
+            continue
+        for key, val in readconfig(path).items():
+            if 'path' in val:
+                continue
+            val['path'] = os.path.join(path, val['name'])
+            
+            g_config[key] = val
+except Exception as ex:
+    print('Read config error:', ex)
+
+
 class ShowBase:
     size = 32
 
-class BaseImage(Image):
-    def __init__(self, path, pos, **kwargs):
-        super(BaseImage, self).__init__(source=path, size_hint=(None, None), **kwargs)
+class ImageBase(Image):
+    def __init__(self, key, **kwargs):
+        if key not in g_config:
+            print('Can not find key {}'.format(key))
+            return
+        
+        info = g_config[key]
+        path = info['path']
+        super(ImageBase, self).__init__(source=path, size_hint=(None, None), **kwargs)
 
-        self.static = self.get_texture(path, pos)
+        if 'static' in info:
+            self.static = self.get_texture(path, info['static'])
+        elif 'action' in info:
+            self.action = self.get_texture(path, info['action'])
         self.action = []
         self.index = 0
         self.texture = self.static[self.index]
@@ -62,17 +121,14 @@ class BaseImage(Image):
                     pos_list = [(r, col) for r in row]
                 else:
                     pos_list = []
-    
+
             for pos in pos_list:
                 row, col = self.real_pos(pos)
                 texture.append(self.texture.get_region(row, col, ShowBase.size, ShowBase.size))
         except Exception as ex:
-            print(ex)                
-        
-        return texture
+            print(ex)
 
-    def add_action(self, path, pos):
-        self.action = self.get_texture(path, pos)
+        return texture
 
 
     def next(self, dt):
@@ -85,33 +141,19 @@ class Mota(App):
     def build(self):
         self.maze = Maze()
         self.maze.update()
-        try:
-            #self.PythonActivity = autoclass('org.renpy.android.PythonActivity')
-            #self.CurrentActivity = cast('android.app.Activity', self.PythonActivity.mActivity)
-            #self.IndependentVideoManager = autoclass('com.pad.android_independent_video_sdk.IndependentVideoManager')
-            #self.IndependentVideoListener = autoclass('com.pad.android_independent_video_sdk.IndependentVideoListener')
-            #self.IndependentVideoAvailableState = autoclass('com.pad.android_independent_video_sdk.IndependentVideoAvailableState')
-            javaclass = autoclass('com.test.JavaClass')
-            text = javaclass().show()
-        except Exception as ex:
-            text = str(ex)
-        self.image = BaseImage('data/other/door.png', (0, 2))
-        self.button = Button(text=text, on_press=self.show)
+
+        javaclass = autoclass('com.test.JavaClass')
+        print(javaclass().show())
+
+        self.image = ImageBase('door-yellow')
         self.layout = BoxLayout(orientation='vertical')
         self.layout.add_widget(self.image)
-        #self.layout.add_widget(self.button)
-        
-        Clock.schedule_interval(self.image.next, 1)
+
+        Clock.schedule_interval(self.image.next, 0.2)
         return self.layout
 
     def on_start(self):
-        try:
-            #self.IndependentVideoManager.newInstance().init(False)
-            text = 'start success'
-        except Exception as ex:
-            text = str(ex)
-        self.button.text = text
-        #self.IndependentVideoManager.newInstance().updateUserID('zx')
+        pass
 
     def on_pause(self):
         return True
@@ -120,12 +162,7 @@ class Mota(App):
         pass
 
     def show(self, *args):
-        try:
-            #self.IndependentVideoManager.newInstance().checkVideoAvailable(self.CurrentActivity)
-            text = 'show success'
-        except Exception as ex:
-            text = str(ex)
-        self.button.text = text
+        pass
 
 if __name__ == '__main__':
     mota = Mota()
