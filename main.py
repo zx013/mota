@@ -37,52 +37,92 @@ from maze import Maze
 只能从左到右或者从上到下
 '''
 
-def analyseconfig(string):
-    if '-' in string:
-        start, stop = string.split('-')
-        num = range(int(start) - 1, int(stop))
-    else:
-        num = int(string) - 1
-    return num
-
-def readconfig(path):
-    config = ConfigParser()
-    config.read(os.path.join(path, 'info'))
-
-    info = dict(config._sections)
-    for key in info:
-        info[key] = dict(info[key])
-        for k, v in info[key].items():
-            if ',' not in v:
-                continue
-            row, col = v.split(',')
-
-            row = analyseconfig(row)
-            col = analyseconfig(col)
-
-            info[key][k] = (row, col)
-
-    return info
-
-global g_config
-g_config = {}
-
-try:
-    for path, _, filelist in os.walk('data'):
-        if 'info' not in filelist:
-            continue
-        for key, val in readconfig(path).items():
-            if 'path' in val:
-                continue
-            val['path'] = os.path.join(path, val['name'])
-            
-            g_config[key] = val
-except Exception as ex:
-    print('Read config error:', ex)
-
-
 class ShowBase:
     size = 32
+
+class Config:
+    def __init__(self):
+        self.cache = {}
+        self.config = self.read()
+
+    def analyse_config(self, string):
+        if '-' in string:
+            start, stop = string.split('-')
+            num = range(int(start) - 1, int(stop))
+        else:
+            num = int(string) - 1
+        return num
+    
+    def read_config(self, path):
+        config = ConfigParser()
+        config.read(os.path.join(path, 'info'))
+    
+        info = dict(config._sections)
+        for key in info:
+            info[key] = dict(info[key])
+            for k, v in info[key].items():
+                if ',' not in v:
+                    continue
+                row, col = v.split(',')
+                row = self.analyse_config(row)
+                col = self.analyse_config(col)
+                info[key][k] = (row, col)
+            if 'action' in info[key] and 'static' not in info[key]:
+                row, col = info[key]['action']
+                if not isinstance(row, int):
+                    row = row[0]
+                if not isinstance(col, int):
+                    col = col[0]
+                info[key]['static'] = (row, col)
+        return info
+
+    def real_pos(self, size, pos):
+        row, col = pos
+        weight, height = size
+        return col * ShowBase.size, height - (row + 1) * ShowBase.size
+
+    def get_texture(self, texture, pos):
+        textures = []
+        try:
+            row, col = pos
+            if isinstance(row, int):
+                if isinstance(col, int):
+                    pos_list = [(row, col)]
+                else:
+                    pos_list = [(row, c) for c in col]
+            else:
+                if isinstance(col, int):
+                    pos_list = [(r, col) for r in row]
+                else:
+                    pos_list = []
+
+            for pos in pos_list:
+                row, col = self.real_pos(texture.size, pos)
+                textures.append(texture.get_region(row, col, ShowBase.size, ShowBase.size))
+        except Exception as ex:
+            print(ex)
+        return textures
+    
+    def read(self):
+        config = {}
+        for path, _, filelist in os.walk('data'):
+            if 'info' not in filelist:
+                continue
+            for key, val in self.read_config(path).items():
+                if 'path' in val:
+                    continue
+                name = os.path.join(path, val['name'])
+                if name not in self.cache:
+                    self.cache[name] = Image(source=name).texture
+                val['path'] = name
+                if 'static' in val:
+                    val['static_textures'] = self.get_texture(self.cache[name], val['static'])
+                if 'action' in val:
+                    val['action_textures'] = self.get_texture(self.cache[name], val['action'])
+                
+                config[key] = val
+        return config
+
 
 class ImageBase(Image):
     def __init__(self, key, **kwargs):
