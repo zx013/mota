@@ -1,7 +1,35 @@
+[ground]
+name = ground.png
+static = 1, 1
+
+[wall]
+name = wall-action-01.png
+action = 1-4, 2
+
 [door-yellow]
 name = door.png
 action = 1-4, 1
 
-[ground]
-name = ground.png
+[door-blue]
+name = door.png
+action = 1-4, 2
+
+[door-red]
+name = door.png
+action = 1-4, 3
+
+[door-green]
+name = door.png
+action = 1-4, 4
+
+[shop-blue]
+name = other.png
+dynamic = 3, 1-4
+
+[stair-down]
+name = stair.png
 static = 1, 1
+
+[stair-up]
+name = stair.png
+static = 1, 2

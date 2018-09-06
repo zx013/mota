@@ -1,0 +1,91 @@
+[key-yellow]
+name = key.png
+static = 1, 1
+
+[key-blue]
+name = key.png
+static = 1, 2
+
+[key-red]
+name = key.png
+static = 1, 3
+
+[key-green]
+name = key.png
+static = 1, 4
+
+[gem-attack-small]
+name = gem.png
+static = 1, 1
+
+[gem-defence-small]
+name = gem.png
+static = 1, 2
+
+[gem-attack-big]
+name = gem.png
+static = 1, 1
+
+[gem-defence-big]
+name = gem.png
+static = 1, 2
+
+[weapen-attack-01]
+name = weapen.png
+static = 1, 1
+
+[weapen-attack-02]
+name = weapen.png
+static = 1, 2
+
+[weapen-attack-03]
+name = weapen.png
+static = 1, 3
+
+[weapen-attack-04]
+name = weapen.png
+static = 1, 4
+
+[weapen-attack-05]
+name = weapen.png
+static = 2, 1
+
+[weapen-defence-01]
+name = weapen.png
+static = 3, 1
+
+[weapen-defence-02]
+name = weapen.png
+static = 3, 2
+
+[weapen-defence-03]
+name = weapen.png
+static = 3, 3
+
+[weapen-defence-04]
+name = weapen.png
+static = 3, 4
+
+[weapen-defence-05]
+name = weapen.png
+static = 4, 1
+
+[potion-red]
+name = potion.png
+static = 1, 1
+
+[potion-blue]
+name = potion.png
+static = 1, 2
+
+[potion-green]
+name = potion.png
+static = 1, 3
+
+[potion-yellow]
+name = potion.png
+static = 1, 4
+
+[holy]
+name = holy.png
+static = 3, 4
