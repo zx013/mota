@@ -1,0 +1,183 @@
+[slime-green]
+name = 001.png
+dynamic = 1, 1-4
+
+[slime-red]
+name = 001.png
+dynamic = 2, 1-4
+
+[slime-black]
+name = 001.png
+dynamic = 3, 1-4
+
+[slime-king]
+name = 001.png
+dynamic = 4, 1-4
+
+
+[bat-small]
+name = 002.png
+dynamic = 1, 1-4
+
+[bat-big]
+name = 002.png
+dynamic = 2, 1-4
+
+[bat-red]
+name = 002.png
+dynamic = 3, 1-4
+
+[bat-purple]
+name = 011.png
+dynamic = 3, 1-4
+
+
+[skeleton-white]
+name = 003.png
+dynamic = 1, 1-4
+
+[skeleton-fighter]
+name = 003.png
+dynamic = 2, 1-4
+
+[skeleton-yellow]
+name = 003.png
+dynamic = 3, 1-4
+
+[skeleton-warrior]
+name = 003.png
+dynamic = 4, 1-4
+
+[skeleton-purple]
+name = 011.png
+dynamic = 2, 1-4
+
+
+[knight-yellow]
+name = 007.png
+dynamic = 2, 1-4
+
+[knight-red]
+name = 007.png
+dynamic = 3, 1-4
+
+[knight-blue]
+name = 010.png
+dynamic = 4, 1-4
+
+[knight-black]
+name = 007.png
+dynamic = 4, 1-4
+
+
+[mage-blue]
+name = 005.png
+dynamic = 1, 1-4
+
+[mage-yellow]
+name = 009.png
+dynamic = 1, 1-4
+
+[mage-red]
+name = 005.png
+dynamic = 2, 1-4
+
+
+[orcish-brown]
+name = 004.png
+dynamic = 1, 1-4
+
+[orcish-fighter]
+name = 004.png
+dynamic = 2, 1-4
+
+[orcish-green]
+name = 009.png
+dynamic = 4, 1-4
+
+
+[guard-yellow]
+name = 006.png
+dynamic = 1, 1-4
+
+[guard-blue]
+name = 006.png
+dynamic = 2, 1-4
+
+[guard-red]
+name = 006.png
+dynamic = 3, 1-4
+
+
+[wizard-brown]
+name = 005.png
+dynamic = 3, 1-4
+
+[wizard-red]
+name = 005.png
+dynamic = 4, 1-4
+
+
+[quicksilver-white]
+name = 004.png
+dynamic = 4, 1-4
+
+[quicksilver-gray]
+name = 009.png
+dynamic = 3, 1-4
+
+
+[rock-brown]
+name = 004.png
+dynamic = 3, 1-4
+
+[rock-gray]
+name = 011.png
+dynamic = 4, 1-4
+
+
+[swordman-brown]
+name = 006.png
+dynamic = 4, 1-4
+
+[swordman-red]
+name = 009.png
+dynamic = 2, 1-4
+
+
+[elite-vampire]
+name = 002.png
+dynamic = 4, 1-4
+
+[elite-darkmage]
+name = 008.png
+dynamic = 3, 1-4
+
+[elite-silverslime]
+name = 008.png
+dynamic = 4, 1-4
+
+[elite-glodslime]
+name = 011.png
+dynamic = 1, 1-4
+
+
+[boss-blue]
+name = 008.png
+dynamic = 2, 1-4
+
+[boss-green]
+name = 010.png
+dynamic = 3, 1-4
+
+[boss-yellow]
+name = 010.png
+dynamic = 2, 1-4
+
+[boss-red]
+name = 008.png
+dynamic = 1, 1-4
+
+[boss-black]
+name = 010.png
+dynamic = 1, 1-4

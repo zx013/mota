@@ -312,11 +312,11 @@ class MonsterInfo:
             'purple':      ('name', '011.png', 2, 65, 140, 5, -2, False)
         },
         'skeleton': {
-            '1':           ('name', '003.png', 0, 10, 60, 5, -2, False),
-            '2':           ('name', '003.png', 1, 15, 70, 5, -2, False),
-            '3':           ('name', '003.png', 2, 30, 80, 5, -2, False),
-            '4':           ('name', '003.png', 3, 50, 90, 5, -2, False),
-            '5':           ('name', '011.png', 1, 70, 100, 5, -2, False)
+            'white':       ('name', '003.png', 0, 10, 60, 5, -2, False),
+            'fighter':     ('name', '003.png', 1, 15, 70, 5, -2, False),
+            'yellow':      ('name', '003.png', 2, 30, 80, 5, -2, False),
+            'warrior':     ('name', '003.png', 3, 50, 90, 5, -2, False),
+            'purple':      ('name', '011.png', 1, 70, 100, 5, -2, False)
         },
         'knight': {
             'yellow':      ('name', '007.png', 1, 25, 100, 5, -2, False),
@@ -330,9 +330,9 @@ class MonsterInfo:
             'red':         ('name', '005.png', 1, 40, 120, 5, -2, True)
         },
         'orcish': {
-            '1':           ('name', '004.png', 0, 15, 120, 5, -2, False),
-            '2':           ('name', '004.png', 1, 45, 130, 5, -2, False),
-            '3':           ('name', '009.png', 3, 65, 140, 5, -2, False)
+            'brown':       ('name', '004.png', 0, 15, 120, 5, -2, False),
+            'fighter':     ('name', '004.png', 1, 45, 130, 5, -2, False),
+            'green':       ('name', '009.png', 3, 65, 140, 5, -2, False)
         },
         'guard': {
             'yellow':      ('name', '006.png', 0, 20, 110, 5, -2, False),

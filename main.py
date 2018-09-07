@@ -21,6 +21,7 @@ if platform.system().lower() == 'windows':
 import os
 from kivy.app import App
 from kivy.uix.image import Image
+from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.clock import Clock
 #python2应为from Configparser import ConfigParser
@@ -165,65 +166,6 @@ class Mota(App):
     row = MazeSetting.rows + 2
     col = MazeSetting.cols + 2
 
-    def show(self, floor):
-        for i in range(self.row):
-            for j in range(self.col):
-                pos_type = self.maze.get_type((floor, i, j))
-                pos_value = self.maze.get_value((floor, i, j))
-                if pos_type == MazeBase.Type.Static.ground:
-                    self.image[i][j].texture = self.cache.next('ground')
-                elif pos_type == MazeBase.Type.Static.wall:
-                    self.image[i][j].texture = self.cache.next('wall')
-                elif pos_type == MazeBase.Type.Static.stair:
-                    if pos_value == MazeBase.Value.Stair.down:
-                        self.image[i][j].texture = self.cache.next('stair-down')
-                    elif pos_value == MazeBase.Value.Stair.up:
-                        self.image[i][j].texture = self.cache.next('stair-up')
-                elif pos_type == MazeBase.Type.Static.door:
-                    if pos_value == MazeBase.Value.Color.yellow:
-                        self.image[i][j].texture = self.cache.next('door-yellow')
-                    elif pos_value == MazeBase.Value.Color.blue:
-                        self.image[i][j].texture = self.cache.next('door-blue')
-                    elif pos_value == MazeBase.Value.Color.red:
-                        self.image[i][j].texture = self.cache.next('door-red')
-                    elif pos_value == MazeBase.Value.Color.green:
-                        self.image[i][j].texture = self.cache.next('door-green')
-                elif pos_type == MazeBase.Type.Item.key:
-                    if pos_value == MazeBase.Value.Color.yellow:
-                        self.image[i][j].texture = self.cache.next('key-yellow')
-                    elif pos_value == MazeBase.Value.Color.blue:
-                        self.image[i][j].texture = self.cache.next('key-blue')
-                    elif pos_value == MazeBase.Value.Color.red:
-                        self.image[i][j].texture = self.cache.next('key-red')
-                    elif pos_value == MazeBase.Value.Color.green:
-                        self.image[i][j].texture = self.cache.next('key-green')
-                elif pos_type == MazeBase.Type.Item.attack:
-                    if pos_value == MazeBase.Value.Gem.small:
-                        self.image[i][j].texture = self.cache.next('gem-attack-small')
-                    elif pos_value == MazeBase.Value.Gem.big:
-                        self.image[i][j].texture = self.cache.next('gem-attack-big')
-                    elif pos_value == MazeBase.Value.Gem.large:
-                        pass
-                elif pos_type == MazeBase.Type.Item.defence:
-                    if pos_value == MazeBase.Value.Gem.small:
-                        self.image[i][j].texture = self.cache.next('gem-defence-small')
-                    elif pos_value == MazeBase.Value.Gem.big:
-                        self.image[i][j].texture = self.cache.next('gem-defence-big')
-                    elif pos_value == MazeBase.Value.Gem.large:
-                        pass
-                elif pos_type == MazeBase.Type.Item.potion:
-                    if pos_value == MazeBase.Value.Potion.red:
-                        self.image[i][j].texture = self.cache.next('potion-red')
-                    elif pos_value == MazeBase.Value.Potion.blue:
-                        self.image[i][j].texture = self.cache.next('potion-blue')
-                    elif pos_value == MazeBase.Value.Potion.yellow:
-                        self.image[i][j].texture = self.cache.next('potion-yellow')
-                    elif pos_value == MazeBase.Value.Potion.green:
-                        self.image[i][j].texture = self.cache.next('potion-green')
-                elif pos_type == MazeBase.Type.Item.holy:
-                    self.image[i][j].texture = self.cache.next('holy')
-                    
-
     def build(self):
         self.cache = Cache()
         self.maze = Maze()
@@ -232,15 +174,24 @@ class Mota(App):
         #javaclass = autoclass('com.test.JavaClass')
         #print(javaclass().show())
 
+        #一层背景，一层物品
         self.image = [[None for j in range(self.col)] for i in range(self.row)]
-        self.layout = GridLayout(rows=self.row, cols=self.col, size=(ShowBase.size * self.row, ShowBase.size * self.col), size_hint=(None, None))
+        self.gridlayout = GridLayout(rows=self.row, cols=self.col, size=(ShowBase.size * self.row, ShowBase.size * self.col), size_hint=(None, None))
+        self.gridlayoutback = GridLayout(rows=self.row, cols=self.col, size=(ShowBase.size * self.row, ShowBase.size * self.col), size_hint=(None, None))
+
+        self.layout = FloatLayout()
+        self.layout.add_widget(self.gridlayoutback)
+        self.layout.add_widget(self.gridlayout)
         for i in range(self.row):
             for j in range(self.col):
-                image = Image(size=(ShowBase.size, ShowBase.size))
-                image.texture = self.cache.next('ground')
+                image = Image(size=(ShowBase.size, ShowBase.size), size_hint=(None, None))
                 self.image[i][j] = image
-                self.layout.add_widget(image)
-        
+                self.gridlayout.add_widget(image)
+
+                imageback = Image(size=(ShowBase.size, ShowBase.size), size_hint=(None, None))
+                imageback.texture = self.cache.next('ground')
+                self.gridlayoutback.add_widget(imageback)
+
         self.show(1)
 
         #Clock.schedule_interval(self.image.next, 0.2)
@@ -254,6 +205,70 @@ class Mota(App):
 
     def on_resume(self):
         pass
+
+    def show(self, floor):
+        for i in range(self.row):
+            for j in range(self.col):
+                pos_type = self.maze.get_type((floor, i, j))
+                pos_value = self.maze.get_value((floor, i, j))
+                pos_image = self.image[i][j]
+                if pos_type == MazeBase.Type.Static.ground:
+                    pos_image.texture = self.cache.next('ground')
+                elif pos_type == MazeBase.Type.Static.wall:
+                    pos_image.texture = self.cache.next('wall')
+                elif pos_type == MazeBase.Type.Static.stair:
+                    if pos_value == MazeBase.Value.Stair.down:
+                        pos_image.texture = self.cache.next('stair-down')
+                    elif pos_value == MazeBase.Value.Stair.up:
+                        pos_image.texture = self.cache.next('stair-up')
+                elif pos_type == MazeBase.Type.Static.door:
+                    if pos_value == MazeBase.Value.Color.yellow:
+                        pos_image.texture = self.cache.next('door-yellow')
+                    elif pos_value == MazeBase.Value.Color.blue:
+                        pos_image.texture = self.cache.next('door-blue')
+                    elif pos_value == MazeBase.Value.Color.red:
+                        pos_image.texture = self.cache.next('door-red')
+                    elif pos_value == MazeBase.Value.Color.green:
+                        pos_image.texture = self.cache.next('door-green')
+                elif pos_type == MazeBase.Type.Item.key:
+                    if pos_value == MazeBase.Value.Color.yellow:
+                        pos_image.texture = self.cache.next('key-yellow')
+                    elif pos_value == MazeBase.Value.Color.blue:
+                        pos_image.texture = self.cache.next('key-blue')
+                    elif pos_value == MazeBase.Value.Color.red:
+                        pos_image.texture = self.cache.next('key-red')
+                    elif pos_value == MazeBase.Value.Color.green:
+                        pos_image.texture = self.cache.next('key-green')
+                elif pos_type == MazeBase.Type.Item.attack:
+                    if pos_value == MazeBase.Value.Gem.small:
+                        pos_image.texture = self.cache.next('gem-attack-small')
+                    elif pos_value == MazeBase.Value.Gem.big:
+                        pos_image.texture = self.cache.next('gem-attack-big')
+                    elif pos_value == MazeBase.Value.Gem.large:
+                        print(pos_type, pos_value)
+                elif pos_type == MazeBase.Type.Item.defence:
+                    if pos_value == MazeBase.Value.Gem.small:
+                        pos_image.texture = self.cache.next('gem-defence-small')
+                    elif pos_value == MazeBase.Value.Gem.big:
+                        pos_image.texture = self.cache.next('gem-defence-big')
+                    elif pos_value == MazeBase.Value.Gem.large:
+                        print(pos_type, pos_value)
+                elif pos_type == MazeBase.Type.Item.potion:
+                    if pos_value == MazeBase.Value.Potion.red:
+                        pos_image.texture = self.cache.next('potion-red')
+                    elif pos_value == MazeBase.Value.Potion.blue:
+                        pos_image.texture = self.cache.next('potion-blue')
+                    elif pos_value == MazeBase.Value.Potion.yellow:
+                        pos_image.texture = self.cache.next('potion-yellow')
+                    elif pos_value == MazeBase.Value.Potion.green:
+                        pos_image.texture = self.cache.next('potion-green')
+                elif pos_type == MazeBase.Type.Item.holy:
+                    pos_image.texture = self.cache.next('holy')
+                elif pos_type == MazeBase.Type.Active.monster:
+                    pos_image.texture = self.cache.next('-'.join(pos_value), 'dynamic')
+                else:
+                    print(pos_type, pos_value)
+
 
 if __name__ == '__main__':
     mota = Mota()
