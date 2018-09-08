@@ -25,7 +25,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.clock import Clock
 #python2应为from Configparser import ConfigParser
 
-from cache import Cache, CacheBase
+from cache import Cache
 from maze import Maze, MazeSetting, MazeBase
 
 '''
@@ -38,23 +38,22 @@ class Layout(FloatLayout):
     def __init__(self, **kwargs):
         super(Layout, self).__init__(**kwargs)
 
-        self.cache = Cache()
-        self.maze = Maze(self.cache)
+        self.maze = Maze()
         self.maze.update()
         self.image = [[None for j in range(self.col)] for i in range(self.row)]
-        self.gridlayout = GridLayout(rows=self.row, cols=self.col, size=(CacheBase.size * self.row, CacheBase.size * self.col), size_hint=(None, None))
-        self.gridlayoutback = GridLayout(rows=self.row, cols=self.col, size=(CacheBase.size * self.row, CacheBase.size * self.col), size_hint=(None, None))
+        self.gridlayout = GridLayout(rows=self.row, cols=self.col, size=(Cache.size * self.row, Cache.size * self.col), size_hint=(None, None))
+        self.gridlayoutback = GridLayout(rows=self.row, cols=self.col, size=(Cache.size * self.row, Cache.size * self.col), size_hint=(None, None))
     
         self.add_widget(self.gridlayoutback)
         self.add_widget(self.gridlayout)
         for i in range(self.row):
             for j in range(self.col):
-                image = Image(size=(CacheBase.size, CacheBase.size), size_hint=(None, None))
+                image = Image(size=(Cache.size, Cache.size), size_hint=(None, None))
                 self.image[i][j] = image
                 self.gridlayout.add_widget(image)
     
-                imageback = Image(size=(CacheBase.size, CacheBase.size), size_hint=(None, None))
-                imageback.texture = self.cache.next('ground')
+                imageback = Image(size=(Cache.size, Cache.size), size_hint=(None, None))
+                imageback.texture = Cache.next('ground')
                 self.gridlayoutback.add_widget(imageback)
         
         self.floor = 1
@@ -80,61 +79,61 @@ class Layout(FloatLayout):
                 pos_value = self.maze.get_value((floor, i, j))
                 pos_image = self.image[i][j]
                 if pos_type == MazeBase.Type.Static.ground:
-                    pos_image.texture = self.cache.next('ground')
+                    pos_image.texture = Cache.next('ground')
                 elif pos_type == MazeBase.Type.Static.wall:
-                    pos_image.texture = self.cache.next('wall')
+                    pos_image.texture = Cache.next('wall')
                 elif pos_type == MazeBase.Type.Static.stair:
                     if pos_value == MazeBase.Value.Stair.down:
-                        pos_image.texture = self.cache.next('stair-down')
+                        pos_image.texture = Cache.next('stair-down')
                     elif pos_value == MazeBase.Value.Stair.up:
-                        pos_image.texture = self.cache.next('stair-up')
+                        pos_image.texture = Cache.next('stair-up')
                 elif pos_type == MazeBase.Type.Static.door:
                     if pos_value == MazeBase.Value.Color.yellow:
-                        pos_image.texture = self.cache.next('door-yellow')
+                        pos_image.texture = Cache.next('door-yellow')
                     elif pos_value == MazeBase.Value.Color.blue:
-                        pos_image.texture = self.cache.next('door-blue')
+                        pos_image.texture = Cache.next('door-blue')
                     elif pos_value == MazeBase.Value.Color.red:
-                        pos_image.texture = self.cache.next('door-red')
+                        pos_image.texture = Cache.next('door-red')
                     elif pos_value == MazeBase.Value.Color.green:
-                        pos_image.texture = self.cache.next('door-green')
+                        pos_image.texture = Cache.next('door-green')
                 elif pos_type == MazeBase.Type.Item.key:
                     if pos_value == MazeBase.Value.Color.yellow:
-                        pos_image.texture = self.cache.next('key-yellow')
+                        pos_image.texture = Cache.next('key-yellow')
                     elif pos_value == MazeBase.Value.Color.blue:
-                        pos_image.texture = self.cache.next('key-blue')
+                        pos_image.texture = Cache.next('key-blue')
                     elif pos_value == MazeBase.Value.Color.red:
-                        pos_image.texture = self.cache.next('key-red')
+                        pos_image.texture = Cache.next('key-red')
                     elif pos_value == MazeBase.Value.Color.green:
-                        pos_image.texture = self.cache.next('key-green')
+                        pos_image.texture = Cache.next('key-green')
                 elif pos_type == MazeBase.Type.Item.attack:
                     if pos_value == MazeBase.Value.Gem.small:
-                        pos_image.texture = self.cache.next('gem-attack-small')
+                        pos_image.texture = Cache.next('gem-attack-small')
                     elif pos_value == MazeBase.Value.Gem.big:
-                        pos_image.texture = self.cache.next('gem-attack-big')
+                        pos_image.texture = Cache.next('gem-attack-big')
                     elif pos_value == MazeBase.Value.Gem.large:
                         #will random in 5
-                        pos_image.texture = self.cache.next('weapen-attack-01')
+                        pos_image.texture = Cache.next('weapen-attack-01')
                 elif pos_type == MazeBase.Type.Item.defence:
                     if pos_value == MazeBase.Value.Gem.small:
-                        pos_image.texture = self.cache.next('gem-defence-small')
+                        pos_image.texture = Cache.next('gem-defence-small')
                     elif pos_value == MazeBase.Value.Gem.big:
-                        pos_image.texture = self.cache.next('gem-defence-big')
+                        pos_image.texture = Cache.next('gem-defence-big')
                     elif pos_value == MazeBase.Value.Gem.large:
                         #will random in 5
-                        pos_image.texture = self.cache.next('weapen-defence-01')
+                        pos_image.texture = Cache.next('weapen-defence-01')
                 elif pos_type == MazeBase.Type.Item.potion:
                     if pos_value == MazeBase.Value.Potion.red:
-                        pos_image.texture = self.cache.next('potion-red')
+                        pos_image.texture = Cache.next('potion-red')
                     elif pos_value == MazeBase.Value.Potion.blue:
-                        pos_image.texture = self.cache.next('potion-blue')
+                        pos_image.texture = Cache.next('potion-blue')
                     elif pos_value == MazeBase.Value.Potion.yellow:
-                        pos_image.texture = self.cache.next('potion-yellow')
+                        pos_image.texture = Cache.next('potion-yellow')
                     elif pos_value == MazeBase.Value.Potion.green:
-                        pos_image.texture = self.cache.next('potion-green')
+                        pos_image.texture = Cache.next('potion-green')
                 elif pos_type == MazeBase.Type.Item.holy:
-                    pos_image.texture = self.cache.next('holy')
+                    pos_image.texture = Cache.next('holy')
                 elif pos_type == MazeBase.Type.Active.monster:
-                    pos_image.texture = self.cache.next('-'.join(pos_value), 'dynamic')
+                    pos_image.texture = Cache.next('-'.join(pos_value), 'dynamic')
                 if not pos_image.texture:
                     print(pos_type, pos_value)
 

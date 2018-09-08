@@ -1,183 +1,276 @@
 [slime-green]
 name = 001.png
 dynamic = 1, 1-4
+level = 0
+health = 60
 
 [slime-red]
 name = 001.png
 dynamic = 2, 1-4
+level = 5
+health = 80
 
 [slime-black]
 name = 001.png
 dynamic = 3, 1-4
+level = 10
+health = 100
 
 [slime-king]
 name = 001.png
 dynamic = 4, 1-4
+level = 30
+health = 120
 
 
 [bat-small]
 name = 002.png
 dynamic = 1, 1-4
+level = 5
+health = 80
 
 [bat-big]
 name = 002.png
 dynamic = 2, 1-4
+level = 15
+health = 100
 
 [bat-red]
 name = 002.png
 dynamic = 3, 1-4
+level = 35
+health = 120
 
 [bat-purple]
 name = 011.png
 dynamic = 3, 1-4
+level = 65
+health = 140
 
 
 [skeleton-white]
 name = 003.png
 dynamic = 1, 1-4
+level = 10
+health = 60
 
 [skeleton-fighter]
 name = 003.png
 dynamic = 2, 1-4
+level = 15
+health = 70
 
 [skeleton-yellow]
 name = 003.png
 dynamic = 3, 1-4
+level = 30
+health = 80
 
 [skeleton-warrior]
 name = 003.png
 dynamic = 4, 1-4
+level = 50
+health = 90
 
 [skeleton-purple]
 name = 011.png
 dynamic = 2, 1-4
+level = 70
+health = 100
 
 
 [knight-yellow]
 name = 007.png
 dynamic = 2, 1-4
+level = 25
+health = 100
 
 [knight-red]
 name = 007.png
 dynamic = 3, 1-4
+level = 40
+health = 110
 
 [knight-blue]
 name = 010.png
 dynamic = 4, 1-4
+level = 55
+health = 120
 
 [knight-black]
 name = 007.png
 dynamic = 4, 1-4
+level = 85
+health = 130
 
 
 [mage-blue]
 name = 005.png
 dynamic = 1, 1-4
+level = 10
+health = 80
+ismagic = 1
 
 [mage-yellow]
 name = 009.png
 dynamic = 1, 1-4
+level = 20
+health = 100
+ismagic = 1
 
 [mage-red]
 name = 005.png
 dynamic = 2, 1-4
+level = 40
+health = 120
+ismagic = 1
 
 
 [orcish-brown]
 name = 004.png
 dynamic = 1, 1-4
+level = 15
+health = 120
 
 [orcish-fighter]
 name = 004.png
 dynamic = 2, 1-4
+level = 45
+health = 130
 
 [orcish-green]
 name = 009.png
 dynamic = 4, 1-4
+level = 65
+health = 140
 
 
 [guard-yellow]
 name = 006.png
 dynamic = 1, 1-4
+level = 20
+health = 110
 
 [guard-blue]
 name = 006.png
 dynamic = 2, 1-4
+level = 40
+health = 120
 
 [guard-red]
 name = 006.png
 dynamic = 3, 1-4
+level = 60
+health = 130
 
 
 [wizard-brown]
 name = 005.png
 dynamic = 3, 1-4
+level = 30
+health = 120
+ismagic = 1
 
 [wizard-red]
 name = 005.png
 dynamic = 4, 1-4
+level = 60
+health = 140
+ismagic = 1
 
 
 [quicksilver-white]
 name = 004.png
 dynamic = 4, 1-4
+level = 20
+health = 80
 
 [quicksilver-gray]
 name = 009.png
 dynamic = 3, 1-4
+level = 80
+health = 90
 
 
 [rock-brown]
 name = 004.png
 dynamic = 3, 1-4
+level = 15
+health = 40
 
 [rock-gray]
 name = 011.png
 dynamic = 4, 1-4
+level = 75
+health = 60
 
 
 [swordman-brown]
 name = 006.png
 dynamic = 4, 1-4
+level = 25
+health = 100
 
 [swordman-red]
 name = 009.png
 dynamic = 2, 1-4
+level = 90
+health = 120
 
 
 [elite-vampire]
 name = 002.png
 dynamic = 4, 1-4
+level = 85
+health = 160
 
 [elite-darkmage]
 name = 008.png
 dynamic = 3, 1-4
+level = 95
+health = 80
+ismagic = 1
 
 [elite-silverslime]
 name = 008.png
 dynamic = 4, 1-4
+level = 80
+health = 100
 
 [elite-glodslime]
 name = 011.png
 dynamic = 1, 1-4
+level = 90
+health = 120
 
 
 [boss-blue]
 name = 008.png
 dynamic = 2, 1-4
+level = 100
+health = 160
 
 [boss-green]
 name = 010.png
 dynamic = 3, 1-4
+level = 100
+health = 170
 
 [boss-yellow]
 name = 010.png
 dynamic = 2, 1-4
+level = 100
+health = 180
 
 [boss-red]
 name = 008.png
 dynamic = 1, 1-4
+level = 100
+health = 190
 
 [boss-black]
 name = 010.png
 dynamic = 1, 1-4
+level = 100
+health = 200
+

@@ -12,10 +12,10 @@ from kivy.uix.image import Image
 路径，行，列，方向（按行还是按列）
 只能从左到右或者从上到下
 '''
+
 class CacheBase:
     size = 32
 
-class Cache:
     def __init__(self):
         self.config = {}
         self.cache = {}
@@ -63,7 +63,7 @@ class Cache:
     def __real_pos(self, size, pos):
         weight, height = size
         row, col = pos
-        return col * CacheBase.size, height - (row + 1) * CacheBase.size
+        return col * self.size, height - (row + 1) * self.size
 
     #获取texture中的部分
     def __cut_texture(self, texture, pos):
@@ -82,7 +82,7 @@ class Cache:
         textures = []
         for pos in pos_list:
             row, col = self.__real_pos(texture.size, pos)
-            textures.append(texture.get_region(row, col, CacheBase.size, CacheBase.size))
+            textures.append(texture.get_region(row, col, self.size, self.size))
         return textures
 
     #加载配置，并缓存图片信息
@@ -135,3 +135,8 @@ class Cache:
         if style == 'dynamic':
             info[index_name] %= length
         return texture
+
+
+global Cache
+if 'Cache' not in dir():
+    Cache = CacheBase()

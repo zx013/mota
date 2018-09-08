@@ -3,6 +3,7 @@ import os
 import random
 import pickle
 from functools import reduce
+from cache import Cache
 #import copy
 
 
@@ -207,7 +208,7 @@ class TreeNode:
         return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
 
-
+'''
 class Cache:
     class staticproperty(property):
         def __get__(self, cls, owner):
@@ -236,6 +237,7 @@ class Cache:
     def staticrecount(self):
         for cache in self.__staticcache.values():
             cache['check'] = True
+'''
 
 #注意，出现random的属性，每次获取时值将不同
 class MazeSetting:
@@ -297,78 +299,30 @@ class MonsterInfo:
     data_fluctuate = 10
     data_range = 20
 
-    #level, health, ismagic
-    data = {
-        'slime': {
-            'green':       {'level':  0, 'health':  60, 'ismagic': 0},
-            'red':         {'level':  5, 'health':  80, 'ismagic': 0},
-            'black':       {'level': 10, 'health': 100, 'ismagic': 0},
-            'king':        {'level': 30, 'health': 120, 'ismagic': 0}
-        },
-        'bat': {
-            'small':       {'level':  5, 'health':  80, 'ismagic': 0},
-            'big':         {'level': 15, 'health': 100, 'ismagic': 0},
-            'red':         {'level': 35, 'health': 120, 'ismagic': 0},
-            'purple':      {'level': 65, 'health': 140, 'ismagic': 0}
-        },
-        'skeleton': {
-            'white':       {'level': 10, 'health':  60, 'ismagic': 0},
-            'fighter':     {'level': 15, 'health':  70, 'ismagic': 0},
-            'yellow':      {'level': 30, 'health':  80, 'ismagic': 0},
-            'warrior':     {'level': 50, 'health':  90, 'ismagic': 0},
-            'purple':      {'level': 70, 'health': 100, 'ismagic': 0}
-        },
-        'knight': {
-            'yellow':      {'level': 25, 'health': 100, 'ismagic': 0},
-            'red':         {'level': 40, 'health': 110, 'ismagic': 0},
-            'blue':        {'level': 55, 'health': 120, 'ismagic': 0},
-            'black':       {'level': 85, 'health': 130, 'ismagic': 0}
-        },
-        'mage': {
-            'blue':        {'level': 10, 'health':  80, 'ismagic': 1},
-            'yellow':      {'level': 20, 'health': 100, 'ismagic': 1},
-            'red':         {'level': 40, 'health': 120, 'ismagic': 1}
-        },
-        'orcish': {
-            'brown':       {'level': 15, 'health': 120, 'ismagic': 0},
-            'fighter':     {'level': 45, 'health': 130, 'ismagic': 0},
-            'green':       {'level': 65, 'health': 140, 'ismagic': 0}
-        },
-        'guard': {
-            'yellow':      {'level': 20, 'health': 110, 'ismagic': 0},
-            'blue':        {'level': 40, 'health': 120, 'ismagic': 0},
-            'red':         {'level': 60, 'health': 130, 'ismagic': 0}
-        },
-        'wizard': {
-            'brown':       {'level': 30, 'health': 120, 'ismagic': 1},
-            'red':         {'level': 60, 'health': 140, 'ismagic': 1}
-        },
-        'quicksilver': {
-            'white':       {'level': 20, 'health':  80, 'ismagic': 0},
-            'gray':        {'level': 80, 'health':  90, 'ismagic': 0}
-        },
-        'rock': {
-            'brown':       {'level': 15, 'health':  40, 'ismagic': 0},
-            'gray':        {'level': 75, 'health':  60, 'ismagic': 0}
-        },
-        'swordman': {
-            'brown':       {'level': 25, 'health': 100, 'ismagic': 0},
-            'red':         {'level': 90, 'health': 120, 'ismagic': 0}
-        },
-        'elite': {
-            'vampire':     {'level': 85, 'health': 160, 'ismagic': 0},
-            'darkmage':    {'level': 95, 'health':  80, 'ismagic': 1},
-            'silverslime': {'level': 80, 'health': 100, 'ismagic': 0},
-            'glodslime':   {'level': 90, 'health': 120, 'ismagic': 0},
-        },
-        'boss': {
-            'blue':        {'level': 100, 'health': 160, 'ismagic': 0},
-            'green':       {'level': 100, 'health': 170, 'ismagic': 0},
-            'yellow':      {'level': 100, 'health': 180, 'ismagic': 0},
-            'red':         {'level': 100, 'health': 190, 'ismagic': 0},
-            'black':       {'level': 100, 'health': 200, 'ismagic': 0}
-        }
-    }
+    base = {'level': 50, 'health': 100, 'ismagic': 0}
+    data = {}
+
+    @staticmethod
+    def load():
+        data = MonsterInfo.data
+        for key, config in Cache.config.items():
+            if not config['path'].startswith(MonsterInfo.path):
+                continue
+            key_list = key.split('-')
+            if len(key_list) != 2:
+                continue
+
+            key1, key2 = key_list
+            if key1 not in data:
+                data[key1] = {}
+            if key2 not in data[key1]:
+                data[key1][key2] = {}
+
+            for name in MonsterInfo.base:
+                if name not in data[key1][key2]:
+                    data[key1][key2][name] = MonsterInfo.base[name]
+                if name in config and config[name].isdigit():
+                    data[key1][key2][name] = int(config[name])
 
 
 class Pos:
@@ -471,14 +425,14 @@ class HeroState:
 
 
 class Maze:
-    def __init__(self, cache):
-        self.cache = cache
+    def __init__(self):
         self.maze = {}
         self.maze_map = {} #每一层不同点的分类集合
         self.maze_info = {} #每一层的信息，node, stair等
         self.monster = {}
         self.herobase = HeroBase()
         self.herostate = HeroState(self.herobase)
+        MonsterInfo.load()
 
     def init(self, floor):
         for key in list(self.maze.keys()):
@@ -1671,10 +1625,7 @@ class Maze:
 
 
 if __name__ == '__main__':
-    from cache import Cache
-    cache = Cache()
-
-    maze = Maze(cache)
+    maze = Maze()
     maze.update()
 
     stairs_start = set(maze.maze_info[1]['stair'][MazeBase.Value.Stair.down]).pop()
