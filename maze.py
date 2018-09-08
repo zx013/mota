@@ -297,76 +297,76 @@ class MonsterInfo:
     data_fluctuate = 10
     data_range = 20
 
-    #name, resource, locate, level, health, attack, defence, skill
+    #level, health, ismagic
     data = {
         'slime': {
-            'green':       ('name', '001.png', 0,  0, 60, 5, -2, False),
-            'red':         ('name', '001.png', 1,  5, 80, 5, -2, False),
-            'black':       ('name', '001.png', 2, 10, 100, 5, -2, False),
-            'king':        ('name', '001.png', 3, 30, 120, 5, -2, False)
+            'green':       {'level':  0, 'health':  60, 'ismagic': 0},
+            'red':         {'level':  5, 'health':  80, 'ismagic': 0},
+            'black':       {'level': 10, 'health': 100, 'ismagic': 0},
+            'king':        {'level': 30, 'health': 120, 'ismagic': 0}
         },
         'bat': {
-            'small':       ('name', '002.png', 0,  5, 80, 5, -2, False),
-            'big':         ('name', '002.png', 1, 15, 100, 5, -2, False),
-            'red':         ('name', '002.png', 2, 35, 120, 5, -2, False),
-            'purple':      ('name', '011.png', 2, 65, 140, 5, -2, False)
+            'small':       {'level':  5, 'health':  80, 'ismagic': 0},
+            'big':         {'level': 15, 'health': 100, 'ismagic': 0},
+            'red':         {'level': 35, 'health': 120, 'ismagic': 0},
+            'purple':      {'level': 65, 'health': 140, 'ismagic': 0}
         },
         'skeleton': {
-            'white':       ('name', '003.png', 0, 10, 60, 5, -2, False),
-            'fighter':     ('name', '003.png', 1, 15, 70, 5, -2, False),
-            'yellow':      ('name', '003.png', 2, 30, 80, 5, -2, False),
-            'warrior':     ('name', '003.png', 3, 50, 90, 5, -2, False),
-            'purple':      ('name', '011.png', 1, 70, 100, 5, -2, False)
+            'white':       {'level': 10, 'health':  60, 'ismagic': 0},
+            'fighter':     {'level': 15, 'health':  70, 'ismagic': 0},
+            'yellow':      {'level': 30, 'health':  80, 'ismagic': 0},
+            'warrior':     {'level': 50, 'health':  90, 'ismagic': 0},
+            'purple':      {'level': 70, 'health': 100, 'ismagic': 0}
         },
         'knight': {
-            'yellow':      ('name', '007.png', 1, 25, 100, 5, -2, False),
-            'red':         ('name', '007.png', 2, 40, 110, 5, -2, False),
-            'blue':        ('name', '010.png', 3, 55, 120, 5, -2, False),
-            'black':       ('name', '007.png', 3, 85, 130, 5, -2, False)
+            'yellow':      {'level': 25, 'health': 100, 'ismagic': 0},
+            'red':         {'level': 40, 'health': 110, 'ismagic': 0},
+            'blue':        {'level': 55, 'health': 120, 'ismagic': 0},
+            'black':       {'level': 85, 'health': 130, 'ismagic': 0}
         },
         'mage': {
-            'blue':        ('name', '005.png', 0, 10, 80, 5, -2, True),
-            'yellow':      ('name', '009.png', 0, 20, 100, 5, -2, True),
-            'red':         ('name', '005.png', 1, 40, 120, 5, -2, True)
+            'blue':        {'level': 10, 'health':  80, 'ismagic': 1},
+            'yellow':      {'level': 20, 'health': 100, 'ismagic': 1},
+            'red':         {'level': 40, 'health': 120, 'ismagic': 1}
         },
         'orcish': {
-            'brown':       ('name', '004.png', 0, 15, 120, 5, -2, False),
-            'fighter':     ('name', '004.png', 1, 45, 130, 5, -2, False),
-            'green':       ('name', '009.png', 3, 65, 140, 5, -2, False)
+            'brown':       {'level': 15, 'health': 120, 'ismagic': 0},
+            'fighter':     {'level': 45, 'health': 130, 'ismagic': 0},
+            'green':       {'level': 65, 'health': 140, 'ismagic': 0}
         },
         'guard': {
-            'yellow':      ('name', '006.png', 0, 20, 110, 5, -2, False),
-            'blue':        ('name', '006.png', 1, 40, 120, 5, -2, False),
-            'red':         ('name', '006.png', 2, 60, 130, 5, -2, False)
+            'yellow':      {'level': 20, 'health': 110, 'ismagic': 0},
+            'blue':        {'level': 40, 'health': 120, 'ismagic': 0},
+            'red':         {'level': 60, 'health': 130, 'ismagic': 0}
         },
         'wizard': {
-            'brown':       ('name', '005.png', 2, 30, 120, 5, -2, True),
-            'red':         ('name', '005.png', 3, 60, 140, 5, -2, True)
+            'brown':       {'level': 30, 'health': 120, 'ismagic': 1},
+            'red':         {'level': 60, 'health': 140, 'ismagic': 1}
         },
         'quicksilver': {
-            'white':       ('name', '004.png', 3, 20, 80, 5, -2, False),
-            'gray':        ('name', '009.png', 2, 80, 90, 5, -2, False)
+            'white':       {'level': 20, 'health':  80, 'ismagic': 0},
+            'gray':        {'level': 80, 'health':  90, 'ismagic': 0}
         },
         'rock': {
-            'brown':       ('name', '004.png', 2, 15, 40, 5, -2, False),
-            'gray':        ('name', '011.png', 3, 75, 60, 5, -2, False)
+            'brown':       {'level': 15, 'health':  40, 'ismagic': 0},
+            'gray':        {'level': 75, 'health':  60, 'ismagic': 0}
         },
         'swordman': {
-            'brown':       ('name', '006.png', 3, 25, 100, 5, -2, False),
-            'red':         ('name', '009.png', 1, 90, 120, 5, -2, False)
+            'brown':       {'level': 25, 'health': 100, 'ismagic': 0},
+            'red':         {'level': 90, 'health': 120, 'ismagic': 0}
         },
         'elite': {
-            'vampire':     ('name', '002.png', 3, 85, 160, 20, 20, False),
-            'darkmage':    ('name', '008.png', 2, 95, 80, -60, 20, True),
-            'silverslime': ('name', '008.png', 3, 80, 100, 20, 10, False),
-            'glodslime':   ('name', '011.png', 0, 90, 120, 30, 10, False),
+            'vampire':     {'level': 85, 'health': 160, 'ismagic': 0},
+            'darkmage':    {'level': 95, 'health':  80, 'ismagic': 1},
+            'silverslime': {'level': 80, 'health': 100, 'ismagic': 0},
+            'glodslime':   {'level': 90, 'health': 120, 'ismagic': 0},
         },
         'boss': {
-            'blue':        ('name', '008.png', 1, 100, 160, 5, -2, False),
-            'green':       ('name', '010.png', 2, 100, 170, 5, -2, False),
-            'yellow':      ('name', '010.png', 1, 100, 180, 5, -2, False),
-            'red':         ('name', '008.png', 0, 100, 190, 5, -2, False),
-            'black':       ('name', '010.png', 0, 100, 200, 5, -2, False)
+            'blue':        {'level': 100, 'health': 160, 'ismagic': 0},
+            'green':       {'level': 100, 'health': 170, 'ismagic': 0},
+            'yellow':      {'level': 100, 'health': 180, 'ismagic': 0},
+            'red':         {'level': 100, 'health': 190, 'ismagic': 0},
+            'black':       {'level': 100, 'health': 200, 'ismagic': 0}
         }
     }
 
@@ -1128,7 +1128,7 @@ class Maze:
                 if key1 in ('elite', 'boss'):
                     continue
                 for key2, data2 in data1.items():
-                    level = random.choice(range(max(0, data2[3] - MonsterInfo.data_fluctuate), min(100, data2[3] + MonsterInfo.data_fluctuate)))
+                    level = random.choice(range(max(0, data2['level'] - MonsterInfo.data_fluctuate), min(100, data2['level'] + MonsterInfo.data_fluctuate)))
                     minimum = max(0, int(float(level - MonsterInfo.data_range) * monster_length / 100))
                     maximum = min(monster_length, int(float(level + MonsterInfo.data_range) * monster_length / 100))
                     for index in range(minimum, maximum):
@@ -1176,8 +1176,8 @@ class Maze:
 
             monster = node.Monster
             monster_info = MonsterInfo.data[monster[0]][monster[1]]
-            monster_health = monster_info[4] - 10 + random.randint(0, 20)
-            monster_ismagic = monster_info[7]
+            monster_health = monster_info['health'] - 10 + random.randint(0, 20)
+            monster_ismagic = monster_info['ismagic']
             monster_number = []
             for number, node in enumerate(node_list):
                 if node.IsMonster and node.Monster == monster:
@@ -1280,7 +1280,7 @@ class Maze:
                     if node.IsMonster:
                         monster = node.Monster
                         monster_info = MonsterInfo.data[monster[0]][monster[1]]
-                        monster_ismagic = monster_info[7]
+                        monster_ismagic = monster_info['ismagic']
 
                         monster_state = self.monster[monster[0]][monster[1]]
                         monster_health = monster_state['health']
@@ -1355,7 +1355,7 @@ class Maze:
             if node.IsMonster:
                 monster = node.Monster
                 monster_info = MonsterInfo.data[monster[0]][monster[1]]
-                monster_ismagic = monster_info[7]
+                monster_ismagic = monster_info['ismagic']
 
                 monster_state = self.monster[monster[0]][monster[1]]
                 monster_health = monster_state['health']
