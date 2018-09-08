@@ -1,0 +1,66 @@
+[hero-blue-down]
+name = blue.png
+action = 1, 1-4
+
+[hero-blue-left]
+name = blue.png
+action = 2, 1-4
+
+[hero-blue-right]
+name = blue.png
+action = 3, 1-4
+
+[hero-blue-up]
+name = blue.png
+action = 4, 1-4
+
+
+[hero-black-down]
+name = black.png
+action = 1, 1-4
+
+[hero-black-left]
+name = black.png
+action = 2, 1-4
+
+[hero-black-right]
+name = black.png
+action = 3, 1-4
+
+[hero-black-up]
+name = black.png
+action = 4, 1-4
+
+
+[hero-red-down]
+name = red.png
+action = 1, 1-4
+
+[hero-red-left]
+name = red.png
+action = 2, 1-4
+
+[hero-red-right]
+name = red.png
+action = 3, 1-4
+
+[hero-red-up]
+name = red.png
+action = 4, 1-4
+
+
+[hero-yellow-down]
+name = yellow.png
+action = 1, 1-4
+
+[hero-yellow-left]
+name = yellow.png
+action = 2, 1-4
+
+[hero-yellow-right]
+name = yellow.png
+action = 3, 1-4
+
+[hero-yellow-up]
+name = yellow.png
+action = 4, 1-4

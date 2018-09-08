@@ -22,6 +22,7 @@ from kivy.app import App
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
 #python2应为from Configparser import ConfigParser
 
@@ -31,7 +32,24 @@ from maze import Maze, MazeSetting, MazeBase
 '''
 sometimes node is empty, that means we will get nothing in these area
 '''
-class Layout(FloatLayout):
+class Layer(GridLayout):
+    def __init__(self, row, col, **kwargs):
+        self.row = row
+        self.col = col
+        super(Layer, self).__init__(rows=self.row, cols=self.col, size=(Cache.size * self.row, Cache.size * self.col), size_hint=(None, None), **kwargs)
+        self.image = [[None for j in range(self.col)] for i in range(self.row)]
+        self.texture = None #默认的texture
+
+    def add(self, i, j, texture=None):
+        self.texture = texture
+        image = Image(size=(Cache.size, Cache.size), size_hint=(None, None))
+        image.texture = texture
+        self.image[i][j] = image
+        self.add_widget(image)
+        return image
+
+
+class Layout(FocusBehavior, FloatLayout):
     row = MazeSetting.rows + 2
     col = MazeSetting.cols + 2
 
@@ -40,48 +58,76 @@ class Layout(FloatLayout):
 
         self.maze = Maze()
         self.maze.update()
-        self.image = [[None for j in range(self.col)] for i in range(self.row)]
-        self.gridlayout = GridLayout(rows=self.row, cols=self.col, size=(Cache.size * self.row, Cache.size * self.col), size_hint=(None, None))
-        self.gridlayoutback = GridLayout(rows=self.row, cols=self.col, size=(Cache.size * self.row, Cache.size * self.col), size_hint=(None, None))
-    
-        self.add_widget(self.gridlayoutback)
-        self.add_widget(self.gridlayout)
+
+        self.front = Layer(self.row, self.col)
+        self.middle = Layer(self.row, self.col)
+        self.back = Layer(self.row, self.col)
+
+        self.add_widget(self.back)
+        self.add_widget(self.middle)
+        self.add_widget(self.front)
         for i in range(self.row):
             for j in range(self.col):
-                image = Image(size=(Cache.size, Cache.size), size_hint=(None, None))
-                self.image[i][j] = image
-                self.gridlayout.add_widget(image)
-    
-                imageback = Image(size=(Cache.size, Cache.size), size_hint=(None, None))
-                imageback.texture = Cache.next('ground')
-                self.gridlayoutback.add_widget(imageback)
+                self.front.add(i, j, Cache.next('empty'))
+                self.middle.add(i, j)
+                self.back.add(i, j, Cache.next('ground'))
 
         self.floor = 1
+        self.pos = (5, 5)
+        self.color = 'blue'
+        self.key = 'down'
+        self.focused = True
         Clock.schedule_interval(self.show, 0.25)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        print(keycode)
         key = keycode[1]
-        if key not in set(('up', 'down', 'left', 'right')):
+        if key not in ('up', 'down', 'left', 'right'):
             return False
-        #self.move(key)
+        self.move(key)
         return True
     
     def on_touch_down(self, touch):
+        print(touch)
         if self.maze.is_boss_floor(self.floor):
             self.maze.update()
         self.floor += 1
-        print(touch)
         if self.collide_point(touch.x, touch.y):
             return True
         super(Layout, self).on_touch_down(touch)
 
+    def move(self, key):
+        if key == 'up':
+            move = (1, 0)
+        elif key == 'down':
+            move = (1, 0)
+        elif key == 'left':
+            move = (1, 0)
+        elif key == 'right':
+            move = (1, 0)
+        else:
+            move = (0, 0)
+        
+        x, y = move
+        x_before, y_before = self.pos
+        x_after, y_after = (x_before + x, y_before + y)
+        self.pos = (x_before + x, y_before + y)
+        
+        self.front.image[x_before][y_before].texture = Cache.next('empty')
+        
+
+
     def show(self, dt):
         floor = self.floor
+        hero_image = self.front.image[self.pos[0]][self.pos[1]]
+        hero_image.texture = Cache.next('hero-{}-{}'.format(self.color, self.key), 'action')
+        if not hero_image.texture:
+            hero_image.texture = Cache.next('hero-{}-{}'.format(self.color, self.key))
         for i in range(self.row):
             for j in range(self.col):
                 pos_type = self.maze.get_type((floor, i, j))
                 pos_value = self.maze.get_value((floor, i, j))
-                pos_image = self.image[i][j]
+                pos_image = self.middle.image[i][j]
                 if pos_type == MazeBase.Type.Static.ground:
                     pos_image.texture = Cache.next('ground')
                 elif pos_type == MazeBase.Type.Static.wall:

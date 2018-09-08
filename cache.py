@@ -121,6 +121,8 @@ class CacheBase:
         textures_name = '{}_textures'.format(style)
         textures = info[textures_name]
         if style == 'static':
+            if 'action_index' in info:
+                info['action_index'] = 0
             return textures
 
         index_name = '{}_index'.format(style)
