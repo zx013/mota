@@ -112,6 +112,17 @@ class CacheBase:
 
                 self.config[key] = val
 
+    def reset(self, key):
+        if key not in self.config:
+            print(key)
+            return None
+
+        info = self.config[key]
+        if 'dynamic_index' in info:
+            info['dynamic_index'] = 0
+        if 'action_index' in info:
+            info['action_index'] = 0
+
     def next(self, key, style='static'):
         if key not in self.config:
             print(key)
@@ -121,8 +132,6 @@ class CacheBase:
         textures_name = '{}_textures'.format(style)
         textures = info[textures_name]
         if style == 'static':
-            if 'action_index' in info:
-                info['action_index'] = 0
             return textures
 
         index_name = '{}_index'.format(style)

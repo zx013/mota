@@ -326,12 +326,6 @@ class MonsterInfo:
 
 
 class Pos:
-    class Move:
-        up = (1, 0)
-        down = (-1, 0)
-        left = (0, 1)
-        right = (0, -1)
-
     @staticmethod
     def inside(pos):
         z, x, y = pos
@@ -413,7 +407,6 @@ class HeroBase:
 class HeroState:
     def __init__(self, herobase):
         self.pos = (0, 0, 0)
-        self.direction = Pos.Move.down
         self.floor = herobase.floor
         self.health = herobase.health
         self.attack = herobase.attack

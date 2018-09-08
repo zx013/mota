@@ -48,6 +48,41 @@ class Layer(GridLayout):
         self.add_widget(image)
         return image
 
+class Hero:
+    color = 'blue'
+    key = 'down'
+    old_pos = (0, 0)
+    pos = (0, 0)
+
+    def __init__(self, row, col, **kwargs):
+        self.row = row
+        self.col = col
+
+    #将key转换为具体方向
+    @property
+    def direction(self):
+        key_map = {
+            'up': (-1, 0),
+            'down': (1, 0),
+            'left': (0, -1),
+            'right': (0, 1)
+        }
+        return key_map.get(self.key, (0, 0))
+
+    @property
+    def name(self):
+        return 'hero-{}-{}'.format(self.color, self.key)
+
+    #移动到的位置
+    def move_pos(self):
+        x1, y1 = self.pos
+        x2, y2 = self.direction
+        return (x1 + x2, y1 + y2)
+
+    def move(self, pos):
+        self.old_pos = self.pos
+        self.pos = pos
+
 
 class Layout(FocusBehavior, FloatLayout):
     row = MazeSetting.rows + 2
@@ -72,23 +107,19 @@ class Layout(FocusBehavior, FloatLayout):
                 self.middle.add(i, j)
                 self.back.add(i, j, Cache.next('ground'))
 
+        self.hero = Hero(self.row, self.col)
         self.floor = 1
-        self.pos = (5, 5)
-        self.color = 'blue'
-        self.key = 'down'
-        self.focused = True
-        Clock.schedule_interval(self.show, 0.25)
+        self.focus = True
+        Clock.schedule_interval(self.show, 0.20)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
-        print(keycode)
         key = keycode[1]
         if key not in ('up', 'down', 'left', 'right'):
             return False
         self.move(key)
         return True
-    
+
     def on_touch_down(self, touch):
-        print(touch)
         if self.maze.is_boss_floor(self.floor):
             self.maze.update()
         self.floor += 1
@@ -96,33 +127,36 @@ class Layout(FocusBehavior, FloatLayout):
             return True
         super(Layout, self).on_touch_down(touch)
 
-    def move(self, key):
-        if key == 'up':
-            move = (1, 0)
-        elif key == 'down':
-            move = (1, 0)
-        elif key == 'left':
-            move = (1, 0)
-        elif key == 'right':
-            move = (1, 0)
-        else:
-            move = (0, 0)
-        
-        x, y = move
-        x_before, y_before = self.pos
-        x_after, y_after = (x_before + x, y_before + y)
-        self.pos = (x_before + x, y_before + y)
-        
-        self.front.image[x_before][y_before].texture = Cache.next('empty')
-        
 
+    def moveimage(self):
+        texture = Cache.next(self.hero.name, 'action')
+        if not texture:
+            return
+        x, y = self.hero.old_pos
+        image = self.front.image[x][y]
+        image.texture = Cache.next('empty')
+
+        x, y = self.hero.pos
+        image = self.front.image[x][y]
+        image.texture = texture
+
+    def ismove(self, pos):
+        x, y = pos
+        if x < 0 or x >= self.col or y < 0 or y >= self.row:
+            return False
+        return True
+
+    def move(self, key):
+        self.hero.key = key
+        pos = self.hero.move_pos()
+        if self.ismove(pos):
+            self.hero.move(pos)
+        Cache.reset(self.hero.name)
+        self.moveimage()
 
     def show(self, dt):
         floor = self.floor
-        hero_image = self.front.image[self.pos[0]][self.pos[1]]
-        hero_image.texture = Cache.next('hero-{}-{}'.format(self.color, self.key), 'action')
-        if not hero_image.texture:
-            hero_image.texture = Cache.next('hero-{}-{}'.format(self.color, self.key))
+        self.moveimage()
         for i in range(self.row):
             for j in range(self.col):
                 pos_type = self.maze.get_type((floor, i, j))
