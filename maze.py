@@ -295,7 +295,7 @@ class MazeSetting:
 
 
 class MonsterInfo:
-    path = 'data/monster'
+    path = 'monster'
     data_fluctuate = 10
     data_range = 20
 
@@ -306,7 +306,7 @@ class MonsterInfo:
     def load():
         data = MonsterInfo.data
         for key, config in Cache.config.items():
-            if not config['path'].startswith(MonsterInfo.path):
+            if not config['path'].startswith(os.path.join('data', MonsterInfo.path)):
                 continue
             key_list = key.split('-')
             if len(key_list) != 2:
