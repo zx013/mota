@@ -471,7 +471,8 @@ class HeroState:
 
 
 class Maze:
-    def __init__(self):
+    def __init__(self, cache):
+        self.cache = cache
         self.maze = {}
         self.maze_map = {} #每一层不同点的分类集合
         self.maze_info = {} #每一层的信息，node, stair等
@@ -958,29 +959,19 @@ class Maze:
                 continue
             #如果到达该区域还有有key时，可以设置门
             if sum(key_number.values()) > 0:
-                if random.random() < 0.3 * (node.Space - 2):
-                    door = Tools.dict_choice(key_number)
+                if node.Special or random.random() < 0.3 * (node.Space - 2):
+                    if node.Special:
+                        door = Tools.dict_choice(key_choice_special)
+                    else:
+                        door = Tools.dict_choice(key_number)
                     node.IsDoor = True
                     node.Door = door
-                    node.Space -= 1
+                    #node.Space -= 1
                     key_number[door] -= 1
 
-                #特殊区域使用red或green的key
-                if node.Special:
-                    door = node.Door
-                    for i in range(number - 1, -1, -1):
-                        if node_list[i].Key[door] > 0:
-                            node_list[i].Key[door] -= 1
-                            key_number[door] -= 1
-                            door = Tools.dict_choice(key_choice_special)
-                            node_list[i].Key[door] += 1
-                            key_number[door] += 1
-                            node.IsDoor = True
-                            node.Door = door
-                            break
-                    #boss区域需要放置门但不放置钥匙
-                    if node.IsBoss:
-                        continue
+                #boss区域需要放置门但不放置钥匙
+                if node.IsBoss:
+                    continue
             else:
                 if node.Special:
                     #到达特殊区域但没有钥匙，目前没出现过
@@ -1025,16 +1016,17 @@ class Maze:
         #没有door的需要放置monster
         #若空间小于等于1，不能放怪物，第一个区域不放置
         for node in node_list[1:-1]:
-            if node.Space == 0:
-                continue
             ismonster = False
             if not node.IsDoor:
                 ismonster = True
+            elif node.Space == 0:
+                continue
             elif random.random() < 0.3 * (node.Space - 2):
                 ismonster = True
             if ismonster:
                 node.IsMonster = True
-                node.Space -= 1
+                if node.IsDoor: #door will not in the area
+                    node.Space -= 1
 
     #每个单元提升50%左右
     #应该根据当前属性分配，攻击高于防御时应提高防御宝石的数量，反之亦然
@@ -1490,7 +1482,6 @@ class Maze:
 
         node_list = self.montecarlo(node_list, self.herobase.floor_start, MazeSetting.base_floor)
         self.set_potion(node_list)
-
         self.set_maze(node_list)
 
 
@@ -1680,7 +1671,10 @@ class Maze:
 
 
 if __name__ == '__main__':
-    maze = Maze()
+    from cache import Cache
+    cache = Cache()
+
+    maze = Maze(cache)
     maze.update()
 
     stairs_start = set(maze.maze_info[1]['stair'][MazeBase.Value.Stair.down]).pop()
