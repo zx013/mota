@@ -55,12 +55,16 @@ class Layout(FloatLayout):
                 imageback = Image(size=(Cache.size, Cache.size), size_hint=(None, None))
                 imageback.texture = Cache.next('ground')
                 self.gridlayoutback.add_widget(imageback)
-        
+
         self.floor = 1
         Clock.schedule_interval(self.show, 0.25)
 
-    def on_key_down(key, scancode, codepoint, modifier):
-        print('on_key_down')
+    def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        key = keycode[1]
+        if key not in set(('up', 'down', 'left', 'right')):
+            return False
+        #self.move(key)
+        return True
     
     def on_touch_down(self, touch):
         if self.maze.is_boss_floor(self.floor):
