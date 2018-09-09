@@ -31,6 +31,7 @@ from maze import Maze, MazeSetting, MazeBase
 
 '''
 sometimes node is empty, that means we will get nothing in these area
+长条形区域有时需要分割一下，不然显得太空旷
 '''
 class Layer(GridLayout):
     def __init__(self, row, col, **kwargs):

@@ -139,15 +139,19 @@ class MazeBase:
 
 class TreeNode:
     def __init__(self, area, crack, special=False):
-        self.Area = area
+        self.Area = area #节点包含的区域
         self.Crack = crack
         self.Cover = self.Area | self.Crack
 
-        self.Forward = {}
-        self.Backward = {}
+        self.Index = -1 #用于计算
+        self.Forward = {} #节点之前的节点
+        self.Backward = {} #节点之后的节点
+        self.Up = None #上一层的开始节点
+        self.Down = None #下一层的开始节点
 
-        self.Special = special
-        self.Space = len(area)
+        self.Deep = -1 #深度，离楼梯间最短路径的最短距离
+        self.Special = special #特殊空间
+        self.Space = len(area) #空间大小
 
         self.Door = 0
         self.Key = {
@@ -288,7 +292,7 @@ class MazeSetting:
     damage_total_min = 100
 
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
-    montecarlo_time = 3
+    montecarlo_time = 300
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     extra_potion = 100
@@ -385,7 +389,7 @@ class HeroBase:
             MazeBase.Value.Color.green: 0
         }
         self.base = 1
-        
+
         self.boss_attack = 0
         self.boss_defence = 0
 
@@ -393,7 +397,7 @@ class HeroBase:
         self.level += 1
         self.floor = self.level * MazeSetting.base_floor + 1
         self.base = int((self.attack + self.defence) * 0.5 * MazeSetting.attribute_value) + 1
-    
+
     @property
     def floor_start(self):
         return self.level * MazeSetting.base_floor + 1
@@ -794,6 +798,8 @@ class Maze:
             door_list = self.find_pos(floor, MazeBase.Type.Static.door)
             while node_list:
                 node = node_list.pop()
+                if self.is_boss_floor(node.floor) and node.Special:
+                    node.IsBoss = True
                 for door in door_list & node.Crack:
                     beside_pos = (self.get_beside(door, MazeBase.Type.Static.ground) - node.Area).pop()
                     beside_node = self.find_node(beside_pos)
@@ -802,28 +808,14 @@ class Maze:
                     node_list.append(beside_node)
                 door_list -= node.Crack
 
-
-    #遍历树
-    def ergodic_yield(self, floor, across=1):
-        node_list = [set(self.maze_info[floor]['tree']).pop()]
-        boss_node = None #boss区域放在最后
-        while node_list:
-            node = random.choice(node_list)
-            node_list += list(set(node.Forward.values()) - set(node_list))
-            if floor + across > node.floor + 1:
-                if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
-                    node_list.append(set(self.maze_info[node.floor + 1]['tree']).pop())
-            node_list.remove(node)
-            if self.is_boss_floor(node.floor) and node.Special:
-                boss_node = node
-            else:
-               yield node
-        if boss_node:
-            yield boss_node
-
-    def ergodic(self, floor, across=1):
-        ergodic_list = [node for node in self.ergodic_yield(floor, across)]
-        return ergodic_list
+        if self.is_initial_floor(floor - 1) or self.is_boss_floor(floor - 1):
+            return
+        pos_up = set(self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up]).pop()
+        node_up = self.find_node(pos_up)
+        pos_down = set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]).pop()
+        node_down = self.find_node(pos_down)
+        node_up.Up = node_down
+        node_down.Down = node_up
 
 
     def adjust_corner(self, floor):
@@ -857,6 +849,75 @@ class Maze:
         self.adjust_corner(floor)
         self.adjust_trap(floor)
         self.adjust_crack(floor)
+
+
+    #获取楼梯之间的最短路径
+    def get_way(self, floor):
+        node_list = [set(self.maze_info[floor]['tree']).pop()]
+
+        index = 0
+        while node_list:
+            node_list_next = []
+            for node in node_list:
+                node.Index = index
+            for node in node_list:
+                if node.Up or node.IsBoss:
+                    break
+                node_list_next += [n for n in node.Forward.values() if n.Index < 0]
+            if node.Up or node.IsBoss:
+                break
+            node_list = node_list_next
+            index += 1
+
+        node_list = [node]
+        while True:
+            backward = node.Backward.values()
+            index -= 1
+            for node in backward:
+                if node.Index == index:
+                    node_list.append(node)
+                    break
+            else:
+                break
+        return node_list[::-1]
+
+    #获取深度
+    def get_deep(self, node_list):
+        deep = 0
+        while node_list:
+            node_list_next = []
+            for node in node_list:
+                node.Deep = deep
+            for node in node_list:
+                node_list_next += [n for n in node.Forward.values() if n.Deep < 0]
+            node_list = node_list_next
+            deep += 1
+
+    def process(self, floor):
+        node_list = self.get_way(floor)
+        self.get_deep(node_list)
+
+
+    #遍历树
+    def ergodic_yield(self, floor, across=1):
+        node_list = [set(self.maze_info[floor]['tree']).pop()]
+        boss_node = None #boss区域放在最后
+        while node_list:
+            node = random.choice(node_list)
+            node_list = list(set(node.Forward.values()) | set(node_list))
+            if node.Up and floor + across > node.floor + 1:
+                node_list.append(node.Up)
+            node_list.remove(node)
+            if node.IsBoss:
+                boss_node = node
+            else:
+               yield node
+        if boss_node:
+            yield boss_node
+
+    def ergodic(self, floor, across=1):
+        ergodic_list = [node for node in self.ergodic_yield(floor, across)]
+        return ergodic_list
 
 
     def set_stair(self, floor):
@@ -900,64 +961,62 @@ class Maze:
             MazeBase.Value.Color.red: 0,
             MazeBase.Value.Color.green: 0
         }
-        for number, node in enumerate(node_list):
-            #第一个区域不放置
-            if number == 0:
+
+        key_value = {
+            MazeBase.Value.Color.yellow: 1,
+            MazeBase.Value.Color.blue: 3,
+            MazeBase.Value.Color.red: 9,
+            MazeBase.Value.Color.green: 27
+        }
+
+        #前两个节点不设置门，第一个节点可能需要放置圣水，第一个门的钥匙需要放在第二个节点，不然可能导致没有空间放置圣水
+        key_list = []
+        for node in node_list[2:]:
+            if node.Special:
+                door = Tools.dict_choice(key_choice_special)
+            elif random.random() > 0.3 * (node.Space - 2):
+                key_list.append(MazeBase.Value.Color.none)
                 continue
-            #如果到达该区域还有有key时，可以设置门
-            if sum(key_number.values()) > 0:
-                if node.Special or random.random() < 0.3 * (node.Space - 2):
-                    if node.Special:
-                        door = Tools.dict_choice(key_choice_special)
-                    else:
-                        door = Tools.dict_choice(key_number)
-                    node.IsDoor = True
-                    node.Door = door
-                    #node.Space -= 1
-                    key_number[door] -= 1
-
-                #boss区域需要放置门但不放置钥匙
-                if node.IsBoss:
-                    continue
             else:
-                if node.Special:
-                    #到达特殊区域但没有钥匙，目前没出现过
-                    print('speciel has no door')
+                door = Tools.dict_choice(key_choice)
 
-            key_sum = sum(key_number.values())
-            key_chance = 1 / (1.5 * (1.5 + float(key_sum)))
-            if key_sum == 0:
-                number = 1 #没有key时至少放置一把
-            else:
-                number = 0
+            key_list.append(door)
+            node.IsDoor = True
+            node.Door = door
+            key_number[door] += 1
 
-            #一定概率放置多把，不超过空间减一（只放一把时，需放置其他奖励）
-            #没有门时，需放置怪物
-            while number <= node.Space - 1:
-                if random.random() < key_chance:
-                    number += 1
-                    continue
-                break
+        while sum(key_number.values()) > 0:
+            for number, node in enumerate(node_list[1:-1]):
+                key = key_list[number]
+                if key != MazeBase.Value.Color.none:
+                    key_list[number] = MazeBase.Value.Color.none
+                    key_number[key] -= 1
+                    node.Key[key] += 1
+                    node.Space -= 1
 
-            for i in range(number):
-                key = Tools.dict_choice(key_choice)
-                if not key:
-                    continue
-
-                key_number[key] += 1
-                node.Key[key] += 1
-                node.Space -= 1
-
-        #删除多余的key，从后往前
-        if sum(key_number.values()) > 0:
-            for node in node_list[::-1]:
-                for key in key_number.keys():
-                    while key_number[key] > 0 and node.Key[key] > 0:
-                        key_number[key] -= 1
-                        node.Key[key] -= 1
-                        node.Space += 1
                 if sum(key_number.values()) == 0:
                     break
+
+                #把高价值的钥匙移到前面困难区域(deep)，将钥匙集中在一个区域
+                #一定概率放置多把，不超过空间减一（只放一把时，需放置其他奖励）
+                '''
+                while random.random() < 0 and sum(key_number.values()) > 0:
+                    key = Tools.dict_choice(key_number)
+                    if node.Space * (node.Deep + 1) < key_value[key]:
+                        break
+                    for index, door in enumerate(key_list[number:]):
+                        if key == door:
+                            key_list[number + index] = MazeBase.Value.Color.none
+                            break
+                    else:
+                        break
+                    key_number[key] -= 1
+                    node.Key[key] += 1
+                    node.Space -= 1
+
+                if sum(key_number.values()) == 0:
+                    break
+                '''
 
     def set_monster(self, node_list):
         #没有door的需要放置monster
@@ -997,6 +1056,9 @@ class Maze:
                 isgem = True
             if isgem:
                 gem = Tools.dict_choice(gem_choice)
+                #剑盾需要放置在难以拿到的区域，同时要设置剑盾类型（显示类型）
+                if gem == MazeBase.Value.Gem.large:
+                    pass
                 if random.random() < gem_chance:
                     itemgem = node.AttackGem
                     gem_chance -= 0.02 * gem
@@ -1415,7 +1477,6 @@ class Maze:
         for f in range(self.herobase.floor_start, self.herobase.floor_end + 1):
             self.set_stair(f)
         node_list = self.ergodic(self.herobase.floor_start, MazeSetting.base_floor)
-        node_list[-1].IsBoss = True
         self.set_space(node_list)
         self.set_door(node_list)
         self.set_monster(node_list)
@@ -1451,22 +1512,26 @@ class Maze:
         self.herobase.defence += self.herobase.base * self.herobase.boss_defence
 
         for i in range(3):
-            try:
-                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
-                    self.init(floor)
-                    self.create_special(floor)
-                    self.create_wall(floor)
-                    self.crack_wall(floor)
-                    self.create_stair(floor)
-                    self.create_tree(floor)
-                    self.adjust(floor)
+            #try:
+            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                self.init(floor)
+                self.create_special(floor)
+                self.create_wall(floor)
+                self.crack_wall(floor)
+                self.create_stair(floor)
+                self.create_tree(floor)
+                self.adjust(floor)
 
-                self.set_item()
-                self.set_boss()
-            except Exception as ex:
+            #等楼梯设置好再进行
+            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                self.process(floor)
+
+            self.set_item()
+            self.set_boss()
+            #except Exception as ex:
                 #生成异常时重新生成
-                print('reset : ', ex)
-                continue
+            #    print('reset : ', ex)
+            #    continue
             break
 
         self.update_monster()
@@ -1507,7 +1572,7 @@ class Maze:
                 break
         import sys
         sys.stdout.flush()
-        
+
 
     def save(self, num):
         record_dict = {
@@ -1516,7 +1581,7 @@ class Maze:
             'herobase': self.herobase.__dict__, #等级状态
             'herostate': self.herostate.__dict__ #实时状态
         }
-        
+
         if not os.path.exists(MazeSetting.save_dir):
             os.mkdir(MazeSetting.save_dir)
             print('save dir not exist.')
@@ -1571,7 +1636,7 @@ class Maze:
                 return way
         return []
 
-    
+
     def move(self, move):
         move_pos = Pos.add(self.herostate.pos, move)
         move_type = self.get_type(move_pos)
@@ -1606,13 +1671,13 @@ class Maze:
                 #if self.herostate.floor:
                 self.herostate.floor -= 1
             print('stair')
-                
+
         if move_enable:
             self.set_type(move_pos, MazeBase.Type.Static.ground)
             self.set_value(move_pos, 0)
             print('move')
             self.herostate.pos = move_pos
-    
+
     def jump(self, type):
         pass
 
