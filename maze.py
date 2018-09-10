@@ -292,7 +292,7 @@ class MazeSetting:
     damage_total_min = 100
 
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
-    montecarlo_time = 300
+    montecarlo_time = 100
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     extra_potion = 100
@@ -898,7 +898,7 @@ class Maze:
         self.get_deep(node_list)
 
 
-    #遍历树
+    #遍历树，简单区域（没有怪物，门内有相同钥匙）可以合并
     def ergodic_yield(self, floor, across=1):
         node_list = [set(self.maze_info[floor]['tree']).pop()]
         boss_node = None #boss区域放在最后
@@ -943,14 +943,19 @@ class Maze:
     #空间小于2不放置key，空间越小放置key概率越小
     def set_door(self, node_list):
         key_choice = {
-            MazeBase.Value.Color.yellow: 27,
-            MazeBase.Value.Color.blue: 9,
-            MazeBase.Value.Color.red: 3,
+            MazeBase.Value.Color.yellow: 60,
+            MazeBase.Value.Color.blue: 20,
+            MazeBase.Value.Color.red: 5,
             MazeBase.Value.Color.green: 1
         }
 
+        key_choice_normal = {
+            MazeBase.Value.Color.yellow: 2,
+            MazeBase.Value.Color.blue: 1
+        }
+
         key_choice_special = {
-            MazeBase.Value.Color.red: 3,
+            MazeBase.Value.Color.red: 2,
             MazeBase.Value.Color.green: 1
         }
 
@@ -962,14 +967,150 @@ class Maze:
             MazeBase.Value.Color.green: 0
         }
 
-        key_value = {
-            MazeBase.Value.Color.yellow: 1,
-            MazeBase.Value.Color.blue: 3,
-            MazeBase.Value.Color.red: 9,
-            MazeBase.Value.Color.green: 27
+        door_number = {
+            MazeBase.Value.Color.yellow: 0,
+            MazeBase.Value.Color.blue: 0,
+            MazeBase.Value.Color.red: 0,
+            MazeBase.Value.Color.green: 0
         }
 
         #前两个节点不设置门，第一个节点可能需要放置圣水，第一个门的钥匙需要放在第二个节点，不然可能导致没有空间放置圣水
+        #红绿钥匙也可能在大片区域的入口（Deep == 1）
+        length = len(node_list[-2:0:-1])
+        door_total = random.randint(int(0.5 * length), int(0.7 * length))
+        nokey_node = set()
+        special_node = set()
+        for node in node_list[-2:0:-1]:
+            if node.Space < 2:
+                continue
+            if node.Deep == 0: #主路径上
+                continue
+            if node.Forward: #不是最终节点
+                continue
+
+            keys = []
+            door = None
+            is_yellows = False
+            rand = random.random()
+            if node.Deep > 3:
+                total = key_number[MazeBase.Value.Color.red] + key_number[MazeBase.Value.Color.green]
+                if rand < 1.2 - 0.3 * total: #红绿钥匙
+                    node.IsMonster = True
+                    keys.append(Tools.dict_choice(key_choice_special))
+                    door = Tools.dict_choice(key_choice_normal)
+                else:
+                    rand = random.random()
+                    if rand < 0.3:
+                        nokey_node.add(node)
+                    elif rand < 0.6: #多把黄钥匙
+                        door = Tools.dict_choice(key_choice_normal)
+                        node.IsMonster = True
+                        is_yellows = True
+                    else: #关键区域
+                        door = Tools.dict_choice(key_choice_special)
+            else:
+                door = Tools.dict_choice(key_choice_normal)
+                if door == MazeBase.Value.Color.yellow:
+                    if rand < 0.3: #没有黄钥匙（宝石）
+                        nokey_node.add(node)
+                    elif rand < 0.7: #多把黄钥匙加怪物
+                        node.IsMonster = True
+                        is_yellows = True
+                    else: #一把蓝钥匙（可能有怪物）
+                        if random.random() < 0.3:
+                            node.IsMonster = True
+                        keys.append(MazeBase.Value.Color.blue)
+                else:
+                    if rand < 0.5:#没有黄钥匙（宝石）
+                        nokey_node.add(node)
+                    else: #多把黄钥匙（可能有怪物）
+                        if random.random() < 0.3:
+                            node.IsMonster = True
+                        is_yellows = True
+            if is_yellows == True:
+                space = node.Space - node.IsMonster
+                while random.random() < 0.5 and space > 0:
+                    keys.append(MazeBase.Value.Color.yellow)
+                    space -= 1
+
+            for key in keys:
+                key_number[key] += 1
+                node.Key[key] += 1
+                node.Space -= 1
+            if door:
+                door_number[door] += 1
+                node.IsDoor = True
+                node.Door = door
+            
+            special_node.add(node)
+
+
+        key_set = {
+            MazeBase.Value.Color.yellow: 0,
+            MazeBase.Value.Color.blue: 0,
+            MazeBase.Value.Color.red: 0,
+            MazeBase.Value.Color.green: 0
+        }
+
+        door_set = {
+            MazeBase.Value.Color.yellow: 0,
+            MazeBase.Value.Color.blue: 0,
+            MazeBase.Value.Color.red: 0,
+            MazeBase.Value.Color.green: 0
+        }
+
+        #门比钥匙少
+        for color in MazeBase.Value.Color.total:
+            num = door_number[color] - key_number[color]
+            if num < 0:
+                num = -num
+                door_set[color] = num
+                door_total -= num
+
+        #设置门的数量分配
+        for i in range(door_total - sum(door_number.values())):
+            door = Tools.dict_choice(key_choice)
+            door_set[door] += 1
+
+        #设置钥匙的数量分配
+        for color in MazeBase.Value.Color.total:
+            num = door_number[color] + door_set[color] - key_number[color]
+            key_set[color] = num
+
+        #放置门
+        random_node = list(set(node_list[1:-1]) - set(special_node))
+        random.shuffle(random_node)
+        while sum(door_set.values()) > 0:
+            for node in random_node:
+                door = None
+                if door_set[MazeBase.Value.Color.red] + door_set[MazeBase.Value.Color.green]:
+                    rand = random.random()
+                    if node.Deep == 1:
+                        if rand < 0.7:
+                            door = Tools.dict_choice(key_choice_special)
+                    if node.Deep == 2:
+                        if rand < 0.3:
+                            door = Tools.dict_choice(key_choice_special)
+    
+                else:
+                    if random.random() < 0.3 * (node.Space - 2):
+                        door = Tools.dict_choice(key_choice_normal)
+                if door and door_set[door] > 0:
+                    door_set[door] -= 1
+                    node.IsDoor = True
+                    node.Door = door
+                    random_node.remove(node)
+
+        #boss设置特殊门
+        node = node_list[-1]
+        door = Tools.dict_choice(key_choice_special)
+        node.IsDoor = True
+        node.Door = door
+        key_set[door] += 1
+        print(key_set, door_set)
+
+        #放置key，使能够走通
+        '''
         key_list = []
         for node in node_list[2:]:
             if node.Special:
@@ -985,45 +1126,98 @@ class Maze:
             node.Door = door
             key_number[door] += 1
 
+        #非黄钥匙的后一个门不是同颜色
+
+        nokey_node = {}
+        yellow_node = {}
+        blue_node = {}
+        redgreen_node = {}
+        for number, node in enumerate(node_list[1:-1]):
+            if node.Space < 2:
+                continue
+            if node.Deep == 0: #主路径上
+                continue
+            if node.Forward: #不是最终节点
+                continue
+
+            if node.Deep > 3:
+                #红绿钥匙
+                redgreen_node[number] = node
+            elif node.Door:
+                rand = random.random()
+                if node.Door == MazeBase.Value.Color.yellow:
+                    #没有黄钥匙（宝石），多把黄钥匙加怪物，一把蓝钥匙（可能有怪物）
+                    if rand < 0.3:
+                        nokey_node[number] = node
+                    elif rand < 0.7:
+                        yellow_node[number] = node
+                    else:
+                        blue_node[number] = node
+                else:
+                    #没有黄钥匙（宝石），多把黄钥匙（可能有怪物）
+                    if rand < 0.5:
+                        nokey_node[number] = node
+                    else:
+                        yellow_node[number] = node
+
+        special_node = list(nokey_node.values()) + list(yellow_node.values()) + list(blue_node.values()) + list(redgreen_node.values())
+        print(special_node)
+
         while sum(key_number.values()) > 0:
             for number, node in enumerate(node_list[1:-1]):
                 key = key_list[number]
                 if key != MazeBase.Value.Color.none:
-                    key_list[number] = MazeBase.Value.Color.none
-                    key_number[key] -= 1
                     node.Key[key] += 1
                     node.Space -= 1
+                    key_list[number] = MazeBase.Value.Color.none
+                    key_number[key] -= 1
+                        
 
                 if sum(key_number.values()) == 0:
                     break
 
                 #把高价值的钥匙移到前面困难区域(deep)，将钥匙集中在一个区域
                 #一定概率放置多把，不超过空间减一（只放一把时，需放置其他奖励）
-                '''
-                while random.random() < 0 and sum(key_number.values()) > 0:
-                    key = Tools.dict_choice(key_number)
-                    if node.Space * (node.Deep + 1) < key_value[key]:
-                        break
+                continue
+                if node.Space < 2:
+                    continue
+                if node.Forward: #不是最终节点
+                    continue
+                if node.Deep == 0: #主路径上
+                    continue
+                
+                keys = []
+                if node.Deep > 3:
+                    value = key_number[MazeBase.Value.Color.red] + key_number[MazeBase.Value.Color.green] * 4
+                    if random.random() < value * 0.25:
+                        key = Tools.dict_choice(key_choice_special)
+                        keys.append(key)
+                        node.IsMonster = True
+                else:
+                    pass
+                
+                for key in keys:
                     for index, door in enumerate(key_list[number:]):
                         if key == door:
                             key_list[number + index] = MazeBase.Value.Color.none
                             break
                     else:
-                        break
+                        continue
                     key_number[key] -= 1
                     node.Key[key] += 1
                     node.Space -= 1
-
-                if sum(key_number.values()) == 0:
-                    break
-                '''
+                    if sum(key_number.values()) == 0:
+                        break
+        '''
 
     def set_monster(self, node_list):
         #没有door的需要放置monster
         #若空间小于等于1，不能放怪物，第一个区域不放置
         for node in node_list[1:-1]:
             ismonster = False
-            if not node.IsDoor:
+            if node.IsMonster:
+                ismonster = True
+            elif not node.IsDoor:
                 ismonster = True
             elif node.Space == 0:
                 continue
