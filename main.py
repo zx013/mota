@@ -54,8 +54,10 @@ class Hero:
     key = 'down'
     old_pos = (0, 0)
     pos = (0, 0)
+    action = set()
 
-    def __init__(self, row, col, **kwargs):
+    def __init__(self, floor, row, col, **kwargs):
+        self.floor = floor
         self.row = row
         self.col = col
 
@@ -108,8 +110,7 @@ class Layout(FocusBehavior, FloatLayout):
                 self.middle.add(i, j)
                 self.back.add(i, j, Cache.next('ground'))
 
-        self.hero = Hero(self.row, self.col)
-        self.floor = 1
+        self.hero = Hero(1, self.row, self.col)
         self.focus = True
         Clock.schedule_interval(self.show, 0.20)
 
@@ -121,9 +122,9 @@ class Layout(FocusBehavior, FloatLayout):
         return True
 
     def on_touch_down(self, touch):
-        if self.maze.is_boss_floor(self.floor):
+        if self.maze.is_boss_floor(self.hero.floor):
             self.maze.update()
-        self.floor += 1
+        self.hero.floor += 1
         if self.collide_point(touch.x, touch.y):
             return True
         super(Layout, self).on_touch_down(touch)
@@ -136,12 +137,29 @@ class Layout(FocusBehavior, FloatLayout):
 
         x, y = self.hero.pos
         image = self.front.image[x][y]
-        image.texture = Cache.next(self.hero.name, 'action')
+        image.texture = Cache.next(self.hero.name, 'action', False)
+        
+        image = self.middle.image[x][y]
+        image.texture = Cache.next('empty')
 
     def ismove(self, pos):
         x, y = pos
         if x < 0 or x >= self.col or y < 0 or y >= self.row:
             return False
+        pos_type = self.maze.get_type((self.hero.floor, x, y))
+        if pos_type == MazeBase.Type.Static.ground:
+            return True
+        elif pos_type == MazeBase.Type.Static.wall:
+            pass
+        elif pos_type == MazeBase.Type.Static.stair:
+            pass
+        elif pos_type == MazeBase.Type.Static.door:
+            self.hero.action.add(pos)
+            return False
+        elif pos_type in (MazeBase.Type.Item.key, MazeBase.Type.Item.attack, MazeBase.Type.Item.defence, MazeBase.Type.Item.potion, MazeBase.Type.Item.holy):
+            self.maze.set_type((self.hero.floor, x, y), MazeBase.Type.Static.ground)
+        elif pos_type == MazeBase.Type.Active.monster:
+            pass  
         return True
 
     def move(self, key):
@@ -152,73 +170,87 @@ class Layout(FocusBehavior, FloatLayout):
         Cache.reset(self.hero.name)
         self.moveimage()
 
+    def show_pos(self, pos, style='static'):
+        x, y = pos
+        floor = self.hero.floor
+        pos_type = self.maze.get_type((floor, x, y))
+        pos_value = self.maze.get_value((floor, x, y))
+        pos_image = self.middle.image[x][y]
+        if pos_type == MazeBase.Type.Static.ground:
+            pos_key = 'ground'
+        elif pos_type == MazeBase.Type.Static.wall:
+            pos_key = 'wall'
+        elif pos_type == MazeBase.Type.Static.stair:
+            if pos_value == MazeBase.Value.Stair.down:
+                pos_key = 'stair-down'
+            elif pos_value == MazeBase.Value.Stair.up:
+                pos_key = 'stair-up'
+        elif pos_type == MazeBase.Type.Static.door:
+            if pos_value == MazeBase.Value.Color.yellow:
+                pos_key = 'door-yellow'
+            elif pos_value == MazeBase.Value.Color.blue:
+                pos_key = 'door-blue'
+            elif pos_value == MazeBase.Value.Color.red:
+                pos_key = 'door-red'
+            elif pos_value == MazeBase.Value.Color.green:
+                pos_key = 'door-green'
+        elif pos_type == MazeBase.Type.Item.key:
+            if pos_value == MazeBase.Value.Color.yellow:
+                pos_key = 'key-yellow'
+            elif pos_value == MazeBase.Value.Color.blue:
+                pos_key = 'key-blue'
+            elif pos_value == MazeBase.Value.Color.red:
+                pos_key = 'key-red'
+            elif pos_value == MazeBase.Value.Color.green:
+                pos_key = 'key-green'
+        elif pos_type == MazeBase.Type.Item.attack:
+            if pos_value == MazeBase.Value.Gem.small:
+                pos_key = 'gem-attack-small'
+            elif pos_value == MazeBase.Value.Gem.big:
+                pos_key = 'gem-attack-big'
+            elif pos_value == MazeBase.Value.Gem.large:
+                #will random in 5
+                pos_key = 'weapen-attack-01'
+        elif pos_type == MazeBase.Type.Item.defence:
+            if pos_value == MazeBase.Value.Gem.small:
+                pos_key = 'gem-defence-small'
+            elif pos_value == MazeBase.Value.Gem.big:
+                pos_key = 'gem-defence-big'
+            elif pos_value == MazeBase.Value.Gem.large:
+                #will random in 5
+                pos_key = 'weapen-defence-01'
+        elif pos_type == MazeBase.Type.Item.potion:
+            if pos_value == MazeBase.Value.Potion.red:
+                pos_key = 'potion-red'
+            elif pos_value == MazeBase.Value.Potion.blue:
+                pos_key = 'potion-blue'
+            elif pos_value == MazeBase.Value.Potion.yellow:
+                pos_key = 'potion-yellow'
+            elif pos_value == MazeBase.Value.Potion.green:
+                pos_key = 'potion-green'
+        elif pos_type == MazeBase.Type.Item.holy:
+            pos_key = 'holy'
+        elif pos_type == MazeBase.Type.Active.monster:
+            pos_key = '-'.join(pos_value)
+            style = 'dynamic'
+
+        texture = Cache.next(pos_key, style)
+        if not texture:
+            #texture = Cache.next('empty')
+            self.maze.set_type((floor, x, y), MazeBase.Type.Static.ground)
+            Cache.reset(pos_key)
+            return False
+        pos_image.texture = texture
+        return True
+
     def show(self, dt):
-        floor = self.floor
         self.moveimage()
         for i in range(self.row):
             for j in range(self.col):
-                pos_type = self.maze.get_type((floor, i, j))
-                pos_value = self.maze.get_value((floor, i, j))
-                pos_image = self.middle.image[i][j]
-                if pos_type == MazeBase.Type.Static.ground:
-                    pos_image.texture = Cache.next('ground')
-                elif pos_type == MazeBase.Type.Static.wall:
-                    pos_image.texture = Cache.next('wall')
-                elif pos_type == MazeBase.Type.Static.stair:
-                    if pos_value == MazeBase.Value.Stair.down:
-                        pos_image.texture = Cache.next('stair-down')
-                    elif pos_value == MazeBase.Value.Stair.up:
-                        pos_image.texture = Cache.next('stair-up')
-                elif pos_type == MazeBase.Type.Static.door:
-                    if pos_value == MazeBase.Value.Color.yellow:
-                        pos_image.texture = Cache.next('door-yellow')
-                    elif pos_value == MazeBase.Value.Color.blue:
-                        pos_image.texture = Cache.next('door-blue')
-                    elif pos_value == MazeBase.Value.Color.red:
-                        pos_image.texture = Cache.next('door-red')
-                    elif pos_value == MazeBase.Value.Color.green:
-                        pos_image.texture = Cache.next('door-green')
-                elif pos_type == MazeBase.Type.Item.key:
-                    if pos_value == MazeBase.Value.Color.yellow:
-                        pos_image.texture = Cache.next('key-yellow')
-                    elif pos_value == MazeBase.Value.Color.blue:
-                        pos_image.texture = Cache.next('key-blue')
-                    elif pos_value == MazeBase.Value.Color.red:
-                        pos_image.texture = Cache.next('key-red')
-                    elif pos_value == MazeBase.Value.Color.green:
-                        pos_image.texture = Cache.next('key-green')
-                elif pos_type == MazeBase.Type.Item.attack:
-                    if pos_value == MazeBase.Value.Gem.small:
-                        pos_image.texture = Cache.next('gem-attack-small')
-                    elif pos_value == MazeBase.Value.Gem.big:
-                        pos_image.texture = Cache.next('gem-attack-big')
-                    elif pos_value == MazeBase.Value.Gem.large:
-                        #will random in 5
-                        pos_image.texture = Cache.next('weapen-attack-01')
-                elif pos_type == MazeBase.Type.Item.defence:
-                    if pos_value == MazeBase.Value.Gem.small:
-                        pos_image.texture = Cache.next('gem-defence-small')
-                    elif pos_value == MazeBase.Value.Gem.big:
-                        pos_image.texture = Cache.next('gem-defence-big')
-                    elif pos_value == MazeBase.Value.Gem.large:
-                        #will random in 5
-                        pos_image.texture = Cache.next('weapen-defence-01')
-                elif pos_type == MazeBase.Type.Item.potion:
-                    if pos_value == MazeBase.Value.Potion.red:
-                        pos_image.texture = Cache.next('potion-red')
-                    elif pos_value == MazeBase.Value.Potion.blue:
-                        pos_image.texture = Cache.next('potion-blue')
-                    elif pos_value == MazeBase.Value.Potion.yellow:
-                        pos_image.texture = Cache.next('potion-yellow')
-                    elif pos_value == MazeBase.Value.Potion.green:
-                        pos_image.texture = Cache.next('potion-green')
-                elif pos_type == MazeBase.Type.Item.holy:
-                    pos_image.texture = Cache.next('holy')
-                elif pos_type == MazeBase.Type.Active.monster:
-                    pos_image.texture = Cache.next('-'.join(pos_value), 'dynamic')
-                if not pos_image.texture:
-                    print(pos_type, pos_value)
-
+                if (i, j) not in self.hero.action:
+                    self.show_pos((i, j))
+                else:
+                    self.show_pos((i, j), 'action')
 
 class Mota(App):
     def build(self):

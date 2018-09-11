@@ -19,10 +19,8 @@ class CacheBase:
     def __init__(self):
         self.config = {}
         self.cache = {}
-        self.last = {}
         self.base = None
         self.load()
-        self.base = self.next('empty')
 
     #解析读到的数字或范围
     def __analyse_number(self, string):
@@ -117,7 +115,6 @@ class CacheBase:
 
     def reset(self, key):
         if key not in self.config:
-            print(key)
             return None
 
         info = self.config[key]
@@ -126,12 +123,14 @@ class CacheBase:
         if 'action_index' in info:
             info['action_index'] = 0
 
-    def next(self, key, style='static'):
+    def next(self, key, style='static', base=True):
         if key not in self.config:
-            print(key)
-            return self.base
+            return None
 
         info = self.config[key]
+        if style not in info:
+            return None
+
         textures_name = '{}_textures'.format(style)
         textures = info[textures_name]
         if style == 'static':
@@ -143,12 +142,14 @@ class CacheBase:
         length = info[length_name]
 
         if index >= length:
-            return self.last[key]
+            if base:
+                return None
+            else:
+                return info['static_textures']
         texture = textures[index]
         info[index_name] += 1
         if style == 'dynamic':
             info[index_name] %= length
-        self.last[key] = texture
         return texture
 
 
