@@ -916,7 +916,10 @@ class Maze:
             yield boss_node
 
     def ergodic(self, floor, across=1):
-        ergodic_list = [node for node in self.ergodic_yield(floor, across)]
+        ergodic_list = []
+        for index, node in enumerate(self.ergodic_yield(floor, across)):
+            node.Index = index
+            ergodic_list.append(node)
         return ergodic_list
 
 
@@ -976,11 +979,11 @@ class Maze:
 
         #前两个节点不设置门，第一个节点可能需要放置圣水，第一个门的钥匙需要放在第二个节点，不然可能导致没有空间放置圣水
         #红绿钥匙也可能在大片区域的入口（Deep == 1）
-        length = len(node_list[-2:0:-1])
+        length = len(node_list[-2:1:-1])
         door_total = random.randint(int(0.5 * length), int(0.7 * length))
         nokey_node = set()
         special_node = set()
-        for node in node_list[-2:0:-1]:
+        for node in node_list[-2:1:-1]:
             if node.Space < 2:
                 continue
             if node.Deep == 0: #主路径上
@@ -1000,9 +1003,9 @@ class Maze:
                     door = Tools.dict_choice(key_choice_normal)
                 else:
                     rand = random.random()
-                    if rand < 0.3:
+                    if rand < 0.5:
                         nokey_node.add(node)
-                    elif rand < 0.6: #多把黄钥匙
+                    elif rand < 0.8: #多把黄钥匙
                         door = Tools.dict_choice(key_choice_normal)
                         node.IsMonster = True
                         is_yellows = True
@@ -1078,7 +1081,7 @@ class Maze:
             key_set[color] = num
 
         #放置门
-        random_node = list(set(node_list[1:-1]) - set(special_node))
+        random_node = list(set(node_list[2:-1]) - set(special_node))
         random.shuffle(random_node)
         while sum(door_set.values()) > 0:
             for node in random_node:
@@ -1086,10 +1089,10 @@ class Maze:
                 if door_set[MazeBase.Value.Color.red] + door_set[MazeBase.Value.Color.green]:
                     rand = random.random()
                     if node.Deep == 1:
-                        if rand < 0.7:
+                        if rand < 0.2:
                             door = Tools.dict_choice(key_choice_special)
                     if node.Deep == 2:
-                        if rand < 0.3:
+                        if rand < 0.1:
                             door = Tools.dict_choice(key_choice_special)
     
                 else:
@@ -1107,108 +1110,51 @@ class Maze:
         node.IsDoor = True
         node.Door = door
         key_set[door] += 1
-        print(key_set, door_set)
 
         #放置key，使能够走通
-        '''
-        key_list = []
-        for node in node_list[2:]:
-            if node.Special:
-                door = Tools.dict_choice(key_choice_special)
-            elif random.random() > 0.3 * (node.Space - 2):
-                key_list.append(MazeBase.Value.Color.none)
-                continue
-            else:
-                door = Tools.dict_choice(key_choice)
+        for pnode, node in Tools.iter_previous(node_list[1:]):
+            door = node.Door
+            if door:
+                door_set[door] += 1
+            for color in MazeBase.Value.Color.total:
+                door_set[color] -= node.Key[color]
+                if door_set[color] > 0:
+                    random_node = list(set(node_list[1:node.Index]) - set(special_node))
+                    while door_set[color] > 0:
+                        random.shuffle(random_node)
+                        for rnode in random_node:
+                            if rnode.Space > 1:
+                                if color != MazeBase.Value.Color.yellow:
+                                    if rnode.Door == color:
+                                        continue
+                                    if [fnode for fnode in rnode.Forward.values() if fnode.Door == color]:
+                                        continue
+                                rnode.Key[color] += 1
+                                rnode.Space -= 1
+                                break
+                        door_set[color] -= 1
 
-            key_list.append(door)
-            node.IsDoor = True
-            node.Door = door
-            key_number[door] += 1
-
-        #非黄钥匙的后一个门不是同颜色
-
-        nokey_node = {}
-        yellow_node = {}
-        blue_node = {}
-        redgreen_node = {}
-        for number, node in enumerate(node_list[1:-1]):
-            if node.Space < 2:
-                continue
-            if node.Deep == 0: #主路径上
-                continue
-            if node.Forward: #不是最终节点
-                continue
-
-            if node.Deep > 3:
-                #红绿钥匙
-                redgreen_node[number] = node
-            elif node.Door:
-                rand = random.random()
-                if node.Door == MazeBase.Value.Color.yellow:
-                    #没有黄钥匙（宝石），多把黄钥匙加怪物，一把蓝钥匙（可能有怪物）
-                    if rand < 0.3:
-                        nokey_node[number] = node
-                    elif rand < 0.7:
-                        yellow_node[number] = node
-                    else:
-                        blue_node[number] = node
-                else:
-                    #没有黄钥匙（宝石），多把黄钥匙（可能有怪物）
-                    if rand < 0.5:
-                        nokey_node[number] = node
-                    else:
-                        yellow_node[number] = node
-
-        special_node = list(nokey_node.values()) + list(yellow_node.values()) + list(blue_node.values()) + list(redgreen_node.values())
-        print(special_node)
-
-        while sum(key_number.values()) > 0:
-            for number, node in enumerate(node_list[1:-1]):
-                key = key_list[number]
-                if key != MazeBase.Value.Color.none:
-                    node.Key[key] += 1
-                    node.Space -= 1
-                    key_list[number] = MazeBase.Value.Color.none
-                    key_number[key] -= 1
-                        
-
-                if sum(key_number.values()) == 0:
-                    break
-
-                #把高价值的钥匙移到前面困难区域(deep)，将钥匙集中在一个区域
-                #一定概率放置多把，不超过空间减一（只放一把时，需放置其他奖励）
-                continue
-                if node.Space < 2:
-                    continue
-                if node.Forward: #不是最终节点
-                    continue
-                if node.Deep == 0: #主路径上
-                    continue
-                
-                keys = []
-                if node.Deep > 3:
-                    value = key_number[MazeBase.Value.Color.red] + key_number[MazeBase.Value.Color.green] * 4
-                    if random.random() < value * 0.25:
-                        key = Tools.dict_choice(key_choice_special)
-                        keys.append(key)
-                        node.IsMonster = True
-                else:
-                    pass
-                
-                for key in keys:
-                    for index, door in enumerate(key_list[number:]):
-                        if key == door:
-                            key_list[number + index] = MazeBase.Value.Color.none
+        door_base = dict(door_set)
+        for color in MazeBase.Value.Color.total:
+            door_set[color] = 0
+        while sum(door_base.values()) < 0:
+            for node in node_list[1:]:
+                door = node.Door
+                if door:
+                    door_set[door] += 1
+                for color in MazeBase.Value.Color.total:
+                    door_set[color] -= node.Key[color]
+                    if door_set[color] < 0 and door_base[color] < 0:
+                        random_node = node_list[1:node.Index]
+                        random.shuffle(random_node)
+                        for rnode in random_node:
+                            if rnode.Key[color] > 0:
+                                print(node.Index, rnode.Index)
+                                rnode.Key[color] -= 1
+                                rnode.Space += 1
+                                door_set[color] += 1
+                                door_base[color] += 1
                             break
-                    else:
-                        continue
-                    key_number[key] -= 1
-                    node.Key[key] += 1
-                    node.Space -= 1
-                    if sum(key_number.values()) == 0:
-                        break
-        '''
 
     def set_monster(self, node_list):
         #没有door的需要放置monster

@@ -130,16 +130,13 @@ class Layout(FocusBehavior, FloatLayout):
 
 
     def moveimage(self):
-        texture = Cache.next(self.hero.name, 'action')
-        if not texture:
-            return
         x, y = self.hero.old_pos
         image = self.front.image[x][y]
         image.texture = Cache.next('empty')
 
         x, y = self.hero.pos
         image = self.front.image[x][y]
-        image.texture = texture
+        image.texture = Cache.next(self.hero.name, 'action')
 
     def ismove(self, pos):
         x, y = pos
