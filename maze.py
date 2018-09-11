@@ -981,7 +981,6 @@ class Maze:
         #红绿钥匙也可能在大片区域的入口（Deep == 1）
         length = len(node_list[-2:1:-1])
         door_total = random.randint(int(0.5 * length), int(0.7 * length))
-        nokey_node = set()
         special_node = set()
         for node in node_list[-2:1:-1]:
             if node.Space < 2:
@@ -1004,7 +1003,7 @@ class Maze:
                 else:
                     rand = random.random()
                     if rand < 0.5:
-                        nokey_node.add(node)
+                        pass
                     elif rand < 0.8: #多把黄钥匙
                         door = Tools.dict_choice(key_choice_normal)
                         node.IsMonster = True
@@ -1015,7 +1014,7 @@ class Maze:
                 door = Tools.dict_choice(key_choice_normal)
                 if door == MazeBase.Value.Color.yellow:
                     if rand < 0.3: #没有黄钥匙（宝石）
-                        nokey_node.add(node)
+                        pass
                     elif rand < 0.7: #多把黄钥匙加怪物
                         node.IsMonster = True
                         is_yellows = True
@@ -1025,7 +1024,7 @@ class Maze:
                         keys.append(MazeBase.Value.Color.blue)
                 else:
                     if rand < 0.5:#没有黄钥匙（宝石）
-                        nokey_node.add(node)
+                        pass
                     else: #多把黄钥匙（可能有怪物）
                         if random.random() < 0.3:
                             node.IsMonster = True
@@ -1044,7 +1043,7 @@ class Maze:
                 door_number[door] += 1
                 node.IsDoor = True
                 node.Door = door
-            
+
             special_node.add(node)
 
 
@@ -1094,7 +1093,7 @@ class Maze:
                     if node.Deep == 2:
                         if rand < 0.1:
                             door = Tools.dict_choice(key_choice_special)
-    
+
                 else:
                     if random.random() < 0.3 * (node.Space - 2):
                         door = Tools.dict_choice(key_choice_normal)
@@ -1149,7 +1148,6 @@ class Maze:
                         random.shuffle(random_node)
                         for rnode in random_node:
                             if rnode.Key[color] > 0:
-                                print(node.Index, rnode.Index)
                                 rnode.Key[color] -= 1
                                 rnode.Space += 1
                                 door_set[color] += 1
@@ -1177,36 +1175,60 @@ class Maze:
     #每个单元提升50%左右
     #应该根据当前属性分配，攻击高于防御时应提高防御宝石的数量，反之亦然
     def set_gem(self, node_list):
-        gem_choice = {
-            MazeBase.Value.Gem.small: 90,
-            MazeBase.Value.Gem.big: 9,
+        gem_choice_normal = {
+            MazeBase.Value.Gem.small: 10,
+            MazeBase.Value.Gem.big: 1,
+        }
+
+        gem_choice_special = {
+            MazeBase.Value.Gem.big: 10,
             MazeBase.Value.Gem.large: 1
         }
         #确保攻防加成接近
         gem_chance = 0.5
 
         #有门且放置的钥匙数小于等于1，必须放置宝物，第一个位置不放宝石，防止空间不够
+        large_attack = False
+        large_defence = False
         for node in node_list[1:-1]:
             if node.Space == 0:
                 continue
             isgem = False
-            if node.IsDoor and sum(node.Key.values()) <= 1:
+            if sum(node.Key.values()) == 0:
+                isgem = True
+            elif node.IsDoor and sum(node.Key.values()) == 1:
                 isgem = True
             elif random.random() < 0.1 + 0.1 * node.Space:
                 isgem = True
             if isgem:
-                gem = Tools.dict_choice(gem_choice)
+                if node.Deep < 3 or node.Forward or sum(node.Key.values()) != 0:
+                    gem = Tools.dict_choice(gem_choice_normal)
+                else:
+                    if large_attack and large_defence:
+                        gem = MazeBase.Value.Gem.big
+                    else:
+                        gem = Tools.dict_choice(gem_choice_special)
                 #剑盾需要放置在难以拿到的区域，同时要设置剑盾类型（显示类型）
-                if gem == MazeBase.Value.Gem.large:
-                    pass
-                if random.random() < gem_chance:
+                if gem == MazeBase.Value.Gem.large and large_defence or random.random() < gem_chance:
                     itemgem = node.AttackGem
                     gem_chance -= 0.02 * gem
+                    if gem == MazeBase.Value.Gem.large:
+                        large_attack = True
                 else:
                     itemgem = node.DefenceGem
                     gem_chance += 0.02 * gem
+                    if gem == MazeBase.Value.Gem.large:
+                        large_defence = True
+
                 itemgem[gem] += 1
                 node.Space -= 1
+
+        if large_attack and large_defence:
+            print('set sword and shield')
+        elif large_attack:
+            print('set sword')
+        elif large_defence:
+            print('set shield')
 
 
     def set_elite(self, node_list):
