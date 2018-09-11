@@ -1124,8 +1124,10 @@ class Maze:
                         for rnode in random_node:
                             if rnode.Space > 1:
                                 if color != MazeBase.Value.Color.yellow:
+                                    #门里面有相同的钥匙
                                     if rnode.Door == color:
                                         continue
+                                    #不能拿到钥匙就可以开门
                                     if [fnode for fnode in rnode.Forward.values() if fnode.Door == color]:
                                         continue
                                 rnode.Key[color] += 1
@@ -1133,6 +1135,7 @@ class Maze:
                                 break
                         door_set[color] -= 1
 
+        #删除多余的钥匙
         door_base = dict(door_set)
         for color in MazeBase.Value.Color.total:
             door_set[color] = 0
@@ -1152,7 +1155,8 @@ class Maze:
                                 rnode.Space += 1
                                 door_set[color] += 1
                                 door_base[color] += 1
-                            break
+                                break
+
 
     def set_monster(self, node_list):
         #没有door的需要放置monster
@@ -1172,6 +1176,7 @@ class Maze:
                 if node.IsDoor: #door will not in the area
                     node.Space -= 1
 
+
     #每个单元提升50%左右
     #应该根据当前属性分配，攻击高于防御时应提高防御宝石的数量，反之亦然
     def set_gem(self, node_list):
@@ -1186,6 +1191,9 @@ class Maze:
         }
         #确保攻防加成接近
         gem_chance = 0.5
+
+        total_attack = 0
+        total_defence = 0
 
         #有门且放置的钥匙数小于等于1，必须放置宝物，第一个位置不放宝石，防止空间不够
         large_attack = False
@@ -1204,19 +1212,22 @@ class Maze:
                 if node.Deep < 3 or node.Forward or sum(node.Key.values()) != 0:
                     gem = Tools.dict_choice(gem_choice_normal)
                 else:
+                    #剑盾需要放置在难以拿到的区域，同时要设置剑盾类型（显示类型）
+                    #剑盾每种最多放置一个
                     if large_attack and large_defence:
                         gem = MazeBase.Value.Gem.big
                     else:
                         gem = Tools.dict_choice(gem_choice_special)
-                #剑盾需要放置在难以拿到的区域，同时要设置剑盾类型（显示类型）
                 if gem == MazeBase.Value.Gem.large and large_defence or random.random() < gem_chance:
                     itemgem = node.AttackGem
                     gem_chance -= 0.02 * gem
+                    total_attack += gem
                     if gem == MazeBase.Value.Gem.large:
                         large_attack = True
                 else:
                     itemgem = node.DefenceGem
                     gem_chance += 0.02 * gem
+                    total_defence += gem
                     if gem == MazeBase.Value.Gem.large:
                         large_defence = True
 
@@ -1406,9 +1417,6 @@ class Maze:
                 break
 
             #初始值不一定为100
-            #if monster_ismagic == False:
-            #    attack += 100
-            #defence += 100
             if monster[0] not in self.monster:
                 self.monster[monster[0]] = {}
             self.monster[monster[0]][monster[1]] = {'health': monster_health, 'attack': attack, 'defence': defence, 'magic': monster_ismagic}
@@ -1545,11 +1553,46 @@ class Maze:
 
 
     def set_potion(self, node_list):
+        potion_choice = {
+            MazeBase.Value.Potion.red: 27,
+            MazeBase.Value.Potion.blue: 9,
+            MazeBase.Value.Potion.yellow: 3,
+            MazeBase.Value.Potion.green: 1
+        }
         #需要的总数
         potion = MazeSetting.extra_potion
+
+        for node in node_list[1:-1]:
+            #放置了特殊的物品可以不用放置其他的东西
+            if node.AttackGem[MazeBase.Value.Gem.large] or node.DefenceGem[MazeBase.Value.Gem.large]:
+                continue
+            if node.Key[MazeBase.Value.Color.red] or node.Key[MazeBase.Value.Color.green]:
+                continue
+
+            pos_list = []
+            for pos in node.Area:
+                if self.get_type(pos) == MazeBase.Type.Static.ground:
+                    pos_list.append(pos)
+            space = len(pos_list)
+            items = sum(node.AttackGem.values()) + sum(node.DefenceGem.values()) + sum(node.Key.values())
+            if space < 4 or items > 1:
+                continue
+
+            color = Tools.dict_choice(potion_choice)
+            node.Potion[color] += 1
+            node.Space -= 1
+            
+            while random.random() < 0.5 and node.Space > 0:
+                color = Tools.dict_choice(potion_choice)
+                node.Potion[color] += 1
+                node.Space -= 1
+
         #boss区域不设置potion
         for node in node_list[-2::-1]:
             while node.Space > 0 and potion > 0:
+                for color in MazeBase.Value.Potion.total:
+                    potion -= color * node.Potion[color]
+
                 if potion >= MazeBase.Value.Potion.green:
                     node.Potion[MazeBase.Value.Potion.green] += 1
                     potion -= MazeBase.Value.Potion.green
@@ -1598,37 +1641,80 @@ class Maze:
                     self.set_type(pos, MazeBase.Type.Active.monster)
                     self.set_value(pos, node.Monster)
 
-            pos_set = set()
+            pos_area = []
+            pos_list = []
+
             for pos in node.Area:
                 if self.get_type(pos) == MazeBase.Type.Static.ground:
-                    pos_set.add(pos)
+                    pos_list.append(pos)
 
-            for color in MazeBase.Value.Color.total:
-                for i in range(node.Key[color]):
-                    pos = pos_set.pop()
-                    self.set_type(pos, MazeBase.Type.Item.key)
-                    self.set_value(pos, color)
+            #三面靠墙
+            for pos in pos_list:
+                beside = self.get_beside(pos, MazeBase.Type.Static.wall)
+                if len(beside) == 3:
+                    if self.get_type(pos) == MazeBase.Type.Static.ground:
+                        pos_area.append(pos)
+                        pos_list.remove(pos)
 
-            for gem in MazeBase.Value.Gem.total:
+            #长条形，按顺序添加
+            while pos_list:
+                for pos in pos_list:
+                    beside = self.get_beside(pos, MazeBase.Type.Static.ground)
+                    if beside & set(pos_area):
+                        pos_area.append(pos)
+                        pos_list.remove(pos)
+                        break
+                else: #没有改变就退出
+                    break
+
+            #方形角上的
+            for pos in pos_list:
+                beside = self.get_beside(pos, MazeBase.Type.Static.wall)
+                if len(beside) == 2:
+                    pos_area.append(pos)
+                    pos_list.remove(pos)
+
+            #方形，按顺序添加
+            while pos_list:
+                for pos in pos_list:
+                    beside = self.get_beside(pos, MazeBase.Type.Static.ground)
+                    if beside & set(pos_area):
+                        pos_area.append(pos)
+                        pos_list.remove(pos)
+                        break
+                else:
+                    break
+
+            #剩下一些特殊的情况
+            pos_area += pos_list
+
+            for gem in MazeBase.Value.Gem.total[::-1]:
                 for i in range(node.AttackGem[gem]):
-                    pos = pos_set.pop()
+                    pos = pos_area.pop(0)
                     self.set_type(pos, MazeBase.Type.Item.attack)
                     self.set_value(pos, gem)
                 for i in range(node.DefenceGem[gem]):
-                    pos = pos_set.pop()
+                    pos = pos_area.pop(0)
                     self.set_type(pos, MazeBase.Type.Item.defence)
                     self.set_value(pos, gem)
 
-            for potion in MazeBase.Value.Potion.total:
+            for color in MazeBase.Value.Color.total[::-1]:
+                for i in range(node.Key[color]):
+                    pos = pos_area.pop(0)
+                    self.set_type(pos, MazeBase.Type.Item.key)
+                    self.set_value(pos, color)
+
+            for potion in MazeBase.Value.Potion.total[::-1]:
                 for i in range(node.Potion[potion]):
-                    pos = pos_set.pop()
+                    pos = pos_area.pop(0)
                     self.set_type(pos, MazeBase.Type.Item.potion)
                     self.set_value(pos, potion)
 
             if node.HolyWater > 0:
-                pos = pos_set.pop()
+                pos = pos_area.pop(0)
                 self.set_type(pos, MazeBase.Type.Item.holy)
                 self.set_value(pos, node.HolyWater)
+
 
 
     def set_boss(self):
