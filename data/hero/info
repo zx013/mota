@@ -1,82 +1,82 @@
 [hero-blue-down]
 name = blue.png
-static = 1, 4
-action = 1, 1-4
+static = 1, 1
+action = 1, 2-4
 
 [hero-blue-left]
 name = blue.png
-static = 2, 4
-action = 2, 1-4
+static = 2, 1
+action = 2, 2-4
 
 [hero-blue-right]
 name = blue.png
-static = 3, 4
-action = 3, 1-4
+static = 3, 1
+action = 3, 2-4
 
 [hero-blue-up]
 name = blue.png
-static = 4, 4
-action = 4, 1-4
+static = 4, 1
+action = 4, 2-4
 
 
 [hero-black-down]
 name = black.png
-static = 1, 4
-action = 1, 1-4
+static = 1, 1
+action = 1, 2-4
 
 [hero-black-left]
 name = black.png
-static = 2, 4
-action = 2, 1-4
+static = 2, 1
+action = 2, 2-4
 
 [hero-black-right]
 name = black.png
-static = 3, 4
-action = 3, 1-4
+static = 3, 1
+action = 3, 2-4
 
 [hero-black-up]
 name = black.png
-static = 4, 4
-action = 4, 1-4
+static = 4, 1
+action = 4, 2-4
 
 
 [hero-red-down]
 name = red.png
-static = 1, 4
-action = 1, 1-4
+static = 1, 1
+action = 1, 2-4
 
 [hero-red-left]
 name = red.png
-static = 2, 4
-action = 2, 1-4
+static = 2, 1
+action = 2, 2-4
 
 [hero-red-right]
 name = red.png
-static = 3, 4
-action = 3, 1-4
+static = 3, 1
+action = 3, 2-4
 
 [hero-red-up]
 name = red.png
-static = 4, 4
-action = 4, 1-4
+static = 4, 1
+action = 4, 2-4
 
 
 [hero-yellow-down]
 name = yellow.png
-static = 1, 4
-action = 1, 1-4
+static = 1, 1
+action = 1, 2-4
 
 [hero-yellow-left]
 name = yellow.png
-static = 2, 4
-action = 2, 1-4
+static = 2, 1
+action = 2, 2-4
 
 [hero-yellow-right]
 name = yellow.png
-static = 3, 4
-action = 3, 1-4
+static = 3, 1
+action = 3, 2-4
 
 [hero-yellow-up]
 name = yellow.png
-static = 4, 4
-action = 4, 1-4
+static = 4, 1
+action = 4, 2-4
