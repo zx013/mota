@@ -162,7 +162,7 @@ class Layout(FocusBehavior, FloatLayout):
             return False
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
-                if not self.maze.is_initial_floor(floor - 1):
+                if not self.maze.is_initial_floor(floor - 1) and not self.maze.is_boss_floor(floor - 1):
                     self.hero.floor -= 1
             elif pos_value == MazeBase.Value.Stair.up:
                 if self.maze.is_boss_floor(floor):
