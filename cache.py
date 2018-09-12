@@ -143,6 +143,7 @@ class CacheBase:
 
         if index >= length:
             if base:
+                self.reset(key)
                 return None
             else:
                 return info['static_textures']

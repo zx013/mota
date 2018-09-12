@@ -8,23 +8,28 @@ static = 1, 1
 
 [wall]
 name = wall-action-01.png
-action = 1-4, 2
+static = 1, 2
+action = 2-4, 2
 
 [door-yellow]
 name = door.png
-action = 1-4, 1
+static = 1, 1
+action = 2-4, 1
 
 [door-blue]
 name = door.png
-action = 1-4, 2
+static = 1, 2
+action = 2-4, 2
 
 [door-red]
 name = door.png
-action = 1-4, 3
+static = 1, 3
+action = 2-4, 3
 
 [door-green]
 name = door.png
-action = 1-4, 4
+static = 1, 4
+action = 2-4, 4
 
 [shop-blue]
 name = other.png

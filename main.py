@@ -28,6 +28,7 @@ from kivy.clock import Clock
 
 from cache import Cache
 from maze import Maze, MazeSetting, MazeBase
+from random import randint
 
 '''
 sometimes node is empty, that means we will get nothing in these area
@@ -52,39 +53,45 @@ class Layer(GridLayout):
 class Hero:
     color = 'blue'
     key = 'down'
-    old_pos = (0, 0)
-    pos = (0, 0)
+    old_pos = (1, 0, 0)
+    pos = (1, 0, 0)
     action = set()
+    weapon = 1
 
-    def __init__(self, floor, row, col, **kwargs):
-        self.floor = floor
+    def __init__(self, row, col, **kwargs):
         self.row = row
         self.col = col
+        self.weapon = randint(1, 5)
 
-    #将key转换为具体方向
     @property
-    def direction(self):
+    def name(self):
+        return 'hero-{}-{}'.format(self.color, self.key)
+
+    @property
+    def floor(self):
+        return self.pos[0]
+
+    @floor.setter
+    def floor(self, floor):
+        z, x, y = self.pos
+        self.pos = (floor, x, y)
+
+    #移动到的位置
+    def move_pos(self, key):
+        self.key = key
         key_map = {
             'up': (-1, 0),
             'down': (1, 0),
             'left': (0, -1),
             'right': (0, 1)
         }
-        return key_map.get(self.key, (0, 0))
+        floor, x1, y1 = self.pos
+        x2, y2 = key_map.get(self.key, (0, 0)) #将key转换为具体方向
+        return (floor, x1 + x2, y1 + y2)
 
-    @property
-    def name(self):
-        return 'hero-{}-{}'.format(self.color, self.key)
-
-    #移动到的位置
-    def move_pos(self):
-        x1, y1 = self.pos
-        x2, y2 = self.direction
-        return (x1 + x2, y1 + y2)
-
-    def move(self, pos):
+    def move(self, key):
         self.old_pos = self.pos
-        self.pos = pos
+        self.pos = self.move_pos(key)
 
 
 class Layout(FocusBehavior, FloatLayout):
@@ -110,7 +117,8 @@ class Layout(FocusBehavior, FloatLayout):
                 self.middle.add(i, j)
                 self.back.add(i, j, Cache.next('ground'))
 
-        self.hero = Hero(1, self.row, self.col)
+        self.hero = Hero(self.row, self.col)
+        self.hero.pos = set(self.maze.maze_info[1]['stair'][MazeBase.Value.Stair.down]).pop()
         self.focus = True
         Clock.schedule_interval(self.show, 0.20)
 
@@ -131,11 +139,11 @@ class Layout(FocusBehavior, FloatLayout):
 
 
     def moveimage(self):
-        x, y = self.hero.old_pos
+        _, x, y = self.hero.old_pos
         image = self.front.image[x][y]
         image.texture = Cache.next('empty')
 
-        x, y = self.hero.pos
+        _, x, y = self.hero.pos
         image = self.front.image[x][y]
         image.texture = Cache.next(self.hero.name, 'action', False)
         
@@ -143,39 +151,44 @@ class Layout(FocusBehavior, FloatLayout):
         image.texture = Cache.next('empty')
 
     def ismove(self, pos):
-        x, y = pos
+        floor, x, y = pos
         if x < 0 or x >= self.col or y < 0 or y >= self.row:
             return False
-        pos_type = self.maze.get_type((self.hero.floor, x, y))
+        pos_type = self.maze.get_type(pos)
+        pos_value = self.maze.get_value(pos)
         if pos_type == MazeBase.Type.Static.ground:
             return True
         elif pos_type == MazeBase.Type.Static.wall:
-            pass
+            return False
         elif pos_type == MazeBase.Type.Static.stair:
-            pass
+            if pos_value == MazeBase.Value.Stair.down:
+                if not self.maze.is_initial_floor(floor - 1):
+                    self.hero.floor -= 1
+            elif pos_value == MazeBase.Value.Stair.up:
+                if self.maze.is_boss_floor(floor):
+                    self.maze.update()
+                    self.hero.weapon = randint(1, 5)
+                self.hero.floor += 1
         elif pos_type == MazeBase.Type.Static.door:
             self.hero.action.add(pos)
             return False
         elif pos_type in (MazeBase.Type.Item.key, MazeBase.Type.Item.attack, MazeBase.Type.Item.defence, MazeBase.Type.Item.potion, MazeBase.Type.Item.holy):
-            self.maze.set_type((self.hero.floor, x, y), MazeBase.Type.Static.ground)
+            self.maze.set_type(pos, MazeBase.Type.Static.ground)
         elif pos_type == MazeBase.Type.Active.monster:
-            pass  
+            print('Fight monster {}'.format('-'.join(pos_value)))
+            self.maze.set_type(pos, MazeBase.Type.Static.ground)  
         return True
 
     def move(self, key):
-        self.hero.key = key
-        pos = self.hero.move_pos()
-        if self.ismove(pos):
-            self.hero.move(pos)
+        if self.ismove(self.hero.move_pos(key)):
+            self.hero.move(key)
         Cache.reset(self.hero.name)
         self.moveimage()
 
-    def show_pos(self, pos, style='static'):
-        x, y = pos
-        floor = self.hero.floor
-        pos_type = self.maze.get_type((floor, x, y))
-        pos_value = self.maze.get_value((floor, x, y))
-        pos_image = self.middle.image[x][y]
+    def get_texture(self, pos, style='static'):
+        floor, x, y = pos
+        pos_type = self.maze.get_type(pos)
+        pos_value = self.maze.get_value(pos)
         if pos_type == MazeBase.Type.Static.ground:
             pos_key = 'ground'
         elif pos_type == MazeBase.Type.Static.wall:
@@ -209,16 +222,14 @@ class Layout(FocusBehavior, FloatLayout):
             elif pos_value == MazeBase.Value.Gem.big:
                 pos_key = 'gem-attack-big'
             elif pos_value == MazeBase.Value.Gem.large:
-                #will random in 5
-                pos_key = 'weapen-attack-01'
+                pos_key = 'weapen-attack-{:0>2}'.format(self.hero.weapon)
         elif pos_type == MazeBase.Type.Item.defence:
             if pos_value == MazeBase.Value.Gem.small:
                 pos_key = 'gem-defence-small'
             elif pos_value == MazeBase.Value.Gem.big:
                 pos_key = 'gem-defence-big'
             elif pos_value == MazeBase.Value.Gem.large:
-                #will random in 5
-                pos_key = 'weapen-defence-01'
+                pos_key = 'weapen-defence-{:0>2}'.format(self.hero.weapon)
         elif pos_type == MazeBase.Type.Item.potion:
             if pos_value == MazeBase.Value.Potion.red:
                 pos_key = 'potion-red'
@@ -234,23 +245,27 @@ class Layout(FocusBehavior, FloatLayout):
             pos_key = '-'.join(pos_value)
             style = 'dynamic'
 
-        texture = Cache.next(pos_key, style)
-        if not texture:
-            #texture = Cache.next('empty')
-            self.maze.set_type((floor, x, y), MazeBase.Type.Static.ground)
-            Cache.reset(pos_key)
-            return False
-        pos_image.texture = texture
-        return True
+        return Cache.next(pos_key, style)
 
     def show(self, dt):
+        floor = self.hero.floor
         self.moveimage()
         for i in range(self.row):
             for j in range(self.col):
-                if (i, j) not in self.hero.action:
-                    self.show_pos((i, j))
+                pos_image = self.middle.image[i][j]
+                pos = (floor, i, j)
+                if pos not in self.hero.action:
+                    texture = self.get_texture(pos)
                 else:
-                    self.show_pos((i, j), 'action')
+                    texture = self.get_texture(pos, 'action')
+
+                if texture:
+                    pos_image.texture = texture
+                else:
+                    pos_image.texture = Cache.next('empty')
+                    self.maze.set_type(pos, MazeBase.Type.Static.ground)
+                    self.hero.action.remove(pos)
+                
 
 class Mota(App):
     def build(self):
