@@ -56,11 +56,14 @@ class Hero:
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
     action = set()
+    wall = 1
     weapon = 1
 
-    def __init__(self, row, col, **kwargs):
+    def __init__(self, maze, row, col, **kwargs):
+        self.maze = maze
         self.row = row
         self.col = col
+        self.wall = 2
         self.weapon = randint(1, 5)
 
     @property
@@ -73,8 +76,20 @@ class Hero:
 
     @floor.setter
     def floor(self, floor):
-        z, x, y = self.pos
-        self.pos = (floor, x, y)
+        if self.maze.is_boss_floor(floor - 1):
+            self.maze.update()
+            self.wall = randint(1, 3)
+            self.weapon = randint(1, 5)
+            print(floor, self.wall, self.weapon)
+        self.old_pos = self.pos
+        if floor in self.maze.maze_info: #楼层存在
+            stair = self.maze.maze_info[floor]['stair']
+            if self.floor == floor + 1: #下楼
+                if not self.maze.is_boss_floor(floor) and MazeBase.Value.Stair.up in stair: #楼梯存在
+                        self.pos = set(stair[MazeBase.Value.Stair.up]).pop()
+            elif self.floor == floor - 1: #上楼
+                if MazeBase.Value.Stair.down in stair:
+                    self.pos = set(stair[MazeBase.Value.Stair.down]).pop()
 
     #移动到的位置
     def move_pos(self, key):
@@ -94,12 +109,12 @@ class Hero:
         self.pos = self.move_pos(key)
 
 
-class Layout(FocusBehavior, FloatLayout):
+class Map(FocusBehavior, FloatLayout):
     row = MazeSetting.rows + 2
     col = MazeSetting.cols + 2
 
     def __init__(self, **kwargs):
-        super(Layout, self).__init__(**kwargs)
+        super(Map, self).__init__(**kwargs)
 
         self.maze = Maze()
         self.maze.update()
@@ -117,10 +132,10 @@ class Layout(FocusBehavior, FloatLayout):
                 self.middle.add(i, j)
                 self.back.add(i, j, Cache.next('ground'))
 
-        self.hero = Hero(self.row, self.col)
+        self.hero = Hero(self.maze, self.row, self.col)
         self.hero.pos = set(self.maze.maze_info[1]['stair'][MazeBase.Value.Stair.down]).pop()
         self.focus = True
-        Clock.schedule_interval(self.show, 0.20)
+        Clock.schedule_interval(self.show, 0.10)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         key = keycode[1]
@@ -130,25 +145,11 @@ class Layout(FocusBehavior, FloatLayout):
         return True
 
     def on_touch_down(self, touch):
-        if self.maze.is_boss_floor(self.hero.floor):
-            self.maze.update()
         self.hero.floor += 1
         if self.collide_point(touch.x, touch.y):
             return True
-        super(Layout, self).on_touch_down(touch)
+        super(Map, self).on_touch_down(touch)
 
-
-    def moveimage(self):
-        _, x, y = self.hero.old_pos
-        image = self.front.image[x][y]
-        image.texture = Cache.next('empty')
-
-        _, x, y = self.hero.pos
-        image = self.front.image[x][y]
-        image.texture = Cache.next(self.hero.name, 'action', False)
-        
-        image = self.middle.image[x][y]
-        image.texture = Cache.next('empty')
 
     def ismove(self, pos):
         floor, x, y = pos
@@ -156,18 +157,13 @@ class Layout(FocusBehavior, FloatLayout):
             return False
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
-        if pos_type == MazeBase.Type.Static.ground:
-            return True
-        elif pos_type == MazeBase.Type.Static.wall:
+
+        if pos_type == MazeBase.Type.Static.wall:
             return False
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
-                if not self.maze.is_initial_floor(floor - 1) and not self.maze.is_boss_floor(floor - 1):
-                    self.hero.floor -= 1
+                self.hero.floor -= 1
             elif pos_value == MazeBase.Value.Stair.up:
-                if self.maze.is_boss_floor(floor):
-                    self.maze.update()
-                    self.hero.weapon = randint(1, 5)
                 self.hero.floor += 1
         elif pos_type == MazeBase.Type.Static.door:
             self.hero.action.add(pos)
@@ -176,14 +172,15 @@ class Layout(FocusBehavior, FloatLayout):
             self.maze.set_type(pos, MazeBase.Type.Static.ground)
         elif pos_type == MazeBase.Type.Active.monster:
             print('Fight monster {}'.format('-'.join(pos_value)))
-            self.maze.set_type(pos, MazeBase.Type.Static.ground)  
+            self.maze.set_type(pos, MazeBase.Type.Static.ground)
+
         return True
 
     def move(self, key):
         if self.ismove(self.hero.move_pos(key)):
             self.hero.move(key)
         Cache.reset(self.hero.name)
-        self.moveimage()
+
 
     def get_texture(self, pos, style='static'):
         floor, x, y = pos
@@ -192,7 +189,7 @@ class Layout(FocusBehavior, FloatLayout):
         if pos_type == MazeBase.Type.Static.ground:
             pos_key = 'ground'
         elif pos_type == MazeBase.Type.Static.wall:
-            pos_key = 'wall'
+            pos_key = 'wall-{:0>2}'.format(self.hero.wall)
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
                 pos_key = 'stair-down'
@@ -247,9 +244,21 @@ class Layout(FocusBehavior, FloatLayout):
 
         return Cache.next(pos_key, style)
 
+    def show_hero(self):
+        _, x, y = self.hero.old_pos
+        image = self.front.image[x][y]
+        image.texture = Cache.next('empty')
+
+        _, x, y = self.hero.pos
+        image = self.front.image[x][y]
+        image.texture = Cache.next(self.hero.name, 'action', False)
+
+        image = self.middle.image[x][y]
+        image.texture = Cache.next('empty')
+
     def show(self, dt):
         floor = self.hero.floor
-        self.moveimage()
+        self.show_hero()
         for i in range(self.row):
             for j in range(self.col):
                 pos_image = self.middle.image[i][j]
@@ -265,14 +274,20 @@ class Layout(FocusBehavior, FloatLayout):
                     pos_image.texture = Cache.next('empty')
                     self.maze.set_type(pos, MazeBase.Type.Static.ground)
                     self.hero.action.remove(pos)
-                
+
+
+class State(FloatLayout):
+    pass
+
+class Layout(FloatLayout):
+    pass
 
 class Mota(App):
     def build(self):
         #javaclass = autoclass('com.test.JavaClass')
         #print(javaclass().show())
 
-        self.layout = Layout()
+        self.layout = Map()
         return self.layout
 
     def on_start(self):

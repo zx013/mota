@@ -377,7 +377,6 @@ class Pos:
 class HeroBase:
     def __init__(self):
         self.level = -1
-        self.floor = 0
         self.health = 1000
         self.attack = 10
         self.defence = 10
@@ -410,8 +409,6 @@ class HeroBase:
 #实时状态
 class HeroState:
     def __init__(self, herobase):
-        self.pos = (0, 0, 0)
-        self.floor = herobase.floor
         self.health = herobase.health
         self.attack = herobase.attack
         self.defence = herobase.defence
@@ -1885,8 +1882,7 @@ class Maze:
         return []
 
 
-    def move(self, move):
-        move_pos = Pos.add(self.herostate.pos, move)
+    def move(self, move_pos):
         move_type = self.get_type(move_pos)
         move_value = self.get_value(move_pos)
         move_enable = True
@@ -1912,22 +1908,13 @@ class Maze:
         elif move_type == MazeBase.Type.Item.potion:
             self.herostate.health += self.herobase.base * move_value
         elif move_type == MazeBase.Type.Static.stair:
-            if move_value == MazeBase.Value.Stair.up:
-                self.herobase.floor += 1
-                self.herostate.floor += 1
-            elif move_value == MazeBase.Value.Stair.down:
-                #if self.herostate.floor:
-                self.herostate.floor -= 1
             print('stair')
 
         if move_enable:
             self.set_type(move_pos, MazeBase.Type.Static.ground)
             self.set_value(move_pos, 0)
             print('move')
-            self.herostate.pos = move_pos
-
-    def jump(self, type):
-        pass
+        return move_enable
 
 
 if __name__ == '__main__':
