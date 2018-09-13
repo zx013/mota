@@ -31,7 +31,6 @@ from maze import Maze, MazeSetting, MazeBase
 from random import randint
 
 '''
-sometimes node is empty, that means we will get nothing in these area
 长条形区域有时需要分割一下，不然显得太空旷
 '''
 class Layer(GridLayout):
@@ -56,6 +55,7 @@ class Hero:
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
     action = set()
+    action_finish = set()
     wall = 1
     weapon = 1
 
@@ -152,11 +152,17 @@ class Map(FocusBehavior, FloatLayout):
 
 
     def ismove(self, pos):
+        for pos in self.hero.action_finish:
+            self.maze.set_type(pos, MazeBase.Type.Static.ground)
+            self.maze.set_value(pos, 0)
+
         floor, x, y = pos
         if x < 0 or x >= self.col or y < 0 or y >= self.row:
             return False
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
+        herobase = self.maze.herobase
+        herostate = self.maze.herostate
 
         if pos_type == MazeBase.Type.Static.wall:
             return False
@@ -168,12 +174,21 @@ class Map(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Static.door:
             self.hero.action.add(pos)
             return False
-        elif pos_type in (MazeBase.Type.Item.key, MazeBase.Type.Item.attack, MazeBase.Type.Item.defence, MazeBase.Type.Item.potion, MazeBase.Type.Item.holy):
-            self.maze.set_type(pos, MazeBase.Type.Static.ground)
+        elif pos_type == MazeBase.Type.Item.key:
+            herostate.key[pos_value] += 1
+        elif pos_type == MazeBase.Type.Item.attack:
+            herostate.attack += herobase.base * pos_value
+        elif pos_type == MazeBase.Type.Item.defence:
+            herostate.defence += herobase.base * pos_value
+        elif pos_type == MazeBase.Type.Item.potion:
+            herostate.health += herobase.base * pos_value
+        elif pos_type == MazeBase.Type.Item.holy:
+            herostate.health += herobase.base * pos_value
         elif pos_type == MazeBase.Type.Active.monster:
             print('Fight monster {}'.format('-'.join(pos_value)))
-            self.maze.set_type(pos, MazeBase.Type.Static.ground)
 
+        self.maze.set_type(pos, MazeBase.Type.Static.ground)
+        self.maze.set_value(pos, 0)
         return True
 
     def move(self, key):
@@ -263,17 +278,19 @@ class Map(FocusBehavior, FloatLayout):
             for j in range(self.col):
                 pos_image = self.middle.image[i][j]
                 pos = (floor, i, j)
-                if pos not in self.hero.action:
-                    texture = self.get_texture(pos)
-                else:
+                if pos in self.hero.action:
                     texture = self.get_texture(pos, 'action')
+                elif pos in self.hero.action_finish:
+                    texture = Cache.next('empty')
+                else:
+                    texture = self.get_texture(pos)
 
                 if texture:
                     pos_image.texture = texture
                 else:
                     pos_image.texture = Cache.next('empty')
-                    self.maze.set_type(pos, MazeBase.Type.Static.ground)
                     self.hero.action.remove(pos)
+                    self.hero.action_finish.add(pos)
 
 
 class State(FloatLayout):

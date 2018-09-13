@@ -1879,42 +1879,7 @@ class Maze:
                     pos = new_z, new_x, new_y
                     way.insert(0, (new_x - old_x, new_y - old_y))
                 return way
-        return []
-
-
-    def move(self, move_pos):
-        move_type = self.get_type(move_pos)
-        move_value = self.get_value(move_pos)
-        move_enable = True
-
-        if move_type == MazeBase.Type.Static.wall:
-            move_enable = False
-            print('wall')
-        elif move_type == MazeBase.Type.Static.door:
-            if self.herostate.key[move_value] == 0:
-                move_enable = False
-                print('no key')
-            else:
-                self.herostate.key[move_value] -= 1
-                print('open door')
-        elif move_type == MazeBase.Type.Active.monster:
-            print('attack monster')
-        elif move_type == MazeBase.Type.Item.key:
-            self.herostate.key[move_value] += 1
-        elif move_type == MazeBase.Type.Item.attack:
-            self.herostate.attack += self.herobase.base * move_value
-        elif move_type == MazeBase.Type.Item.defence:
-            self.herostate.defence += self.herobase.base * move_value
-        elif move_type == MazeBase.Type.Item.potion:
-            self.herostate.health += self.herobase.base * move_value
-        elif move_type == MazeBase.Type.Static.stair:
-            print('stair')
-
-        if move_enable:
-            self.set_type(move_pos, MazeBase.Type.Static.ground)
-            self.set_value(move_pos, 0)
-            print('move')
-        return move_enable
+        return []        
 
 
 if __name__ == '__main__':
