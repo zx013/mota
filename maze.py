@@ -433,6 +433,7 @@ class Maze:
         self.monster = {}
         self.herobase = HeroBase()
         self.herostate = HeroState(self.herobase)
+        self.set_init()
         MonsterInfo.load()
 
     def init(self, floor):
@@ -1587,7 +1588,7 @@ class Maze:
             color = Tools.dict_choice(potion_choice)
             node.Potion[color] += 1
             node.Space -= 1
-            
+
             while random.random() < 0.5 and node.Space > 0:
                 color = Tools.dict_choice(potion_choice)
                 node.Potion[color] += 1
@@ -1731,13 +1732,13 @@ class Maze:
         self.set_type(pos, MazeBase.Type.Static.init)
         self.set_value(pos, 0)
         self.maze_info[floor]['init'] = pos
-        
+
         pos = (floor, 1, middle)
         self.set_type(pos, MazeBase.Type.Static.stair)
         self.set_value(pos, MazeBase.Value.Stair.up)
         self.maze_info[floor]['stair'] = {}
         self.maze_info[floor]['stair'][MazeBase.Value.Stair.up] = set((pos,))
-        
+
         for i in range(1, 4):
             pos_list = ((floor, i, middle - 1), (floor, i, middle + 1))
             for pos in pos_list:
@@ -1924,7 +1925,7 @@ class Maze:
                     pos = new_z, new_x, new_y
                     way.insert(0, (new_x - old_x, new_y - old_y))
                 return way
-        return []        
+        return []
 
 
 if __name__ == '__main__':

@@ -32,6 +32,7 @@ from random import randint
 
 '''
 长条形区域有时需要分割一下，不然显得太空旷
+出现了一次开局红门钥匙不够的情况！！！
 '''
 class Layer(GridLayout):
     def __init__(self, row, col, **kwargs):
@@ -50,12 +51,13 @@ class Layer(GridLayout):
         return image
 
 class Hero:
-    color = 'blue'
-    key = 'down'
+    color = 'blue' #颜色
+    key = 'down' #朝向
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
-    opacity = 1
-    action = set()
+    opacity = 1 #不透明度
+    stair = None #是否触发上下楼的动作
+    action = set() #执行动画的点
     wall = 2
     weapon = 1
 
@@ -123,7 +125,6 @@ class Map(FocusBehavior, FloatLayout):
 
         self.maze = Maze()
         self.maze.update()
-        self.maze.set_init()
 
         self.front = Layer(self.row, self.col)
         self.middle = Layer(self.row, self.col)
@@ -151,7 +152,7 @@ class Map(FocusBehavior, FloatLayout):
         return True
 
     def on_touch_down(self, touch):
-        self.hero.floor += 1
+        self.hero.stair = MazeBase.Value.Stair.up
         if self.collide_point(touch.x, touch.y):
             return True
         super(Map, self).on_touch_down(touch)
@@ -159,9 +160,6 @@ class Map(FocusBehavior, FloatLayout):
 
     def ismove(self, pos):
         if pos in self.hero.action:
-            return False
-        floor, x, y = pos
-        if x < 0 or x >= self.col or y < 0 or y >= self.row:
             return False
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
@@ -171,12 +169,10 @@ class Map(FocusBehavior, FloatLayout):
         if pos_type == MazeBase.Type.Static.wall:
             return False
         elif pos_type == MazeBase.Type.Static.stair:
-            if pos_value == MazeBase.Value.Stair.down:
-                self.hero.floor -= 1
-            elif pos_value == MazeBase.Value.Stair.up:
-                self.hero.floor += 1
+            self.hero.stair = pos_value
             return True
         elif pos_type == MazeBase.Type.Static.door:
+            print(herostate.key.values())
             if herostate.key[pos_value] == 0:
                 return False
             herostate.key[pos_value] -= 1
@@ -184,6 +180,7 @@ class Map(FocusBehavior, FloatLayout):
             Music.play('opendoor')
             return False
         elif pos_type == MazeBase.Type.Item.key:
+            print(herostate.key.values())
             herostate.key[pos_value] += 1
             Music.play('getitem')
         elif pos_type == MazeBase.Type.Item.attack:
@@ -209,7 +206,8 @@ class Map(FocusBehavior, FloatLayout):
         return True
 
     def move(self, key):
-        if self.ismove(self.hero.move_pos(key)):
+        pos = self.hero.move_pos(key)
+        if self.ismove(pos):
             self.hero.move(key)
         Cache.reset(self.hero.name)
         self.show_hero()
@@ -294,15 +292,38 @@ class Map(FocusBehavior, FloatLayout):
         _, x, y = self.hero.old_pos
         image = self.front.image[x][y]
         image.texture = Cache.next('empty')
+        image.canvas.opacity = self.hero.opacity
 
         _, x, y = self.hero.pos
         image = self.front.image[x][y]
         image.texture = Cache.next(self.hero.name, 'action', False)
+        image.canvas.opacity = self.hero.opacity
 
         image = self.middle.image[x][y]
         image.texture = Cache.next('empty')
+        image.canvas.opacity = self.hero.opacity
+
+    #效果达到，但代码需要调整
+    d = True
+    def show_stair(self):
+        if self.d:
+            self.hero.opacity -= 0.2
+            if self.hero.opacity <= 0:
+                self.d = False
+                if self.hero.stair == MazeBase.Value.Stair.down:
+                    self.hero.floor -= 1
+                elif self.hero.stair == MazeBase.Value.Stair.up:
+                    self.hero.floor += 1
+        else:
+            self.hero.opacity += 0.2
+            if self.hero.opacity >= 1.0:
+                self.d = True
+                self.hero.stair = None
 
     def show(self, dt):
+        if self.hero.stair:
+            self.show_stair()
+
         floor = self.hero.floor
         opacity = self.hero.opacity
         self.show_hero()
