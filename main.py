@@ -54,8 +54,9 @@ class Hero:
     key = 'down'
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
+    opacity = 1
     action = set()
-    wall = 1
+    wall = 2
     weapon = 1
 
     def __init__(self, maze, row, col, **kwargs):
@@ -63,7 +64,7 @@ class Hero:
         self.row = row
         self.col = col
         self.wall = 2
-        self.weapon = randint(1, 5)
+        self.weapon = 1
 
     @property
     def name(self):
@@ -79,16 +80,20 @@ class Hero:
             self.maze.update()
             self.wall = randint(1, 3)
             self.weapon = randint(1, 5)
-            print(floor, self.wall, self.weapon)
+
+        update_pos = None
         self.old_pos = self.pos
         if floor in self.maze.maze_info: #楼层存在
             stair = self.maze.maze_info[floor]['stair']
             if self.floor == floor + 1: #下楼
                 if not self.maze.is_boss_floor(floor) and MazeBase.Value.Stair.up in stair: #楼梯存在
-                        self.pos = set(stair[MazeBase.Value.Stair.up]).pop()
+                        update_pos = set(stair[MazeBase.Value.Stair.up]).pop()
             elif self.floor == floor - 1: #上楼
                 if MazeBase.Value.Stair.down in stair:
-                    self.pos = set(stair[MazeBase.Value.Stair.down]).pop()
+                    update_pos = set(stair[MazeBase.Value.Stair.down]).pop()
+
+        if update_pos:
+            self.pos = update_pos
 
     #移动到的位置
     def move_pos(self, key):
@@ -271,6 +276,7 @@ class Map(FocusBehavior, FloatLayout):
 
     def show(self, dt):
         floor = self.hero.floor
+        opacity = self.hero.opacity
         self.show_hero()
         for i in range(self.row):
             for j in range(self.col):
@@ -288,6 +294,7 @@ class Map(FocusBehavior, FloatLayout):
                     self.maze.set_type(pos, MazeBase.Type.Static.ground)
                     self.maze.set_value(pos, 0)
                     self.hero.action.remove(pos)
+                pos_image.canvas.opacity = opacity
 
 
 class State(FloatLayout):
