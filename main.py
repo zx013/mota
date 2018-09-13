@@ -55,7 +55,6 @@ class Hero:
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
     action = set()
-    action_finish = set()
     wall = 1
     weapon = 1
 
@@ -152,10 +151,6 @@ class Map(FocusBehavior, FloatLayout):
 
 
     def ismove(self, pos):
-        for pos in self.hero.action_finish:
-            self.maze.set_type(pos, MazeBase.Type.Static.ground)
-            self.maze.set_value(pos, 0)
-
         floor, x, y = pos
         if x < 0 or x >= self.col or y < 0 or y >= self.row:
             return False
@@ -172,6 +167,9 @@ class Map(FocusBehavior, FloatLayout):
             elif pos_value == MazeBase.Value.Stair.up:
                 self.hero.floor += 1
         elif pos_type == MazeBase.Type.Static.door:
+            if herostate.key[pos_value] == 0:
+                return False
+            herostate.key[pos_value] -= 1
             self.hero.action.add(pos)
             return False
         elif pos_type == MazeBase.Type.Item.key:
@@ -280,8 +278,6 @@ class Map(FocusBehavior, FloatLayout):
                 pos = (floor, i, j)
                 if pos in self.hero.action:
                     texture = self.get_texture(pos, 'action')
-                elif pos in self.hero.action_finish:
-                    texture = Cache.next('empty')
                 else:
                     texture = self.get_texture(pos)
 
@@ -289,8 +285,9 @@ class Map(FocusBehavior, FloatLayout):
                     pos_image.texture = texture
                 else:
                     pos_image.texture = Cache.next('empty')
+                    self.maze.set_type(pos, MazeBase.Type.Static.ground)
+                    self.maze.set_value(pos, 0)
                     self.hero.action.remove(pos)
-                    self.hero.action_finish.add(pos)
 
 
 class State(FloatLayout):
