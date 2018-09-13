@@ -52,3 +52,19 @@ static = 1, 1
 [stair-up]
 name = stair.png
 static = 1, 2
+
+[npc-wisdom]
+name = npc.png
+dynamic = 1, 1-4
+
+[npc-trader]
+name = npc.png
+dynamic = 2, 1-4
+
+[npc-thief]
+name = npc.png
+dynamic = 3, 1-4
+
+[npc-fairy]
+name = npc.png
+dynamic = 4, 1-4

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
+import random
 from configparser import ConfigParser
 from kivy.uix.image import Image
 
@@ -154,6 +155,55 @@ class CacheBase:
         return texture
 
 
+from kivy.core.audio import SoundLoader
+
+class MusicBase:
+    path = 'music'
+
+    def __init__(self):
+        self.music = {}
+        self.back = None
+        self.back_list = []
+        for name in os.listdir(self.path):
+            continue #加载太多似乎会出错
+            if not name.endswith('.mp3') and not name.endswith('.wav'):
+                continue
+            key = name.split('.')[0]
+            if key.startswith('background-'):
+                index = key.split('-')[1]
+                if index != 'init':
+                    self.back_list.append(index)
+            self.music[key] = SoundLoader.load(os.path.join('music', name))
+            #self.music[key] = music
+
+    def background(self, init=False):
+        if init:
+            key = 'init'
+        else:
+            key = random.choice(self.back_list)
+        key = 'background-{}'.format(key)
+
+        if self.back:
+            self.back.stop()
+
+        if key in self.music:
+            self.back = self.music[key]
+            self.back.loop = True
+            self.back.seek(0)
+            self.back.play()
+            
+    def play(self, key):
+        if key in self.music:
+            music = self.music[key]
+            music.seek(0)
+            music.play()
+
+
 global Cache
 if 'Cache' not in dir():
     Cache = CacheBase()
+
+global Music
+if 'Music' not in dir():
+    Music = MusicBase()
+

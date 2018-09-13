@@ -60,11 +60,12 @@ class Tools:
 class MazeBase:
     class Type:
         class Static:
-            ground = 11
-            wall = 12
-            shop = 13
-            stair = 14
-            door = 15
+            init = 11
+            ground = 12
+            wall = 13
+            shop = 14
+            stair = 15
+            door = 16
 
         class Active:
             monster = 21
@@ -126,6 +127,12 @@ class MazeBase:
             green = 1200
 
             total = (red, blue, yellow, green)
+
+        class Rpc:
+            wisdom = 1
+            trader = 2
+            thief = 3
+            fairy = 4
 
     class NodeType:
         none = 0
@@ -434,7 +441,6 @@ class Maze:
                 del self.maze[key]
                 del self.maze_map[key]
                 del self.maze_info[key]
-
         self.maze[floor] = [[[0, 0] for j in range(MazeSetting.cols + 2)] for i in range(MazeSetting.rows + 2)]
         self.maze_map[floor] = {MazeBase.Type.Static.ground: set()}
         self.maze_info[floor] = {}
@@ -446,7 +452,8 @@ class Maze:
                     self.maze[floor][i][j][0] = MazeBase.Type.Static.ground
                     self.maze_map[floor][MazeBase.Type.Static.ground].add((floor, i, j))
 
-        self.monster = {}
+        if self.is_boss_floor(floor):
+            self.monster = {}
 
 
     def get_type(self, pos):
@@ -654,6 +661,8 @@ class Maze:
         return True
 
     def is_boss_floor(self, floor):
+        if not floor:
+            return False
         if not floor % MazeSetting.base_floor:
             return True
         return False
@@ -1713,6 +1722,42 @@ class Maze:
                 self.set_value(pos, node.HolyWater)
 
 
+    def set_init(self):
+        floor = 0
+        middle = int((MazeSetting.cols + 1) / 2)
+        self.init(floor)
+
+        pos = (floor, MazeSetting.rows, middle)
+        self.set_type(pos, MazeBase.Type.Static.init)
+        self.set_value(pos, 0)
+        self.maze_info[floor]['init'] = pos
+        
+        pos = (floor, 1, middle)
+        self.set_type(pos, MazeBase.Type.Static.stair)
+        self.set_value(pos, MazeBase.Value.Stair.up)
+        self.maze_info[floor]['stair'] = {}
+        self.maze_info[floor]['stair'][MazeBase.Value.Stair.up] = set((pos,))
+        
+        for i in range(1, 4):
+            pos_list = ((floor, i, middle - 1), (floor, i, middle + 1))
+            for pos in pos_list:
+                self.set_type(pos, MazeBase.Type.Static.wall)
+
+        pos = (floor, 1, 1)
+        self.set_type(pos, MazeBase.Type.Active.rpc)
+        self.set_value(pos, MazeBase.Value.Rpc.wisdom)
+
+        pos = (floor, 1, MazeSetting.cols)
+        self.set_type(pos, MazeBase.Type.Active.rpc)
+        self.set_value(pos, MazeBase.Value.Rpc.trader)
+
+        pos = (floor, MazeSetting.rows, 1)
+        self.set_type(pos, MazeBase.Type.Active.rpc)
+        self.set_value(pos, MazeBase.Value.Rpc.thief)
+
+        pos = (floor, MazeSetting.rows, MazeSetting.cols)
+        self.set_type(pos, MazeBase.Type.Active.rpc)
+        self.set_value(pos, MazeBase.Value.Rpc.fairy)
 
     def set_boss(self):
         pass

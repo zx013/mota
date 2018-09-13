@@ -26,7 +26,7 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
 #python2应为from Configparser import ConfigParser
 
-from cache import Cache
+from cache import Cache, Music
 from maze import Maze, MazeSetting, MazeBase
 from random import randint
 
@@ -94,6 +94,7 @@ class Hero:
 
         if update_pos:
             self.pos = update_pos
+            Music.play('floor')
 
     #移动到的位置
     def move_pos(self, key):
@@ -122,6 +123,7 @@ class Map(FocusBehavior, FloatLayout):
 
         self.maze = Maze()
         self.maze.update()
+        self.maze.set_init()
 
         self.front = Layer(self.row, self.col)
         self.middle = Layer(self.row, self.col)
@@ -137,9 +139,9 @@ class Map(FocusBehavior, FloatLayout):
                 self.back.add(i, j, Cache.next('ground'))
 
         self.hero = Hero(self.maze, self.row, self.col)
-        self.hero.pos = set(self.maze.maze_info[1]['stair'][MazeBase.Value.Stair.down]).pop()
+        self.hero.pos = self.maze.maze_info[0]['init']
         self.focus = True
-        Clock.schedule_interval(self.show, 0.10)
+        Clock.schedule_interval(self.show, 0.1)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         key = keycode[1]
@@ -156,6 +158,8 @@ class Map(FocusBehavior, FloatLayout):
 
 
     def ismove(self, pos):
+        if pos in self.hero.action:
+            return False
         floor, x, y = pos
         if x < 0 or x >= self.col or y < 0 or y >= self.row:
             return False
@@ -171,24 +175,34 @@ class Map(FocusBehavior, FloatLayout):
                 self.hero.floor -= 1
             elif pos_value == MazeBase.Value.Stair.up:
                 self.hero.floor += 1
+            return True
         elif pos_type == MazeBase.Type.Static.door:
             if herostate.key[pos_value] == 0:
                 return False
             herostate.key[pos_value] -= 1
             self.hero.action.add(pos)
+            Music.play('opendoor')
             return False
         elif pos_type == MazeBase.Type.Item.key:
             herostate.key[pos_value] += 1
+            Music.play('getitem')
         elif pos_type == MazeBase.Type.Item.attack:
             herostate.attack += herobase.base * pos_value
+            Music.play('getitem')
         elif pos_type == MazeBase.Type.Item.defence:
             herostate.defence += herobase.base * pos_value
+            Music.play('getitem')
         elif pos_type == MazeBase.Type.Item.potion:
             herostate.health += herobase.base * pos_value
+            Music.play('getitem')
         elif pos_type == MazeBase.Type.Item.holy:
             herostate.health += herobase.base * pos_value
+            Music.play('getitem')
         elif pos_type == MazeBase.Type.Active.monster:
             print('Fight monster {}'.format('-'.join(pos_value)))
+            Music.play('blood')
+        elif pos_type == MazeBase.Type.Active.rpc:
+            return False
 
         self.maze.set_type(pos, MazeBase.Type.Static.ground)
         self.maze.set_value(pos, 0)
@@ -198,13 +212,17 @@ class Map(FocusBehavior, FloatLayout):
         if self.ismove(self.hero.move_pos(key)):
             self.hero.move(key)
         Cache.reset(self.hero.name)
+        self.show_hero()
 
 
-    def get_texture(self, pos, style='static'):
+    def get_texture(self, pos, pos_style='static'):
         floor, x, y = pos
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
-        if pos_type == MazeBase.Type.Static.ground:
+        
+        if pos_type == MazeBase.Type.Static.init:
+            pos_key = 'ground'
+        elif pos_type == MazeBase.Type.Static.ground:
             pos_key = 'ground'
         elif pos_type == MazeBase.Type.Static.wall:
             pos_key = 'wall-{:0>2}'.format(self.hero.wall)
@@ -258,9 +276,19 @@ class Map(FocusBehavior, FloatLayout):
             pos_key = 'holy'
         elif pos_type == MazeBase.Type.Active.monster:
             pos_key = '-'.join(pos_value)
-            style = 'dynamic'
+            pos_style = 'dynamic'
+        elif pos_type == MazeBase.Type.Active.rpc:
+            if pos_value == MazeBase.Value.Rpc.wisdom:
+                pos_key = 'npc-wisdom'
+            elif pos_value == MazeBase.Value.Rpc.trader:
+                pos_key = 'npc-trader'
+            elif pos_value == MazeBase.Value.Rpc.thief:
+                pos_key = 'npc-thief'
+            elif pos_value == MazeBase.Value.Rpc.fairy:
+                pos_key = 'npc-fairy'
+            pos_style = 'dynamic'
 
-        return Cache.next(pos_key, style)
+        return Cache.next(pos_key, pos_style)
 
     def show_hero(self):
         _, x, y = self.hero.old_pos
