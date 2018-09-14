@@ -3,7 +3,7 @@ import os
 import random
 import pickle
 from functools import reduce
-from cache import Cache
+from cache import Config
 #import copy
 
 
@@ -316,7 +316,7 @@ class MonsterInfo:
     @staticmethod
     def load():
         data = MonsterInfo.data
-        for key, config in Cache.config.items():
+        for key, config in Config.config.items():
             if not config['path'].startswith(os.path.join('data', MonsterInfo.path)):
                 continue
             key_list = key.split('-')

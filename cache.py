@@ -13,18 +13,13 @@ from kivy.uix.image import Image
 路径，行，列，方向（按行还是按列）
 只能从左到右或者从上到下
 '''
-
-class CacheBase:
-    size = 32
-
+class ConfigBase:
     def __init__(self):
         self.config = {}
-        self.cache = {}
-        self.base = None
         self.load()
 
     #解析读到的数字或范围
-    def __analyse_number(self, string):
+    def analyse_number(self, string):
         if '-' in string:
             start, stop = string.split('-')
             num = range(int(start) - 1, int(stop))
@@ -33,7 +28,7 @@ class CacheBase:
         return num
 
     #读取info配置
-    def __read_info(self, path):
+    def read_info(self, path):
         config = ConfigParser()
         config.read(os.path.join(path, 'info'))
 
@@ -44,8 +39,8 @@ class CacheBase:
                 if ',' not in v:
                     continue
                 row, col = v.split(',')
-                row = self.__analyse_number(row)
-                col = self.__analyse_number(col)
+                row = self.analyse_number(row)
+                col = self.analyse_number(col)
                 info[key][k] = (row, col)
             #dynamic或action的第一个作为static
             if 'static' not in info[key]:
@@ -61,14 +56,47 @@ class CacheBase:
                     info[key]['static'] = (row, col)
         return info
 
+    def load(self):
+        self.config = {}
+        for path, _, filelist in os.walk('data'):
+            if 'info' not in filelist:
+                continue
+            for key, val in self.read_info(path).items():
+                if 'path' not in val:
+                    val['path'] = os.path.join(path, val['name'])
+                if 'dt' not in val:
+                    val['dt'] = 0.2
+                val['dt'] -= 0.01 #有时会有小的波动(0.001)
+                val['dtp'] = 0
+                self.config[key] = val
+
+    def active(self, key, dt):
+        if key not in self.config:
+            return False
+        info = self.config[key]
+        if info['dtp'] >= info['dt']:
+            info['dtp'] = 0
+            return True
+        info['dtp'] += dt
+        return False
+
+
+class TextureBase:
+    size = 32
+
+    def __init__(self):
+        self.base = {}
+        self.texture = {}
+        self.load()
+
     #将行列换成真实坐标
-    def __real_pos(self, size, pos):
+    def real_pos(self, size, pos):
         weight, height = size
         row, col = pos
         return col * self.size, height - (row + 1) * self.size
 
     #获取texture中的部分
-    def __cut_texture(self, texture, pos):
+    def cut_texture(self, texture, pos):
         row, col = pos
         if isinstance(row, int):
             if isinstance(col, int):
@@ -83,54 +111,50 @@ class CacheBase:
 
         textures = []
         for pos in pos_list:
-            row, col = self.__real_pos(texture.size, pos)
+            row, col = self.real_pos(texture.size, pos)
             textures.append(texture.get_region(row, col, self.size, self.size))
         return textures
 
     #加载配置，并缓存图片信息
     def load(self):
-        self.config = {}
-        self.cache = {}
-        for path, _, filelist in os.walk('data'):
-            if 'info' not in filelist:
+        self.base = {}
+        self.texture = {}
+        for key, val in Config.config.items():
+            if 'path' not in val:
                 continue
-            for key, val in self.__read_info(path).items():
-                if 'path' in val:
-                    continue
-                name = os.path.join(path, val['name'])
-                if name not in self.cache:
-                    self.cache[name] = Image(source=name).texture
-                val['path'] = name
-                if 'static' in val:
-                    val['static_textures'] = self.__cut_texture(self.cache[name], val['static'])[0]
-                if 'dynamic' in val:
-                    val['dynamic_textures'] = self.__cut_texture(self.cache[name], val['dynamic'])
-                    val['dynamic_index'] = 0
-                    val['dynamic_length'] = len(val['dynamic_textures'])
-                if 'action' in val:
-                    val['action_textures'] = self.__cut_texture(self.cache[name], val['action'])
-                    val['action_index'] = 0
-                    val['action_length'] = len(val['action_textures'])
+            name = val['path']
+            if name not in self.base:
+                self.base[name] = Image(source=name).texture
+            val['path'] = name
 
-                self.config[key] = val
+            info = {}
+            if 'static' in val:
+                info['static_textures'] = self.cut_texture(self.base[name], val['static'])[0]
+            if 'dynamic' in val:
+                info['dynamic_textures'] = self.cut_texture(self.base[name], val['dynamic'])
+                info['dynamic_index'] = 0
+                info['dynamic_length'] = len(info['dynamic_textures'])
+            if 'action' in val:
+                info['action_textures'] = self.cut_texture(self.base[name], val['action'])
+                info['action_index'] = 0
+                info['action_length'] = len(info['action_textures'])
+            self.texture[key] = info
 
     def reset(self, key):
-        if key not in self.config:
+        if key not in self.texture:
             return None
 
-        info = self.config[key]
+        info = self.texture[key]
         if 'dynamic_index' in info:
             info['dynamic_index'] = 0
         if 'action_index' in info:
             info['action_index'] = 0
 
     def next(self, key, style='static', base=True):
-        if key not in self.config:
+        if key not in self.texture:
             return None
 
-        info = self.config[key]
-        if style not in info:
-            return None
+        info = self.texture[key]
 
         textures_name = '{}_textures'.format(style)
         textures = info[textures_name]
@@ -191,7 +215,7 @@ class MusicBase:
             self.back.loop = True
             self.back.seek(0)
             self.back.play()
-            
+
     def play(self, key):
         if key in self.music:
             music = self.music[key]
@@ -199,9 +223,13 @@ class MusicBase:
             music.play()
 
 
-global Cache
-if 'Cache' not in dir():
-    Cache = CacheBase()
+global Config
+if 'Config' not in dir():
+    Config = ConfigBase()
+
+global Texture
+if 'Texture' not in dir():
+    Texture = TextureBase()
 
 global Music
 if 'Music' not in dir():

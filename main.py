@@ -26,7 +26,7 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
 #python2应为from Configparser import ConfigParser
 
-from cache import Cache, Music
+from cache import Texture, Music
 from maze import Maze, MazeSetting, MazeBase
 from random import randint
 
@@ -34,17 +34,42 @@ from random import randint
 长条形区域有时需要分割一下，不然显得太空旷
 出现了一次开局红门钥匙不够的情况！！！
 '''
+class Opacity:
+    opacity = 1.0
+    minimum = 0.2
+    maximum = 1.0
+    step = 0.2
+    down = True
+
+    Run = 1
+    Turn = 2
+    End = 3
+
+    def next(self):
+        if self.down:
+            self.opacity -= self.step
+            if self.opacity <= self.minimum:
+                self.down = False
+                return self.Turn
+        else:
+            self.opacity += self.step
+            if self.opacity >= self.maximum:
+                self.down = True
+                return self.End
+        return self.Run
+
+
 class Layer(GridLayout):
     def __init__(self, row, col, **kwargs):
         self.row = row
         self.col = col
-        super(Layer, self).__init__(rows=self.row, cols=self.col, size=(Cache.size * self.row, Cache.size * self.col), size_hint=(None, None), **kwargs)
+        super(Layer, self).__init__(rows=self.row, cols=self.col, size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
         self.image = [[None for j in range(self.col)] for i in range(self.row)]
         self.texture = None #默认的texture
 
     def add(self, i, j, texture=None):
         self.texture = texture
-        image = Image(size=(Cache.size, Cache.size), size_hint=(None, None))
+        image = Image(size=(Texture.size, Texture.size), size_hint=(None, None))
         image.texture = texture
         self.image[i][j] = image
         self.add_widget(image)
@@ -55,8 +80,9 @@ class Hero:
     key = 'down' #朝向
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
-    opacity = 1 #不透明度
+    opacity = Opacity() #不透明度
     stair = None #是否触发上下楼的动作
+    __stair = True
     action = set() #执行动画的点
     wall = 2
     weapon = 1
@@ -135,9 +161,9 @@ class Map(FocusBehavior, FloatLayout):
         self.add_widget(self.front)
         for i in range(self.row):
             for j in range(self.col):
-                self.front.add(i, j, Cache.next('empty'))
+                self.front.add(i, j, Texture.next('empty'))
                 self.middle.add(i, j)
-                self.back.add(i, j, Cache.next('ground'))
+                self.back.add(i, j, Texture.next('ground'))
 
         self.hero = Hero(self.maze, self.row, self.col)
         self.hero.pos = self.maze.maze_info[0]['init']
@@ -146,9 +172,12 @@ class Map(FocusBehavior, FloatLayout):
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         key = keycode[1]
-        if key not in ('up', 'down', 'left', 'right'):
-            return False
-        self.move(key)
+        if key in ('up', 'down', 'left', 'right'):
+            self.move(key)
+        elif key == 'q':
+            self.hero.stair = MazeBase.Value.Stair.up
+        elif key == 'e':
+            self.hero.stair = MazeBase.Value.Stair.down
         return True
 
     def on_touch_down(self, touch):
@@ -209,7 +238,7 @@ class Map(FocusBehavior, FloatLayout):
         pos = self.hero.move_pos(key)
         if self.ismove(pos):
             self.hero.move(key)
-        Cache.reset(self.hero.name)
+        Texture.reset(self.hero.name)
         self.show_hero()
 
 
@@ -217,7 +246,7 @@ class Map(FocusBehavior, FloatLayout):
         floor, x, y = pos
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
-        
+
         if pos_type == MazeBase.Type.Static.init:
             pos_key = 'ground'
         elif pos_type == MazeBase.Type.Static.ground:
@@ -275,6 +304,8 @@ class Map(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Active.monster:
             pos_key = '-'.join(pos_value)
             pos_style = 'dynamic'
+            if pos_value[0] == 'boss':
+                pass
         elif pos_type == MazeBase.Type.Active.rpc:
             if pos_value == MazeBase.Value.Rpc.wisdom:
                 pos_key = 'npc-wisdom'
@@ -286,46 +317,40 @@ class Map(FocusBehavior, FloatLayout):
                 pos_key = 'npc-fairy'
             pos_style = 'dynamic'
 
-        return Cache.next(pos_key, pos_style)
+        return Texture.next(pos_key, pos_style)
 
     def show_hero(self):
         _, x, y = self.hero.old_pos
         image = self.front.image[x][y]
-        image.texture = Cache.next('empty')
-        image.canvas.opacity = self.hero.opacity
+        image.texture = Texture.next('empty')
+        image.canvas.opacity = self.hero.opacity.opacity
 
         _, x, y = self.hero.pos
         image = self.front.image[x][y]
-        image.texture = Cache.next(self.hero.name, 'action', False)
-        image.canvas.opacity = self.hero.opacity
+        image.texture = Texture.next(self.hero.name, 'action', False)
+        image.canvas.opacity = self.hero.opacity.opacity
 
         image = self.middle.image[x][y]
-        image.texture = Cache.next('empty')
-        image.canvas.opacity = self.hero.opacity
+        image.texture = Texture.next('empty')
+        image.canvas.opacity = self.hero.opacity.opacity
 
-    #效果达到，但代码需要调整
-    d = True
     def show_stair(self):
-        if self.d:
-            self.hero.opacity -= 0.2
-            if self.hero.opacity <= 0:
-                self.d = False
-                if self.hero.stair == MazeBase.Value.Stair.down:
-                    self.hero.floor -= 1
-                elif self.hero.stair == MazeBase.Value.Stair.up:
-                    self.hero.floor += 1
-        else:
-            self.hero.opacity += 0.2
-            if self.hero.opacity >= 1.0:
-                self.d = True
-                self.hero.stair = None
+        state = self.hero.opacity.next()
+        if state == Opacity.Turn:
+            if self.hero.stair == MazeBase.Value.Stair.down:
+                self.hero.floor -= 1
+            elif self.hero.stair == MazeBase.Value.Stair.up:
+                self.hero.floor += 1
+        elif state == Opacity.End:
+            self.hero.stair = None
 
     def show(self, dt):
+        print(dt)
         if self.hero.stair:
             self.show_stair()
 
         floor = self.hero.floor
-        opacity = self.hero.opacity
+        opacity = self.hero.opacity.opacity
         self.show_hero()
         for i in range(self.row):
             for j in range(self.col):
@@ -339,7 +364,7 @@ class Map(FocusBehavior, FloatLayout):
                 if texture:
                     pos_image.texture = texture
                 else:
-                    pos_image.texture = Cache.next('empty')
+                    pos_image.texture = Texture.next('empty')
                     self.maze.set_type(pos, MazeBase.Type.Static.ground)
                     self.maze.set_value(pos, 0)
                     self.hero.action.remove(pos)
