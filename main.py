@@ -26,7 +26,7 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
 #python2应为from Configparser import ConfigParser
 
-from cache import Texture, Music
+from cache import Config, Texture, Music
 from maze import Maze, MazeSetting, MazeBase
 from random import randint
 
@@ -41,11 +41,17 @@ class Opacity:
     step = 0.2
     down = True
 
+    dt = 0.1
+    dtp = 0
+
     Run = 1
     Turn = 2
     End = 3
 
-    def next(self):
+    def next(self, dt):
+        if not self.active(dt):
+            return self.Run
+
         if self.down:
             self.opacity -= self.step
             if self.opacity <= self.minimum:
@@ -57,6 +63,13 @@ class Opacity:
                 self.down = True
                 return self.End
         return self.Run
+
+    def active(self, dt):
+        self.dtp += dt
+        if self.dtp >= self.dt:
+            self.dtp = 0
+            return True
+        return False
 
 
 class Layer(GridLayout):
@@ -168,7 +181,7 @@ class Map(FocusBehavior, FloatLayout):
         self.hero = Hero(self.maze, self.row, self.col)
         self.hero.pos = self.maze.maze_info[0]['init']
         self.focus = True
-        Clock.schedule_interval(self.show, 0.1)
+        Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         key = keycode[1]
@@ -242,7 +255,7 @@ class Map(FocusBehavior, FloatLayout):
         self.show_hero()
 
 
-    def get_texture(self, pos, pos_style='static'):
+    def get_key(self, pos, pos_style='static'):
         floor, x, y = pos
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
@@ -317,7 +330,7 @@ class Map(FocusBehavior, FloatLayout):
                 pos_key = 'npc-fairy'
             pos_style = 'dynamic'
 
-        return Texture.next(pos_key, pos_style)
+        return pos_key, pos_style
 
     def show_hero(self):
         _, x, y = self.hero.old_pos
@@ -334,8 +347,8 @@ class Map(FocusBehavior, FloatLayout):
         image.texture = Texture.next('empty')
         image.canvas.opacity = self.hero.opacity.opacity
 
-    def show_stair(self):
-        state = self.hero.opacity.next()
+    def show_stair(self, dt):
+        state = self.hero.opacity.next(dt)
         if state == Opacity.Turn:
             if self.hero.stair == MazeBase.Value.Stair.down:
                 self.hero.floor -= 1
@@ -345,22 +358,27 @@ class Map(FocusBehavior, FloatLayout):
             self.hero.stair = None
 
     def show(self, dt):
-        print(dt)
         if self.hero.stair:
-            self.show_stair()
+            self.show_stair(dt)
 
         floor = self.hero.floor
         opacity = self.hero.opacity.opacity
-        self.show_hero()
+        if Config.active(self.hero.name, dt):
+            self.show_hero()
         for i in range(self.row):
             for j in range(self.col):
                 pos_image = self.middle.image[i][j]
+                pos_image.canvas.opacity = opacity
                 pos = (floor, i, j)
                 if pos in self.hero.action:
-                    texture = self.get_texture(pos, 'action')
+                    pos_key, pos_style = self.get_key(pos, 'action')
                 else:
-                    texture = self.get_texture(pos)
-
+                    pos_key, pos_style = self.get_key(pos)
+                if not Config.active(pos_key, dt):
+                    continue
+                
+                texture = Texture.next(pos_key, pos_style)
+                
                 if texture:
                     pos_image.texture = texture
                 else:
@@ -368,7 +386,6 @@ class Map(FocusBehavior, FloatLayout):
                     self.maze.set_type(pos, MazeBase.Type.Static.ground)
                     self.maze.set_value(pos, 0)
                     self.hero.action.remove(pos)
-                pos_image.canvas.opacity = opacity
 
 
 class State(FloatLayout):

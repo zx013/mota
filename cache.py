@@ -14,6 +14,8 @@ from kivy.uix.image import Image
 只能从左到右或者从上到下
 '''
 class ConfigBase:
+    step = 0.01
+
     def __init__(self):
         self.config = {}
         self.load()
@@ -66,18 +68,20 @@ class ConfigBase:
                     val['path'] = os.path.join(path, val['name'])
                 if 'dt' not in val:
                     val['dt'] = 0.2
-                val['dt'] -= 0.01 #有时会有小的波动(0.001)
+                val['dt'] -= self.step #有时会有小的波动(0.001)
                 val['dtp'] = 0
                 self.config[key] = val
 
-    def active(self, key, dt):
+    def active(self, key, dt, reset=False):
         if key not in self.config:
             return False
         info = self.config[key]
+        info['dtp'] += dt
+        if reset:
+            info['dtp'] = 0
         if info['dtp'] >= info['dt']:
             info['dtp'] = 0
             return True
-        info['dtp'] += dt
         return False
 
 
