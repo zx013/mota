@@ -32,8 +32,20 @@ from random import randint
 
 '''
 长条形区域有时需要分割一下，不然显得太空旷
-出现了一次开局红门钥匙不够的情况！！！
 '''
+#需要放到单独的模块
+class Setting:
+    #是否展示伤害数字
+    show_damage = True
+    #是否开启背景音乐
+    #是否开启音效
+    #难度
+    #计算次数
+    #是否开启楼层飞行器
+    #默认移动动画间隔
+    #默认开门动画间隔
+    #默认怪物动画间隔
+
 class Opacity:
     opacity = 1.0
     minimum = 0.2
@@ -93,6 +105,7 @@ class Hero:
     key = 'down' #朝向
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
+    move_list = []
     opacity = Opacity() #不透明度
     stair = None #是否触发上下楼的动作
     __stair = True
@@ -104,6 +117,7 @@ class Hero:
         self.maze = maze
         self.row = row
         self.col = col
+        self.pos = maze.maze_info[0]['init']
         self.wall = 2
         self.weapon = 1
 
@@ -179,12 +193,13 @@ class Map(FocusBehavior, FloatLayout):
                 self.back.add(i, j, Texture.next('ground'))
 
         self.hero = Hero(self.maze, self.row, self.col)
-        self.hero.pos = self.maze.maze_info[0]['init']
-        self.focus = True
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        key_map = {'w': 'up', 'a': 'left', 's': 'down', 'd': 'right'}
         key = keycode[1]
+        if key in key_map:
+            key = key_map[key]
         if key in ('up', 'down', 'left', 'right'):
             self.move(key)
         elif key == 'q':
@@ -194,10 +209,11 @@ class Map(FocusBehavior, FloatLayout):
         return True
 
     def on_touch_down(self, touch):
-        self.hero.stair = MazeBase.Value.Stair.up
-        if self.collide_point(touch.x, touch.y):
-            return True
-        super(Map, self).on_touch_down(touch)
+        x = self.row - int(touch.y / Texture.size) - 1
+        y = int(touch.x / Texture.size)
+        pos = (self.hero.floor, x, y)
+        self.hero.move_list = self.maze.find_path(self.hero.pos, pos)
+        return True
 
 
     def ismove(self, pos):
@@ -251,6 +267,7 @@ class Map(FocusBehavior, FloatLayout):
         pos = self.hero.move_pos(key)
         if self.ismove(pos):
             self.hero.move(key)
+        Config.reset(self.hero.name)
         Texture.reset(self.hero.name)
         self.show_hero()
 
@@ -332,22 +349,33 @@ class Map(FocusBehavior, FloatLayout):
 
         return pos_key, pos_style
 
+    #人物移动
     def show_hero(self):
         _, x, y = self.hero.old_pos
         image = self.front.image[x][y]
         image.texture = Texture.next('empty')
-        image.canvas.opacity = self.hero.opacity.opacity
 
         _, x, y = self.hero.pos
         image = self.front.image[x][y]
         image.texture = Texture.next(self.hero.name, 'action', False)
-        image.canvas.opacity = self.hero.opacity.opacity
 
+        pos_key, pos_style = self.get_key(self.hero.pos)
         image = self.middle.image[x][y]
-        image.texture = Texture.next('empty')
-        image.canvas.opacity = self.hero.opacity.opacity
+        image.texture = Texture.next(pos_key, pos_style)
 
+    #点击移动
+    def show_move(self, dt):
+        if not self.hero.move_list:
+            return
+
+        if Config.active('hero-click', dt):
+            key = self.hero.move_list.pop(0)
+            self.move(key)
+
+    #上下楼切换
     def show_stair(self, dt):
+        if not self.hero.stair:
+            return
         state = self.hero.opacity.next(dt)
         if state == Opacity.Turn:
             if self.hero.stair == MazeBase.Value.Stair.down:
@@ -358,27 +386,33 @@ class Map(FocusBehavior, FloatLayout):
             self.hero.stair = None
 
     def show(self, dt):
-        if self.hero.stair:
-            self.show_stair(dt)
+        self.focus = True
 
+        self.show_move(dt)
+        self.show_stair(dt)
+
+        self.middle.canvas.opacity = self.hero.opacity.opacity
+        self.front.canvas.opacity = self.hero.opacity.opacity
         floor = self.hero.floor
-        opacity = self.hero.opacity.opacity
         if Config.active(self.hero.name, dt):
             self.show_hero()
+
+        show = {}
         for i in range(self.row):
             for j in range(self.col):
-                pos_image = self.middle.image[i][j]
-                pos_image.canvas.opacity = opacity
                 pos = (floor, i, j)
                 if pos in self.hero.action:
                     pos_key, pos_style = self.get_key(pos, 'action')
                 else:
                     pos_key, pos_style = self.get_key(pos)
-                if not Config.active(pos_key, dt):
+
+                if pos_key not in show:
+                    show[pos_key] = Config.active(pos_key, dt)
+                if not show[pos_key]:
                     continue
-                
+
                 texture = Texture.next(pos_key, pos_style)
-                
+                pos_image = self.middle.image[i][j]
                 if texture:
                     pos_image.texture = texture
                 else:

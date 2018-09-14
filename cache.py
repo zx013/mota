@@ -4,6 +4,7 @@ import os
 import random
 from configparser import ConfigParser
 from kivy.uix.image import Image
+from kivy.config import Config as DefaultConfig
 
 '''
 静态
@@ -17,6 +18,11 @@ class ConfigBase:
     step = 0.01
 
     def __init__(self):
+        #长宽需要动态调整
+        DefaultConfig.set('kivy', 'window_icon', os.path.join('data', 'icon.ico'))
+        DefaultConfig.set('graphics', 'height', 416)
+        DefaultConfig.set('graphics', 'width', 416)
+        DefaultConfig.set('graphics', 'resizable', 0)
         self.config = {}
         self.load()
 
@@ -63,22 +69,33 @@ class ConfigBase:
         for path, _, filelist in os.walk('data'):
             if 'info' not in filelist:
                 continue
-            for key, val in self.read_info(path).items():
+            info = self.read_info(path)
+            info['hero-click'] = {}
+            for key, val in info.items():
+                if 'name' not in val:
+                    val['name'] = ''
                 if 'path' not in val:
                     val['path'] = os.path.join(path, val['name'])
                 if 'dt' not in val:
-                    val['dt'] = 0.2
+                    if 'hero' in key or 'door' in key:
+                        val['dt'] = 0.08
+                    else:
+                        val['dt'] = 0.2
                 val['dt'] -= self.step #有时会有小的波动(0.001)
                 val['dtp'] = 0
                 self.config[key] = val
 
-    def active(self, key, dt, reset=False):
+    def reset(self, key):
+        if key not in self.config:
+            return
+        info = self.config[key]
+        info['dtp'] = 0
+
+    def active(self, key, dt):
         if key not in self.config:
             return False
         info = self.config[key]
         info['dtp'] += dt
-        if reset:
-            info['dtp'] = 0
         if info['dtp'] >= info['dt']:
             info['dtp'] = 0
             return True

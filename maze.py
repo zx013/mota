@@ -42,8 +42,8 @@ def loop_retry(func):
         while True:
             try:
                 return func(*args, **kwargs)
-            except LoopException as ex:
-                print('LoopException :', ex)
+            except LoopException:
+                print('LoopException')
     run.__name__ = func.__name__
     return run
 
@@ -500,7 +500,7 @@ class Maze:
 
     #寻路使用
     def get_beside_way(self, pos):
-        return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] not in (MazeBase.Type.Static.wall, MazeBase.Type.Static.door, MazeBase.Type.Active.monster)}
+        return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] not in (MazeBase.Type.Static.wall,)}
 
     def get_corner(self, pos, type):
         return {(z, x, y) for z, x, y in Pos.corner(pos) if self.maze[z][x][y][0] == type}
@@ -1764,10 +1764,14 @@ class Maze:
         self.maze_info[floor]['stair'] = {}
         self.maze_info[floor]['stair'][MazeBase.Value.Stair.up] = set((pos,))
 
+        pos_list = []
         for i in range(1, 4):
-            pos_list = ((floor, i, middle - 1), (floor, i, middle + 1))
-            for pos in pos_list:
-                self.set_type(pos, MazeBase.Type.Static.wall)
+            pos_list += [(floor, i, middle - 1), (floor, i, middle + 1)]
+        for i in range(0, middle - 2):
+            pos_list += [(floor, MazeSetting.rows - i, middle - i - 1), (floor, MazeSetting.rows - i, middle + i + 1)]
+            pos_list += [(floor, MazeSetting.rows - i - 3, middle - i - 1), (floor, MazeSetting.rows - i - 3, middle + i + 1)]
+        for pos in pos_list:
+            self.set_type(pos, MazeBase.Type.Static.wall)
 
         pos = (floor, 1, 1)
         self.set_type(pos, MazeBase.Type.Active.rpc)
@@ -1932,6 +1936,12 @@ class Maze:
 
     @except_default([])
     def find_path(self, start_pos, end_pos):
+        move_map = {
+            (1, 0): 'up',
+            (-1, 0): 'down',
+            (0, 1): 'left',
+            (0, -1): 'right'
+        }
         if self.get_type(end_pos) == MazeBase.Type.Static.wall:
             return []
         self.around = {-1: set()}
@@ -1948,7 +1958,9 @@ class Maze:
                     old_z, old_x, old_y = pos
                     new_z, new_x, new_y = (self.get_beside_way(pos) & self.around[i]).pop()
                     pos = new_z, new_x, new_y
-                    way.insert(0, (new_x - old_x, new_y - old_y))
+                    move = (new_x - old_x, new_y - old_y)
+                    if move in move_map:
+                        way.insert(0, move_map[move])
                 return way
         return []
 
