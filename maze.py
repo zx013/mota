@@ -34,6 +34,19 @@ def except_default(default=None):
     return run_func
 
 
+class LoopException(Exception):
+    retry = 1000
+
+def loop_retry(func):
+    def run(*args, **kwargs):
+        while True:
+            try:
+                return func(*args, **kwargs)
+            except LoopException as ex:
+                print('LoopException :', ex)
+    run.__name__ = func.__name__
+    return run
+
 class Tools:
     #从目录中选出一个值
     @staticmethod
@@ -951,6 +964,7 @@ class Maze:
 
 
     #空间小于2不放置key，空间越小放置key概率越小
+    @loop_retry
     def set_door(self, node_list):
         key_choice = {
             MazeBase.Value.Color.yellow: 60,
@@ -1146,7 +1160,13 @@ class Maze:
         door_base = dict(door_set)
         for color in MazeBase.Value.Color.total:
             door_set[color] = 0
+
+        #一定概率会出现无解的情况
+        index = 0
         while sum(door_base.values()) < 0:
+            index += 1
+            if index > LoopException.retry:
+                raise LoopException
             for node in node_list[1:]:
                 door = node.Door
                 if door:
@@ -1154,9 +1174,7 @@ class Maze:
                 for color in MazeBase.Value.Color.total:
                     door_set[color] -= node.Key[color]
                     if door_set[color] < 0 and door_base[color] < 0:
-                        random_node = node_list[1:node.Index]
-                        random.shuffle(random_node)
-                        for rnode in random_node:
+                        for rnode in node_list[node.Index:0:-1]:
                             if rnode.Key[color] > 0:
                                 rnode.Key[color] -= 1
                                 rnode.Space += 1
@@ -1355,6 +1373,7 @@ class Maze:
         self.herobase.boss_defence = node.Defence
 
 
+    @loop_retry
     def adjust_monster(self, node_list):
         number_enable = [False for node in node_list]
         for number, node in enumerate(node_list):
@@ -1382,7 +1401,12 @@ class Maze:
             defence = node_list[monster_number[0]].Attack - random.randint(1, 1 + len(monster_number))
 
             #将伤害限制在范围内
+            #这里陷入了死循环，应该是范围太大导致的
+            index = 0
             while True:
+                index += 1
+                if index > LoopException.retry:
+                    raise LoopException
                 damage_list = []
                 for number in monster_number:
                     node = node_list[number]
@@ -1422,6 +1446,7 @@ class Maze:
                     attack += 1
                     continue
                 break
+                
 
             #初始值不一定为100
             if monster[0] not in self.monster:
