@@ -111,6 +111,7 @@ class Hero:
     __stair = True
     action = set() #执行动画的点
     wall = 2
+    wall_dynamic = 1
     weapon = 1
 
     def __init__(self, maze, row, col, **kwargs):
@@ -119,6 +120,7 @@ class Hero:
         self.col = col
         self.pos = maze.maze_info[0]['init']
         self.wall = 2
+        self.wall_dynamic = 1
         self.weapon = 1
 
     @property
@@ -236,6 +238,7 @@ class Map(FocusBehavior, FloatLayout):
             herostate.key[pos_value] -= 1
             self.hero.action.add(pos)
             Music.play('opendoor')
+            print('open door')
             return False
         elif pos_type == MazeBase.Type.Item.key:
             print(herostate.key.values())
@@ -257,7 +260,7 @@ class Map(FocusBehavior, FloatLayout):
             print('Fight monster {}'.format('-'.join(pos_value)))
             Music.play('blood')
             if pos_value[0] == 'boss':
-                pass
+                self.maze.kill_boss(pos)
         elif pos_type == MazeBase.Type.Active.rpc:
             return False
 
@@ -286,7 +289,11 @@ class Map(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Static.ground:
             pos_key = 'ground'
         elif pos_type == MazeBase.Type.Static.wall:
-            pos_key = 'wall-{:0>2}'.format(self.hero.wall)
+            if pos_value == MazeBase.Value.Wall.static:
+                pos_key = 'wall-{:0>2}'.format(self.hero.wall)
+            elif pos_value == MazeBase.Value.Wall.dynamic:
+                pos_key = 'wall-dynamic-{:0>2}'.format(self.hero.wall_dynamic)
+                pos_style = 'dynamic'
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
                 pos_key = 'stair-down'
@@ -400,6 +407,8 @@ class Map(FocusBehavior, FloatLayout):
             self.show_hero()
 
         show = {}
+        static_texture = {}
+        action_texture = {}
         for i in range(self.row):
             for j in range(self.col):
                 pos = (floor, i, j)
@@ -413,7 +422,14 @@ class Map(FocusBehavior, FloatLayout):
                 if not show[pos_key]:
                     continue
 
-                texture = Texture.next(pos_key, pos_style)
+                if pos in self.hero.action:
+                    action_texture[pos_key] = Texture.next(pos_key, pos_style)
+                    texture = action_texture[pos_key]
+                else:
+                    if pos_key not in static_texture:
+                        static_texture[pos_key] = Texture.next(pos_key, pos_style)
+                    texture = static_texture[pos_key]
+
                 pos_image = self.middle.image[i][j]
                 if texture:
                     pos_image.texture = texture

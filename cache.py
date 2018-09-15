@@ -81,7 +81,7 @@ class ConfigBase:
                         val['dt'] = 0.1
                     else:
                         val['dt'] = 0.2
-                val['dt'] -= self.step #有时会有小的波动(0.001)
+                val['dt'] -= 0.01 #有时会有小的波动(0.001)
                 val['dtp'] = 0
                 self.config[key] = val
 

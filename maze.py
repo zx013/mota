@@ -103,6 +103,10 @@ class MazeBase:
             shop = 4
             branch = 5
 
+        class Wall:
+            static = 1
+            dynamic = 2
+
         class Shop:
             gold = 1
             experience = 2
@@ -464,6 +468,7 @@ class Maze:
             for j in range(MazeSetting.cols + 2):
                 if i in (0, MazeSetting.rows + 1) or j in (0, MazeSetting.cols + 1):
                     self.maze[floor][i][j][0] = MazeBase.Type.Static.wall
+                    self.maze[floor][i][j][1] = MazeBase.Value.Wall.static
                 else:
                     self.maze[floor][i][j][0] = MazeBase.Type.Static.ground
                     self.maze_map[floor][MazeBase.Type.Static.ground].add((floor, i, j))
@@ -710,6 +715,7 @@ class Maze:
                 crack = self.get_rect_crack(pos, width, height)
                 for pos in crack:
                     self.set_type(pos, MazeBase.Type.Static.wall)
+                    self.set_value(pos, MazeBase.Value.Wall.static)
                 self.maze_info[floor]['special'] |= area
 
 
@@ -723,6 +729,7 @@ class Maze:
                 if self.is_wall(wall):
                     for pos in wall:
                         self.set_type(pos, MazeBase.Type.Static.wall)
+                        self.set_value(pos, MazeBase.Value.Wall.static)
                     break
                 else:
                     pure -= set(wall)
@@ -1766,11 +1773,17 @@ class Maze:
         pos_list = []
         for i in range(1, 4):
             pos_list += [(floor, i, middle - 1), (floor, i, middle + 1)]
+        for pos in pos_list:
+            self.set_type(pos, MazeBase.Type.Static.wall)
+            self.set_value(pos, MazeBase.Value.Wall.static)
+
+        pos_list = []
         for i in range(0, middle - 2):
             pos_list += [(floor, MazeSetting.rows - i, middle - i - 1), (floor, MazeSetting.rows - i, middle + i + 1)]
             pos_list += [(floor, MazeSetting.rows - i - 3, middle - i - 1), (floor, MazeSetting.rows - i - 3, middle + i + 1)]
         for pos in pos_list:
             self.set_type(pos, MazeBase.Type.Static.wall)
+            self.set_value(pos, MazeBase.Value.Wall.dynamic)
 
         pos = (floor, 1, 1)
         self.set_type(pos, MazeBase.Type.Active.rpc)
@@ -1790,6 +1803,14 @@ class Maze:
 
     def set_boss(self):
         pass
+
+    def kill_boss(self, pos):
+        area = self.get_area(pos)
+        area.remove(pos)
+        
+        pos = area.pop()
+        self.set_type(pos, MazeBase.Type.Static.stair)
+        self.set_value(pos, MazeBase.Value.Stair.up)
 
     #先确定一个较优路线，再通过蒙特卡洛模拟逼近最优路线
     def set_item(self):
