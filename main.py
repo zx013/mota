@@ -19,6 +19,7 @@ if platform.system().lower() == 'windows':
 #from jnius import autoclass
 
 from kivy.app import App
+from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
@@ -70,6 +71,62 @@ class Opacity:
             self.dtp = 0
             return True
         return False
+
+
+class StateBar(FloatLayout):
+    def __init__(self, herostate, row, col, **kwargs):
+        self.herostate = herostate
+        self.row = row
+        self.col = col
+        super(StateBar, self).__init__(size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
+
+        label = Label(pos=(0, 5 * Texture.size))
+        self.add_widget(label)
+        self.herostate.bind('health', label)
+
+        label = Label(pos=(-4 * Texture.size, 5 * Texture.size))
+        self.add_widget(label)
+        self.herostate.bind('attack', label)
+
+        label = Label(pos=(4 * Texture.size, 5 * Texture.size))
+        self.add_widget(label)
+        self.herostate.bind('defence', label)
+
+
+        image = Image(pos=(5.25 * Texture.size, 0))
+        image.texture = Texture.next('menu-key-yellow')
+        self.add_widget(image)
+
+        label = Label(pos=(5 * Texture.size, -0.25 * Texture.size))
+        self.add_widget(label)
+        self.herostate.key.bind(MazeBase.Value.Color.yellow, label)
+
+
+        image = Image(pos=(5.25 * Texture.size, - Texture.size))
+        image.texture = Texture.next('menu-key-blue')
+        self.add_widget(image)
+
+        label = Label(pos=(5 * Texture.size, -1.25 * Texture.size))
+        self.add_widget(label)
+        self.herostate.key.bind(MazeBase.Value.Color.blue, label)
+
+
+        image = Image(pos=(5.25 * Texture.size, -2 * Texture.size))
+        image.texture = Texture.next('menu-key-red')
+        self.add_widget(image)
+
+        label = Label(pos=(5 * Texture.size, -2.25 * Texture.size))
+        self.add_widget(label)
+        self.herostate.key.bind(MazeBase.Value.Color.red, label)
+
+
+        image = Image(pos=(5.25 * Texture.size, -3 * Texture.size))
+        image.texture = Texture.next('menu-key-green')
+        self.add_widget(image)
+
+        label = Label(pos=(5 * Texture.size, -3.25 * Texture.size))
+        self.add_widget(label)
+        self.herostate.key.bind(MazeBase.Value.Color.green, label)
 
 
 class Layer(GridLayout):
@@ -168,6 +225,7 @@ class Map(FocusBehavior, FloatLayout):
         self.maze = Maze()
         self.maze.update()
 
+        self.statebar = StateBar(self.maze.herostate, self.row, self.col)
         self.front = Layer(self.row, self.col)
         self.middle = Layer(self.row, self.col)
         self.back = Layer(self.row, self.col)
@@ -175,6 +233,7 @@ class Map(FocusBehavior, FloatLayout):
         self.add_widget(self.back)
         self.add_widget(self.middle)
         self.add_widget(self.front)
+        self.add_widget(self.statebar)
         for i in range(self.row):
             for j in range(self.col):
                 self.front.add(i, j, Texture.next('empty'))
@@ -219,16 +278,13 @@ class Map(FocusBehavior, FloatLayout):
             self.hero.stair = pos_value
             return True
         elif pos_type == MazeBase.Type.Static.door:
-            print(herostate.key.values())
             if herostate.key[pos_value] == 0:
                 return False
             herostate.key[pos_value] -= 1
             self.hero.action.add(pos)
             Music.play('opendoor')
-            print('open door')
             return False
         elif pos_type == MazeBase.Type.Item.key:
-            print(herostate.key.values())
             herostate.key[pos_value] += 1
             Music.play('getitem')
         elif pos_type == MazeBase.Type.Item.attack:

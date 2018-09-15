@@ -400,16 +400,44 @@ class HeroBase:
         return (self.level + 1) * MazeSetting.base_floor
 
 
-#实时状态
+#key的绑定
+class HeroStateDict(dict):
+    __bind = {}
+    
+    def __getitem__(self, color):
+        return self.__dict__[color]
+
+    def __setitem__(self, color, value):
+        self.__dict__[color] = value
+        if color in self.__bind:
+            self.__bind[color].text = str(value)
+
+    def bind(self, color, label):
+        self.__bind[color] = label
+        self[color] = self[color]
+
+#实时状态，bind将状态绑定到label上，可以实时显示
 class HeroState:
+    __bind = {}
+
     def __init__(self, herobase):
         self.health = herobase.health
         self.attack = herobase.attack
         self.defence = herobase.defence
 
-        self.key = {}
+        self.key = HeroStateDict()
         for color in MazeBase.Value.Color.total:
             self.key[color] = herobase.key[color]
+
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
+        if name in self.__bind:
+            self.__bind[name].text = str(value)
+
+    def bind(self, name, label):
+        self.__bind[name] = label
+        value = getattr(self, name)
+        setattr(self, name, value)
 
 
 class Maze:

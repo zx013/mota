@@ -1,0 +1,15 @@
+[menu-key-yellow]
+name = key-yellow.png
+size = 16, 16
+
+[menu-key-blue]
+name = key-blue.png
+size = 16, 16
+
+[menu-key-red]
+name = key-red.png
+size = 16, 16
+
+[menu-key-green]
+name = key-green.png
+size = 16, 16

@@ -22,7 +22,7 @@ class Setting:
     base = 2
 
     #迷宫的大小，最小为5，最大不限，正常11，太大影响性能，最好为奇数
-    size = 7
+    size = 9
 
     rows = size
 
@@ -46,12 +46,14 @@ class ConfigBase:
         self.load()
 
     #解析读到的数字或范围
-    def analyse_number(self, string):
+    def analyse_number(self, string, key):
         if '-' in string:
             start, stop = string.split('-')
             num = range(int(start) - 1, int(stop))
         else:
             num = int(string) - 1
+        if key in ['size']:
+            return num + 1
         return num
 
     #读取info配置
@@ -62,12 +64,13 @@ class ConfigBase:
         info = dict(config._sections)
         for key in info:
             info[key] = dict(info[key])
+            info[key]['size'] = (TextureBase.size, TextureBase.size)
             for k, v in info[key].items():
                 if ',' not in v:
                     continue
                 row, col = v.split(',')
-                row = self.analyse_number(row)
-                col = self.analyse_number(col)
+                row = self.analyse_number(row, key)
+                col = self.analyse_number(col, key)
                 info[key][k] = (row, col)
             #dynamic或action的第一个作为static
             if 'static' not in info[key]:
@@ -81,6 +84,8 @@ class ConfigBase:
                     if not isinstance(col, int):
                         col = col[0]
                     info[key]['static'] = (row, col)
+                else:
+                    info[key]['static'] = (0, 0)
         return info
 
     def load(self):
@@ -136,8 +141,9 @@ class TextureBase:
         return col * self.size, height - (row + 1) * self.size
 
     #获取texture中的部分
-    def cut_texture(self, texture, pos):
+    def cut_texture(self, texture, pos, size):
         row, col = pos
+        x, y = size
         if isinstance(row, int):
             if isinstance(col, int):
                 pos_list = [(row, col)]
@@ -152,7 +158,7 @@ class TextureBase:
         textures = []
         for pos in pos_list:
             row, col = self.real_pos(texture.size, pos)
-            textures.append(texture.get_region(row, col, self.size, self.size))
+            textures.append(texture.get_region(row, col, x, y))
         return textures
 
     #加载配置，并缓存图片信息
@@ -171,13 +177,13 @@ class TextureBase:
 
             info = {}
             if 'static' in val:
-                info['static_textures'] = self.cut_texture(self.base[name], val['static'])[0]
+                info['static_textures'] = self.cut_texture(self.base[name], val['static'], val['size'])[0]
             if 'dynamic' in val:
-                info['dynamic_textures'] = self.cut_texture(self.base[name], val['dynamic'])
+                info['dynamic_textures'] = self.cut_texture(self.base[name], val['dynamic'], val['size'])
                 info['dynamic_index'] = 0
                 info['dynamic_length'] = len(info['dynamic_textures'])
             if 'action' in val:
-                info['action_textures'] = self.cut_texture(self.base[name], val['action'])
+                info['action_textures'] = self.cut_texture(self.base[name], val['action'], val['size'])
                 info['action_index'] = 0
                 info['action_length'] = len(info['action_textures'])
             self.texture[key] = info
