@@ -3,7 +3,7 @@ import os
 import random
 import pickle
 from functools import reduce
-from cache import Config
+from cache import Setting, Config
 #import copy
 
 
@@ -27,7 +27,7 @@ def except_default(default=None):
             try:
                 return func(*args, **kwargs)
             except Exception as ex:
-                print(ex)
+                print(func.__name__, ex)
                 return default
         run.__name__ = func.__name__
         return run
@@ -39,11 +39,11 @@ class LoopException(Exception):
 
 def loop_retry(func):
     def run(*args, **kwargs):
-        while True:
+        for i in range(3):
             try:
                 return func(*args, **kwargs)
             except LoopException:
-                print('LoopException')
+                print('retry :', func.__name__)
     run.__name__ = func.__name__
     return run
 
@@ -236,45 +236,13 @@ class TreeNode:
         return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
 
-'''
-class Cache:
-    class staticproperty(property):
-        def __get__(self, cls, owner):
-            return staticmethod(self.fget).__get__(owner)()
-
-    __staticcache = {}
-    @classmethod
-    def staticcache(self, func):
-        self.__staticcache.setdefault(func, {'check': True, 'result': None})
-        cache = self.__staticcache[func]
-        def run(*args, **kwargs):
-            if cache['check']:
-                cache['result'] = func(*args, **kwargs)
-                cache['check'] = False
-            return cache['result']
-        return run
-
-    @classmethod
-    def static(self, func):
-        func = self.staticcache(func)
-        func = self.staticproperty(func)
-        return func
-
-    #两个reloadcache之间获取的值相同
-    @classmethod
-    def staticrecount(self):
-        for cache in self.__staticcache.values():
-            cache['check'] = True
-'''
 
 #注意，出现random的属性，每次获取时值将不同
 class MazeSetting:
-    #层数
-    floor = 11
     #行
-    rows = 11
+    rows = Setting.rows
     #列
-    cols = 11
+    cols = Setting.cols
     #保存的目录
     save_dir = 'save'
     #保存的文件后缀
@@ -285,9 +253,9 @@ class MazeSetting:
         return '{save_dir}/{num}.{save_ext}'.format(save_dir=MazeSetting.save_dir, num=num, save_ext=MazeSetting.save_ext)
 
     #保存的层数，10时占用20M左右内存，100时占用50M左右内存
-    save_floor = 10
+    save_floor = Setting.base
     #每几层一个单元
-    base_floor = 10
+    base_floor = Setting.base
 
     #每个宝石增加的属性值（总属性百分比）
     attribute_value = 0.01
@@ -316,7 +284,7 @@ class MazeSetting:
     damage_total_min = 100
 
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
-    montecarlo_time = 100
+    montecarlo_time = Setting.montecarlo
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     extra_potion = 100
@@ -476,7 +444,7 @@ class Maze:
         if self.is_boss_floor(floor):
             self.monster = {}
 
-
+    #大小为5时出现错误，可能是由于没有楼梯导致的
     def get_type(self, pos):
         z, x, y = pos
         return self.maze[z][x][y][0]
@@ -707,9 +675,20 @@ class Maze:
         if self.is_initial_floor(floor):
             pass
         elif self.is_boss_floor(floor): #boss层只有一个特殊区域
-            pos_list = [(floor, 1, 1)]
-            width = 7
-            height = 7
+            width = MazeSetting.rows // 2
+            height = MazeSetting.cols // 2
+            while True:
+                x = random.randint(1, MazeSetting.rows - width + 1)
+                if x == 2 or x == MazeSetting.rows - width:
+                    continue
+                break
+            while True:
+                y = random.randint(1, MazeSetting.cols - height + 1)
+                if y == 2 or y == MazeSetting.cols - height:
+                    continue
+                break
+
+            pos_list = [(floor, x, y)]
             for pos in pos_list:
                 area = self.get_rect(pos, width, height)
                 crack = self.get_rect_crack(pos, width, height)
@@ -1110,7 +1089,11 @@ class Maze:
         #放置门
         random_node = list(set(node_list[2:-1]) - set(special_node))
         random.shuffle(random_node)
+        index = 0
         while sum(door_set.values()) > 0:
+            index += 1
+            if index > LoopException.retry:
+                raise LoopException
             for node in random_node:
                 door = None
                 if door_set[MazeBase.Value.Color.red] + door_set[MazeBase.Value.Color.green]:
@@ -1452,7 +1435,7 @@ class Maze:
                     attack += 1
                     continue
                 break
-                
+
 
             #初始值不一定为100
             if monster[0] not in self.monster:
@@ -1807,10 +1790,13 @@ class Maze:
     def kill_boss(self, pos):
         area = self.get_area(pos)
         area.remove(pos)
-        
-        pos = area.pop()
-        self.set_type(pos, MazeBase.Type.Static.stair)
-        self.set_value(pos, MazeBase.Value.Stair.up)
+
+        while True:
+            pos = area.pop()
+            if self.get_type(pos) == MazeBase.Type.Static.ground:
+                self.set_type(pos, MazeBase.Type.Static.stair)
+                self.set_value(pos, MazeBase.Value.Stair.up)
+                break
 
     #先确定一个较优路线，再通过蒙特卡洛模拟逼近最优路线
     def set_item(self):
@@ -1861,11 +1847,11 @@ class Maze:
                     self.create_stair(floor)
                     self.create_tree(floor)
                     self.adjust(floor)
-    
+
                 #等楼梯设置好再进行
                 for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
                     self.process(floor)
-    
+
                 self.set_item()
                 self.set_boss()
             except LoopException:
@@ -1993,7 +1979,7 @@ class Maze:
             if around == []:
                 if self.get_type(end_pos) == MazeBase.Type.Static.stair:
                     print(pos, end_pos)
-            
+
         return way
 
 

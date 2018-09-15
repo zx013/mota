@@ -6,22 +6,41 @@ from configparser import ConfigParser
 from kivy.uix.image import Image
 from kivy.config import Config as DefaultConfig
 
-'''
-静态
-路径，行，列
 
-动态，动作（移动/消除）
-路径，行，列，方向（按行还是按列）
-只能从左到右或者从上到下
-'''
+#需要放到单独的模块
+#是否展示伤害数字
+#是否开启背景音乐
+#是否开启音效
+#难度
+#计算次数
+#是否开启楼层飞行器
+#默认移动动画间隔
+#默认开门动画间隔
+#默认怪物动画间隔
+class Setting:
+    #每个单元多少层
+    base = 2
+
+    #迷宫的大小，最小为5，最大不限，正常11，太大影响性能，最好为奇数
+    size = 7
+
+    rows = size
+
+    cols = size
+
+    montecarlo = 100
+
+    show_damage = True
+
+
 class ConfigBase:
     step = 0.05
 
     def __init__(self):
         #长宽需要动态调整
         DefaultConfig.set('kivy', 'window_icon', os.path.join('data', 'icon.ico'))
-        DefaultConfig.set('graphics', 'height', 416)
-        DefaultConfig.set('graphics', 'width', 416)
+        DefaultConfig.set('graphics', 'height', (Setting.rows + 2) * TextureBase.size)
+        DefaultConfig.set('graphics', 'width', (Setting.cols + 2) * TextureBase.size)
         DefaultConfig.set('graphics', 'resizable', 0)
         self.config = {}
         self.load()

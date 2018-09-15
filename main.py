@@ -26,25 +26,13 @@ from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
 #python2应为from Configparser import ConfigParser
 
-from cache import Config, Texture, Music
-from maze import Maze, MazeSetting, MazeBase
+from cache import Setting, Config, Texture, Music
+from maze import Maze, MazeBase
 from random import randint
 
 '''
 长条形区域有时需要分割一下，不然显得太空旷
 '''
-#需要放到单独的模块
-class Setting:
-    #是否展示伤害数字
-    show_damage = True
-    #是否开启背景音乐
-    #是否开启音效
-    #难度
-    #计算次数
-    #是否开启楼层飞行器
-    #默认移动动画间隔
-    #默认开门动画间隔
-    #默认怪物动画间隔
 
 class Opacity:
     opacity = 1.0
@@ -108,7 +96,6 @@ class Hero:
     move_list = []
     opacity = Opacity() #不透明度
     stair = None #是否触发上下楼的动作
-    __stair = True
     action = set() #执行动画的点
     wall = 2
     wall_dynamic = 1
@@ -172,8 +159,8 @@ class Hero:
 
 
 class Map(FocusBehavior, FloatLayout):
-    row = MazeSetting.rows + 2
-    col = MazeSetting.cols + 2
+    row = Setting.rows + 2
+    col = Setting.cols + 2
 
     def __init__(self, **kwargs):
         super(Map, self).__init__(**kwargs)
