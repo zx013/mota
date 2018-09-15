@@ -403,7 +403,7 @@ class HeroBase:
 #key的绑定
 class HeroStateDict(dict):
     __bind = {}
-    
+
     def __getitem__(self, color):
         return self.__dict__[color]
 
@@ -421,6 +421,7 @@ class HeroState:
     __bind = {}
 
     def __init__(self, herobase):
+        self.floor = 0
         self.health = herobase.health
         self.attack = herobase.attack
         self.defence = herobase.defence
@@ -432,7 +433,10 @@ class HeroState:
     def __setattr__(self, name, value):
         self.__dict__[name] = value
         if name in self.__bind:
-            self.__bind[name].text = str(value)
+            text = str(value)
+            if name == 'floor':
+                text = '{} F'.format(text)
+            self.__bind[name].text = text
 
     def bind(self, name, label):
         self.__bind[name] = label

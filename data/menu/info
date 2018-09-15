@@ -1,15 +1,52 @@
-[menu-key-yellow]
-name = key-yellow.png
+[attack-16]
+name = attack-16.png
 size = 16, 16
 
-[menu-key-blue]
-name = key-blue.png
+[attack-32]
+name = attack-32.png
+size = 32, 32
+
+
+[defence-16]
+name = defence-16.png
 size = 16, 16
 
-[menu-key-red]
-name = key-red.png
+[defence-32]
+name = defence-32.png
+size = 32, 32
+
+
+[key-yellow-16]
+name = key-yellow-16.png
 size = 16, 16
 
-[menu-key-green]
-name = key-green.png
+[key-yellow-32]
+name = key-yellow-32.png
+size = 32, 32
+
+
+[key-blue-16]
+name = key-blue-16.png
 size = 16, 16
+
+[key-blue-32]
+name = key-blue-32.png
+size = 32, 32
+
+
+[key-red-16]
+name = key-red-16.png
+size = 16, 16
+
+[key-red-32]
+name = key-red-32.png
+size = 32, 32
+
+
+[key-green-16]
+name = key-green-16.png
+size = 16, 16
+
+[key-green-32]
+name = key-green-32.png
+size = 32, 32
