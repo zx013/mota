@@ -18,6 +18,7 @@ if platform.system().lower() == 'windows':
 #jnius_config.add_classpath('jars/javaclass.jar')
 #from jnius import autoclass
 
+import os
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.image import Image
@@ -80,53 +81,40 @@ class StateBar(FloatLayout):
         self.col = col
         super(StateBar, self).__init__(size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
 
-        label = Label(pos=(0, 5 * Texture.size))
+        label = self.add_label(0, -5)
+        label.text = '字体测试'
+
+        self.add_label(0, 5, 'health')
+        self.add_label(-4, 5, 'attack')
+        self.add_label(4, 5, 'defence')
+
+        self.add_image(5.25, 0, 'menu-key-yellow')
+        self.add_label(5, -0.25, 'key', MazeBase.Value.Color.yellow)
+
+        self.add_image(5.25, -1, 'menu-key-blue')
+        self.add_label(5, -1.25, 'key', MazeBase.Value.Color.blue)
+
+        self.add_image(5.25, -2, 'menu-key-red')
+        self.add_label(5, -2.25, 'key', MazeBase.Value.Color.red)
+
+        self.add_image(5.25, -3, 'menu-key-green')
+        self.add_label(5, -3.25, 'key', MazeBase.Value.Color.green)
+
+
+    def add_label(self, x, y, bind=None, color=None):
+        label = Label(pos=(x * Texture.size, y * Texture.size), font_name=os.path.join('data', 'font.ttf'), font_size='20sp')
+        if bind:
+            if bind == 'key':
+                self.herostate.key.bind(color, label)
+            else:
+                self.herostate.bind(bind, label)
         self.add_widget(label)
-        self.herostate.bind('health', label)
+        return label
 
-        label = Label(pos=(-4 * Texture.size, 5 * Texture.size))
-        self.add_widget(label)
-        self.herostate.bind('attack', label)
-
-        label = Label(pos=(4 * Texture.size, 5 * Texture.size))
-        self.add_widget(label)
-        self.herostate.bind('defence', label)
-
-
-        image = Image(pos=(5.25 * Texture.size, 0))
-        image.texture = Texture.next('menu-key-yellow')
+    def add_image(self, x, y, name):
+        image = Image(pos=(x * Texture.size, y * Texture.size))
+        image.texture = Texture.next(name)
         self.add_widget(image)
-
-        label = Label(pos=(5 * Texture.size, -0.25 * Texture.size))
-        self.add_widget(label)
-        self.herostate.key.bind(MazeBase.Value.Color.yellow, label)
-
-
-        image = Image(pos=(5.25 * Texture.size, - Texture.size))
-        image.texture = Texture.next('menu-key-blue')
-        self.add_widget(image)
-
-        label = Label(pos=(5 * Texture.size, -1.25 * Texture.size))
-        self.add_widget(label)
-        self.herostate.key.bind(MazeBase.Value.Color.blue, label)
-
-
-        image = Image(pos=(5.25 * Texture.size, -2 * Texture.size))
-        image.texture = Texture.next('menu-key-red')
-        self.add_widget(image)
-
-        label = Label(pos=(5 * Texture.size, -2.25 * Texture.size))
-        self.add_widget(label)
-        self.herostate.key.bind(MazeBase.Value.Color.red, label)
-
-
-        image = Image(pos=(5.25 * Texture.size, -3 * Texture.size))
-        image.texture = Texture.next('menu-key-green')
-        self.add_widget(image)
-
-        label = Label(pos=(5 * Texture.size, -3.25 * Texture.size))
-        self.add_widget(label)
-        self.herostate.key.bind(MazeBase.Value.Color.green, label)
 
 
 class Layer(GridLayout):

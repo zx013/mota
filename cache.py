@@ -33,12 +33,14 @@ class Setting:
     show_damage = True
 
 
+#默认字体没有生效，很奇怪
 class ConfigBase:
     step = 0.05
 
     def __init__(self):
         #长宽需要动态调整
         DefaultConfig.set('kivy', 'window_icon', os.path.join('data', 'icon.ico'))
+        DefaultConfig.set('graphics', 'default_font', os.path.join('data', 'font.ttf'))
         DefaultConfig.set('graphics', 'height', (Setting.rows + 2) * TextureBase.size)
         DefaultConfig.set('graphics', 'width', (Setting.cols + 2) * TextureBase.size)
         DefaultConfig.set('graphics', 'resizable', 0)
