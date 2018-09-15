@@ -330,6 +330,8 @@ class MonsterInfo:
     def load():
         data = MonsterInfo.data
         for key, config in Config.config.items():
+            if 'hero' in key:
+                continue
             if not config['path'].startswith(os.path.join('data', MonsterInfo.path)):
                 continue
             key_list = key.split('-')
@@ -498,9 +500,8 @@ class Maze:
     def get_beside(self, pos, type):
         return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] == type}
 
-    #寻路使用
-    def get_beside_way(self, pos):
-        return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] not in (MazeBase.Type.Static.wall,)}
+    def get_beside_except(self, pos, type):
+        return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] != type}
 
     def get_corner(self, pos, type):
         return {(z, x, y) for z, x, y in Pos.corner(pos) if self.maze[z][x][y][0] == type}
@@ -964,7 +965,6 @@ class Maze:
 
 
     #空间小于2不放置key，空间越小放置key概率越小
-    @loop_retry
     def set_door(self, node_list):
         key_choice = {
             MazeBase.Value.Color.yellow: 60,
@@ -1167,7 +1167,7 @@ class Maze:
             index += 1
             if index > LoopException.retry:
                 raise LoopException
-            for node in node_list[1:]:
+            for node in node_list[:0:-1]:
                 door = node.Door
                 if door:
                     door_set[door] += 1
@@ -1373,7 +1373,6 @@ class Maze:
         self.herobase.boss_defence = node.Defence
 
 
-    @loop_retry
     def adjust_monster(self, node_list):
         number_enable = [False for node in node_list]
         for number, node in enumerate(node_list):
@@ -1832,26 +1831,29 @@ class Maze:
         self.herobase.defence += self.herobase.base * self.herobase.boss_defence
 
         for i in range(3):
-            #try:
-            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
-                self.init(floor)
-                self.create_special(floor)
-                self.create_wall(floor)
-                self.crack_wall(floor)
-                self.create_stair(floor)
-                self.create_tree(floor)
-                self.adjust(floor)
-
-            #等楼梯设置好再进行
-            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
-                self.process(floor)
-
-            self.set_item()
-            self.set_boss()
-            #except Exception as ex:
+            try:
+                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                    self.init(floor)
+                    self.create_special(floor)
+                    self.create_wall(floor)
+                    self.crack_wall(floor)
+                    self.create_stair(floor)
+                    self.create_tree(floor)
+                    self.adjust(floor)
+    
+                #等楼梯设置好再进行
+                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                    self.process(floor)
+    
+                self.set_item()
+                self.set_boss()
+            except LoopException:
                 #生成异常时重新生成
-            #    print('reset : ', ex)
-            #    continue
+                print('loop reset')
+                continue
+            except Exception as ex:
+                print('reset :', ex)
+                continue
             break
 
         self.update_monster()
@@ -1927,14 +1929,19 @@ class Maze:
 
 
     #向外扩张，每一圈计数加一
-    def find_around(self, pos_list, num):
+    def find_around(self, pos_list, end_pos, num):
         around = set()
         for pos in pos_list:
-            around |= self.get_beside_way(pos)
+            beside = self.get_beside_except(pos, MazeBase.Type.Static.wall)
+            stair = self.get_beside(pos, MazeBase.Type.Static.stair)
+            beside -= stair
+            if end_pos in stair:
+                beside.add(end_pos)
+            around |= beside
         around -= pos_list | self.around[num - 1]
         return around
 
-    @except_default([])
+    #@except_default([])
     def find_path(self, start_pos, end_pos):
         move_map = {
             (1, 0): 'up',
@@ -1946,23 +1953,27 @@ class Maze:
             return []
         self.around = {-1: set()}
         around = set([start_pos])
+        way = []
         num = 0
         while around:
             self.around[num] = around
-            around = self.find_around(around, num)
+            around = self.find_around(around, end_pos, num)
             num += 1
             if end_pos in around:
-                way = []
                 pos = end_pos
                 for i in range(num)[::-1]:
                     old_z, old_x, old_y = pos
-                    new_z, new_x, new_y = (self.get_beside_way(pos) & self.around[i]).pop()
+                    new_z, new_x, new_y = (self.get_beside_except(pos, MazeBase.Type.Static.wall) & self.around[i]).pop()
                     pos = new_z, new_x, new_y
                     move = (new_x - old_x, new_y - old_y)
                     if move in move_map:
                         way.insert(0, move_map[move])
-                return way
-        return []
+                break
+            if around == []:
+                if self.get_type(end_pos) == MazeBase.Type.Static.stair:
+                    print(pos, end_pos)
+            
+        return way
 
 
 if __name__ == '__main__':

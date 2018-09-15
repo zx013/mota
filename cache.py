@@ -15,7 +15,7 @@ from kivy.config import Config as DefaultConfig
 只能从左到右或者从上到下
 '''
 class ConfigBase:
-    step = 0.01
+    step = 0.05
 
     def __init__(self):
         #长宽需要动态调整
@@ -78,7 +78,7 @@ class ConfigBase:
                     val['path'] = os.path.join(path, val['name'])
                 if 'dt' not in val:
                     if 'hero' in key or 'door' in key:
-                        val['dt'] = 0.08
+                        val['dt'] = 0.1
                     else:
                         val['dt'] = 0.2
                 val['dt'] -= self.step #有时会有小的波动(0.001)
@@ -144,6 +144,8 @@ class TextureBase:
             if 'path' not in val:
                 continue
             name = val['path']
+            if not name.endswith('.png'):
+                continue
             if name not in self.base:
                 self.base[name] = Image(source=name).texture
             val['path'] = name

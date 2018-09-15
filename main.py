@@ -256,6 +256,8 @@ class Map(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Active.monster:
             print('Fight monster {}'.format('-'.join(pos_value)))
             Music.play('blood')
+            if pos_value[0] == 'boss':
+                pass
         elif pos_type == MazeBase.Type.Active.rpc:
             return False
 
@@ -267,6 +269,8 @@ class Map(FocusBehavior, FloatLayout):
         pos = self.hero.move_pos(key)
         if self.ismove(pos):
             self.hero.move(key)
+        else:
+            self.hero.move_list = []
         Config.reset(self.hero.name)
         Texture.reset(self.hero.name)
         self.show_hero()
@@ -334,8 +338,6 @@ class Map(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Active.monster:
             pos_key = '-'.join(pos_value)
             pos_style = 'dynamic'
-            if pos_value[0] == 'boss':
-                pass
         elif pos_type == MazeBase.Type.Active.rpc:
             if pos_value == MazeBase.Value.Rpc.wisdom:
                 pos_key = 'npc-wisdom'
