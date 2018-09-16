@@ -194,6 +194,14 @@ class Maze:
         if self.is_boss_floor(floor):
             self.monster = {}
 
+    def outside(self, pos):
+        z, x, y = pos
+        if x < 1 or x > MazeSetting.rows:
+            return True
+        if y < 1 or y > MazeSetting.cols:
+            return True
+        return False
+
     #大小为5时出现错误，可能是由于没有楼梯导致的
     def get_type(self, pos):
         z, x, y = pos
@@ -205,9 +213,7 @@ class Maze:
 
     def set_type(self, pos, value):
         z, x, y = pos
-        if x < 1 or x > MazeSetting.rows:
-            return
-        if y < 1 or y > MazeSetting.cols:
+        if self.outside(pos):
             return
         type = self.maze[z][x][y][0]
         self.maze_map[z].setdefault(type, set())
@@ -243,7 +249,6 @@ class Maze:
                 next = Pos.add(beside, move)
             extend.add(beside)
         return extend
-
 
 
     #在floor层的type类型的区域中寻找符合func要求的点

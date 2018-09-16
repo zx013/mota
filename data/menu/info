@@ -9,3 +9,7 @@ size = 442, 128
 [sadan]
 name = sadan.png
 size = 487, 289
+
+[menu-start]
+name = start.png
+size = 64, 64

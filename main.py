@@ -30,8 +30,13 @@ from setting import Setting, MazeBase
 from cache import Config, Texture, Music
 from maze import Maze
 from hero import Opacity, Hero
-from state import EasyState
+from state import State
 
+'''
+扩展方法
+在对应目录下新建文件夹，添加图片和info文件，格式参照之前目录的格式
+目前怪物类型可无限扩展
+'''
 '''
 长条形区域有时需要分割一下，不然显得太空旷
 长条区域可以放置多个怪物
@@ -41,6 +46,32 @@ class Menu(FloatLayout):
         self.row = row
         self.col = col
         super(Menu, self).__init__(size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
+
+        self.main()
+
+    def main(self):
+        label_list = []
+
+        label_list.append(self.add_label(-14, 7, '无', 8))
+        label_list.append(self.add_label(-7, 9, '尽', 8))
+        label_list.append(self.add_label(0, 10, '的', 8))
+        label_list.append(self.add_label(7, 9, '魔', 8))
+        label_list.append(self.add_label(14, 7, '塔', 8))
+
+        label_list.append(self.add_label(0, 6, '2 . 0', 4))
+
+        label_list.append(self.add_label(0, 0, '开 始', 6))
+        label_list.append(self.add_label(0, -7, '设 置', 6))
+
+        return label_list
+
+    def add_label(self, x, y, text='', font_size=4):
+        label = Label(text=text, pos=(x * Setting.size, y * Setting.size), font_name=Setting.font_path, font_size=font_size * Setting.size)
+        self.add_widget(label)
+        return label
+
+    def on_touch_down(self, touch):
+        print(touch)
 
 
 class Layer(GridLayout):
@@ -70,15 +101,16 @@ class Map(FocusBehavior, FloatLayout):
         self.maze = Maze()
         self.maze.update()
 
-        self.menu = Menu(self.row, self.col)
-        self.state = EasyState(self.maze.herostate, self.row, self.col)
+        self.menu = Menu(self.row, self.col) #菜单
+        self.state = State(self.maze.herostate, self.row, self.col) #状态显示
+        self.state.easy()
         #切换楼层时显示目标楼层数，3和40是经验数据
-        self.floorlabel= Label(pos=(0, Setting.size * 3), font_name=Setting.font_path, font_size=str(Setting.size * 40))
+        self.floorlabel= Label(pos=(0, Setting.size * 3), font_name=Setting.font_path, font_size=str(Setting.size * 40)) #楼层变换时显示层数
         self.floorlabel.canvas.opacity = 0
 
-        self.front = Layer(self.row, self.col)
-        self.middle = Layer(self.row, self.col)
-        self.back = Layer(self.row, self.col)
+        self.front = Layer(self.row, self.col) #英雄移动
+        self.middle = Layer(self.row, self.col) #物品和怪物
+        self.back = Layer(self.row, self.col) #背景，全部用地面填充
 
         self.add_widget(self.back)
         self.add_widget(self.middle)
@@ -113,11 +145,13 @@ class Map(FocusBehavior, FloatLayout):
         return True
 
     def on_touch_down(self, touch):
-        x = self.row - int(touch.y / Texture.size) - 1
-        y = int(touch.x / Texture.size)
-        pos = (self.hero.floor, x, y)
-        self.hero.move_list = self.maze.find_path(self.hero.pos, pos)
-        return True
+        if self.collide_point(*touch.pos):
+            x = self.row - int(touch.y / Texture.size) - 1
+            y = int(touch.x / Texture.size)
+            pos = (self.hero.floor, x, y)
+            self.hero.move_list = self.maze.find_path(self.hero.pos, pos)
+            return True
+        return False
 
 
     def ismove(self, pos):
@@ -195,6 +229,8 @@ class Map(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Static.wall:
             if pos_value == MazeBase.Value.Wall.static:
                 pos_key = 'wall-{:0>2}'.format(self.hero.wall)
+                if self.maze.outside(pos): #有些墙会导致字体显示不清楚
+                    pos_key = 'wall-02'
             elif pos_value == MazeBase.Value.Wall.dynamic:
                 pos_key = 'wall-dynamic-{:0>2}'.format(self.hero.wall_dynamic)
                 pos_style = 'dynamic'
