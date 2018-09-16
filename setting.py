@@ -20,10 +20,13 @@ class Setting:
     #标题
     title = '无尽的魔塔'
 
+    #标题宽度
     title_width = 28
 
+    #标题所在的圆的半径，越小越突出
     title_radius = 28
 
+    #版本号
     version = '2.0'
 
     #图标路径
@@ -44,15 +47,26 @@ class Setting:
     #行数，从左上开始往下
     rows = size
 
+    #显示的行数，包括外面一圈墙
     row_show = rows + 2
 
     #列数，从左上开始往右
     cols = size
 
+    #显示的列数，包括外面一圈墙
     col_show = cols + 2
 
     #蒙特卡洛模拟的次数
     montecarlo = 100
+
+    #是否显示怪物血量
+    show_health = True
+
+    #是否显示怪物攻击
+    show_attack = True
+
+    #是否显示怪物防御
+    show_defence = True
 
     #是否在怪物上显示对应伤害
     show_damage = True

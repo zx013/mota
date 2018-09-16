@@ -305,10 +305,8 @@ class Map(FocusBehavior, FloatLayout):
             self.hero.stair = None
 
     def show_damage(self):
-        if not Setting.show_damage:
-            return None
-
         floor = self.hero.floor
+        health = self.maze.herostate.health
         attack = self.maze.herostate.attack
         defence = self.maze.herostate.defence
         for i in range(self.row):
@@ -316,11 +314,23 @@ class Map(FocusBehavior, FloatLayout):
                 pos = (floor, i, j)
                 pos_type = self.maze.get_type(pos)
                 pos_value = self.maze.get_value(pos)
+                
+                
                 if pos_type == MazeBase.Type.Active.monster:
                     damage = self.maze.get_damage(attack, defence, pos_value)
+                    info = self.maze.get_monster(pos_value)
                 else:
-                    damage = ''
-                self.state.set_damage(i, j, damage)
+                    damage = -1
+                    info = {'health': '', 'attack': '', 'defence': ''}
+
+                if Setting.show_health:
+                    self.state.set_health(i, j, info['health'])
+                if Setting.show_attack:
+                    self.state.set_attack(i, j, info['attack'])
+                if Setting.show_defence:
+                    self.state.set_defence(i, j, info['defence'])
+                if Setting.show_damage:
+                    self.state.set_damage(i, j, health, damage)
 
     def show(self, dt):
         self.focus = True

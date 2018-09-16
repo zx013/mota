@@ -57,6 +57,11 @@ class HeroStateDict(dict):
 
 
 #实时状态，bind将状态绑定到label上，可以实时显示
+#3000: (0, 1, 0, 1)
+#1000: (0.5, 1, 0.5, 1)
+#500: (1, 1, 0.5, 1)
+#200: (1, 0.5, 0, 1)
+#100: (1, 0, 0, 1)
 class HeroState:
     __bind = {}
 
@@ -73,10 +78,23 @@ class HeroState:
     def __setattr__(self, name, value):
         self.__dict__[name] = value
         if name in self.__bind:
+            label = self.__bind[name]
             text = str(value)
             if name == 'floor':
                 text = '{} F'.format(text)
-            self.__bind[name].text = text
+            elif name == 'health':
+                if value < 100:
+                    label.color = (1, 0, 0, 1) #红色
+                elif value < 200:
+                    label.color = (1, 0.5, 0, 1) #橙色
+                elif value < 500:
+                    label.color = (1, 1, 0.5, 1) #浅黄
+                elif value < 2000:
+                    label.color = (0.5, 1, 0.5, 1) #浅绿
+                else:
+                    label.color = (0, 1, 0, 1) #绿色
+                    
+            label.text = text
 
     def bind(self, name, label):
         self.__bind[name] = label

@@ -23,7 +23,10 @@ class ConfigBase:
             start, stop = string.split('-')
             return range(int(start) - plus, int(stop) + 1 - plus)
         else:
-            return int(string) - plus
+            if string.isdigit():
+                return int(string) - plus
+            else:
+                return float(string) - plus
 
     #读取info配置
     def read_info(self, path):
@@ -37,9 +40,10 @@ class ConfigBase:
             for k, v in info[key].items():
                 if ',' not in v:
                     continue
+                v = v.replace(' ', '')
                 num_list = [self.analyse_number(num, k) for num in v.split(',')]
                 info[key][k] = num_list
-                
+
                 if k in ('static', 'dynamic', 'action'):
                     row, col = num_list
             #dynamic或action的第一个作为static
