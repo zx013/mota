@@ -2,35 +2,11 @@
 # -*- coding: utf-8 -*-
 import os
 import random
-from configparser import ConfigParser
+from configparser import ConfigParser #python2应为from Configparser import ConfigParser
 from kivy.uix.image import Image
 from kivy.config import Config as DefaultConfig
 
-
-#需要放到单独的模块
-#是否展示伤害数字
-#是否开启背景音乐
-#是否开启音效
-#难度
-#计算次数
-#是否开启楼层飞行器
-#默认移动动画间隔
-#默认开门动画间隔
-#默认怪物动画间隔
-class Setting:
-    #每个单元多少层
-    base = 2
-
-    #迷宫的大小，最小为5，最大不限，正常11，太大影响性能，最好为奇数
-    size = 9
-
-    rows = size
-
-    cols = size
-
-    montecarlo = 100
-
-    show_damage = True
+from setting import Setting
 
 
 #默认字体没有生效，很奇怪
@@ -39,8 +15,8 @@ class ConfigBase:
 
     def __init__(self):
         #长宽需要动态调整
-        DefaultConfig.set('kivy', 'window_icon', os.path.join('data', 'icon.ico'))
-        DefaultConfig.set('graphics', 'default_font', os.path.join('data', 'font.ttf'))
+        DefaultConfig.set('kivy', 'window_icon', Setting.icon_path)
+        DefaultConfig.set('graphics', 'default_font', Setting.font_path)
         DefaultConfig.set('graphics', 'height', (Setting.rows + 2) * TextureBase.size)
         DefaultConfig.set('graphics', 'width', (Setting.cols + 2) * TextureBase.size)
         DefaultConfig.set('graphics', 'resizable', 0)

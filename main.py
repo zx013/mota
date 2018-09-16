@@ -18,7 +18,6 @@ if platform.system().lower() == 'windows':
 #jnius_config.add_classpath('jars/javaclass.jar')
 #from jnius import autoclass
 
-import os
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.image import Image
@@ -26,105 +25,22 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
-#python2应为from Configparser import ConfigParser
 
-from cache import Setting, Config, Texture, Music
-from maze import Maze, MazeBase
-from random import randint
+from setting import Setting, MazeBase
+from cache import Config, Texture, Music
+from maze import Maze
+from hero import Opacity, Hero
+from state import EasyState
 
 '''
 长条形区域有时需要分割一下，不然显得太空旷
 长条区域可以放置多个怪物
 '''
-
-class Opacity:
-    opacity = 1.0
-    minimum = 0.2
-    maximum = 1.0
-    step = 0.2
-    down = True
-
-    dt = 0.1
-    dtp = 0
-
-    Run = 1
-    Turn = 2
-    End = 3
-
-    def next(self, dt):
-        if not self.active(dt):
-            return self.Run
-
-        if self.down:
-            self.opacity -= self.step
-            if self.opacity <= self.minimum:
-                self.down = False
-                return self.Turn
-        else:
-            self.opacity += self.step
-            if self.opacity >= self.maximum:
-                self.down = True
-                return self.End
-        return self.Run
-
-    def active(self, dt):
-        self.dtp += dt
-        if self.dtp >= self.dt:
-            self.dtp = 0
-            return True
-        return False
-
-
-#简易显示，直接显示在边缘
-class EasyState(FloatLayout):
-    def __init__(self, herostate, row, col, **kwargs):
-        self.herostate = herostate
+class Menu(FloatLayout):
+    def __init__(self, row, col, **kwargs):
         self.row = row
         self.col = col
-        super(EasyState, self).__init__(size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
-
-        label = self.add_label(0, - (self.col - 1) / 2)
-        label.text = '无尽的魔塔'
-
-        self.add_label((self.row - 3) / 2, - (self.col - 1) / 2, bind='floor')
-
-        self.add_label(0, (self.col - 1) / 2, bind='health')
-
-        self.add_image(- (self.row - 2.5) / 2, (self.col - 1.5) / 2, name='attack-16')
-        self.add_label(- (self.row - 3) / 2, (self.col - 1) / 2, bind='attack')
-
-        self.add_image((self.row - 1.5) / 2, (self.col - 1.5) / 2, name='defence-16')
-        self.add_label((self.row - 3) / 2, (self.col - 1) / 2, bind='defence')
-
-        self.add_image((self.row - 0.5) / 2, - (self.col - 9) / 2, name='key-yellow-16')
-        self.add_label((self.row - 1) / 2, - (self.col - 8.5) / 2, offset=(-1, 1), bind='key', color=MazeBase.Value.Color.yellow)
-
-        self.add_image((self.row - 0.5) / 2, - (self.col - 7) / 2, name='key-blue-16')
-        self.add_label((self.row - 1) / 2, - (self.col - 6.5) / 2, offset=(-1, 1), bind='key', color=MazeBase.Value.Color.blue)
-
-        self.add_image((self.row - 0.5) / 2, - (self.col - 5) / 2, name='key-red-16')
-        self.add_label((self.row - 1) / 2, - (self.col - 4.5) / 2, offset=(-1, 1), bind='key', color=MazeBase.Value.Color.red)
-
-        self.add_image((self.row - 0.5) / 2, - (self.col - 3) / 2, name='key-green-16')
-        self.add_label((self.row - 1) / 2, - (self.col - 2.5) / 2, offset=(-1, 1), bind='key', color=MazeBase.Value.Color.green)
-
-    #offset用来微调
-    def add_label(self, x, y, offset=(0, 0), bind='', color=None):
-        offset_x, offset_y = offset
-        label = Label(pos=(x * Texture.size + offset_x, y * Texture.size + offset_y), font_name=os.path.join('data', 'font.ttf'), font_size='20sp')
-        if bind:
-            if bind == 'key':
-                self.herostate.key.bind(color, label)
-            else:
-                self.herostate.bind(bind, label)
-        self.add_widget(label)
-        return label
-
-    def add_image(self, x, y, offset=(0, 0), name=''):
-        offset_x, offset_y = offset
-        image = Image(pos=(x * Texture.size + offset_x, y * Texture.size + offset_y))
-        image.texture = Texture.next(name)
-        self.add_widget(image)
+        super(Menu, self).__init__(size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
 
 
 class Layer(GridLayout):
@@ -143,85 +59,6 @@ class Layer(GridLayout):
         self.add_widget(image)
         return image
 
-class Hero:
-    color = 'blue' #颜色
-    key = 'down' #朝向
-    old_pos = (1, 0, 0)
-    pos = (1, 0, 0)
-    move_list = []
-    opacity = Opacity() #不透明度
-    stair = None #是否触发上下楼的动作
-    action = set() #执行动画的点
-    wall = 2
-    wall_dynamic = 1
-    weapon = 1
-
-    def __init__(self, maze, row, col, **kwargs):
-        self.maze = maze
-        self.row = row
-        self.col = col
-        self.pos = maze.maze_info[0]['init']
-        self.wall = 2
-        self.wall_dynamic = 1
-        self.weapon = 1
-
-    @property
-    def name(self):
-        return 'hero-{}-{}'.format(self.color, self.key)
-
-    def isfloor(self, floor):
-        if floor in self.maze.maze_info: #楼层存在
-            stair = self.maze.maze_info[floor]['stair']
-            if self.floor == floor + 1: #下楼
-                if not self.maze.is_boss_floor(floor) and MazeBase.Value.Stair.up in stair: #楼梯存在
-                    return True
-            elif self.floor == floor - 1: #上楼
-                if MazeBase.Value.Stair.down in stair:
-                    return True
-        return False
-                    
-    @property
-    def floor(self):
-        return self.pos[0]
-
-    @floor.setter
-    def floor(self, floor):
-        if self.maze.is_boss_floor(floor - 1):
-            self.maze.update()
-            self.wall = randint(1, 3)
-            self.weapon = randint(1, 5)
-
-        update_pos = None
-        self.old_pos = self.pos
-        if self.isfloor(floor):
-            stair = self.maze.maze_info[floor]['stair']
-            if self.floor == floor + 1: #下楼
-                update_pos = set(stair[MazeBase.Value.Stair.up]).pop()
-            elif self.floor == floor - 1: #上楼
-                update_pos = set(stair[MazeBase.Value.Stair.down]).pop()
-
-        if update_pos:
-            self.pos = update_pos
-            self.maze.herostate.floor = self.floor
-            Music.play('floor')
-
-    #移动到的位置
-    def move_pos(self, key):
-        self.key = key
-        key_map = {
-            'up': (-1, 0),
-            'down': (1, 0),
-            'left': (0, -1),
-            'right': (0, 1)
-        }
-        floor, x1, y1 = self.pos
-        x2, y2 = key_map.get(self.key, (0, 0)) #将key转换为具体方向
-        return (floor, x1 + x2, y1 + y2)
-
-    def move(self, key):
-        self.old_pos = self.pos
-        self.pos = self.move_pos(key)
-
 
 class Map(FocusBehavior, FloatLayout):
     row = Setting.rows + 2
@@ -233,10 +70,12 @@ class Map(FocusBehavior, FloatLayout):
         self.maze = Maze()
         self.maze.update()
 
-        #切换楼层时显示目标楼层数，3和40是经验数据
-        self.floorlabel= Label(pos=(0, Setting.size * 3), font_name=os.path.join('data', 'font.ttf'), font_size=str(Setting.size * 40))
-        self.floorlabel.canvas.opacity = 0
+        self.menu = Menu(self.row, self.col)
         self.state = EasyState(self.maze.herostate, self.row, self.col)
+        #切换楼层时显示目标楼层数，3和40是经验数据
+        self.floorlabel= Label(pos=(0, Setting.size * 3), font_name=Setting.font_path, font_size=str(Setting.size * 40))
+        self.floorlabel.canvas.opacity = 0
+
         self.front = Layer(self.row, self.col)
         self.middle = Layer(self.row, self.col)
         self.back = Layer(self.row, self.col)
@@ -244,8 +83,9 @@ class Map(FocusBehavior, FloatLayout):
         self.add_widget(self.back)
         self.add_widget(self.middle)
         self.add_widget(self.front)
-        self.add_widget(self.state)
         self.add_widget(self.floorlabel)
+        self.add_widget(self.state)
+        self.add_widget(self.menu)
         for i in range(self.row):
             for j in range(self.col):
                 self.front.add(i, j, Texture.next('empty'))
@@ -263,11 +103,13 @@ class Map(FocusBehavior, FloatLayout):
         if key in ('up', 'down', 'left', 'right'):
             self.move(key)
         elif key == 'q':
-            self.floorlabel.text = str(self.hero.floor + self.hero.isfloor(self.hero.floor + 1))
+            self.floorlabel.text = str(self.hero.floor_up)
             self.hero.stair = MazeBase.Value.Stair.up
+            Music.play('floor')
         elif key == 'e':
-            self.floorlabel.text = str(self.hero.floor - self.hero.isfloor(self.hero.floor - 1))
+            self.floorlabel.text = str(self.hero.floor_down)
             self.hero.stair = MazeBase.Value.Stair.down
+            Music.play('floor')
         return True
 
     def on_touch_down(self, touch):
@@ -290,10 +132,11 @@ class Map(FocusBehavior, FloatLayout):
             return False
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
-                self.floorlabel.text = str(self.hero.floor - self.hero.isfloor(self.hero.floor - 1))
+                self.floorlabel.text = str(self.hero.floor_down)
             elif pos_value == MazeBase.Value.Stair.up:
-                self.floorlabel.text = str(self.hero.floor + self.hero.isfloor(self.hero.floor + 1))
+                self.floorlabel.text = str(self.hero.floor_up)
             self.hero.stair = pos_value
+            Music.play('floor')
             return True
         elif pos_type == MazeBase.Type.Static.door:
             if herostate.key[pos_value] == 0:
@@ -503,16 +346,14 @@ class Map(FocusBehavior, FloatLayout):
                     self.maze.set_value(pos, 0)
                     self.hero.action.remove(pos)
 
-class Layout(FloatLayout):
-    pass
 
 class Mota(App):
     def build(self):
         #javaclass = autoclass('com.test.JavaClass')
         #print(javaclass().show())
 
-        self.layout = Map()
-        return self.layout
+        self.map = Map()
+        return self.map
 
     def on_start(self):
         pass

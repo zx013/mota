@@ -3,162 +3,11 @@ import os
 import random
 import pickle
 from functools import reduce
-from cache import Setting, Config
-#import copy
 
-
-#限制随机，防止S/L，S/L时需存取__staticrandom
-__random = random._inst.random
-__staticrandom = []
-def staticrandom(number=0):
-    for i in range(number):
-        __staticrandom.append(__random())
-    def new_random():
-        r = __random()
-        __staticrandom.append(r)
-        return __staticrandom.pop(0)
-    random.random = random._inst.random = new_random
-
-
-#异常时返回默认值
-def except_default(default=None):
-    def run_func(func):
-        def run(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except Exception as ex:
-                print(func.__name__, ex)
-                return default
-        run.__name__ = func.__name__
-        return run
-    return run_func
-
-
-class LoopException(Exception):
-    retry = 1000
-
-def loop_retry(func):
-    def run(*args, **kwargs):
-        for i in range(3):
-            try:
-                return func(*args, **kwargs)
-            except LoopException:
-                print('retry :', func.__name__)
-    run.__name__ = func.__name__
-    return run
-
-class Tools:
-    #从目录中选出一个值
-    @staticmethod
-    def dict_choice(dictionary):
-        total = sum(dictionary.values())
-        if total < 1:
-            return
-        rand = random.randint(1, total)
-        for key, val in dictionary.items():
-            rand -= val
-            if rand <= 0:
-                return key
-
-    #迭代当前值和上一个值
-    @staticmethod
-    def iter_previous(iterator):
-        previous = None
-        for number, element in enumerate(iterator):
-            if number > 0:
-                yield previous, element
-            previous = element
-
-
-class MazeBase:
-    class Type:
-        class Static:
-            init = 11
-            ground = 12
-            wall = 13
-            shop = 14
-            stair = 15
-            door = 16
-
-        class Active:
-            monster = 21
-            rpc = 22
-
-        class Item:
-            key = 31
-            potion = 32
-
-            attack = 33
-            defence = 34
-
-            holy = 35
-
-        unknown = 99
-
-    class Value:
-        class Special:
-            boss = 1
-            trigger = 2
-            item = 3
-            shop = 4
-            branch = 5
-
-        class Wall:
-            static = 1
-            dynamic = 2
-
-        class Shop:
-            gold = 1
-            experience = 2
-
-        class Stair:
-            up = 1
-            down = 2
-
-        #key和door的颜色
-        class Color:
-            none = 0
-            yellow = 1
-            blue = 2
-            red = 3
-            green = 4
-
-            prison = 5
-            trap = 6
-
-            total = (yellow, blue, red, green)
-
-        #起始时对应攻防平均属性的1%
-        class Gem:
-            small = 1
-            big = 3
-            large = 10
-
-            total = (small, big, large)
-
-        #起始时对应攻防平均属性的1%，设置太低会导致空间不够的情况，按初始默认的配置，总需求在30000左右
-        class Potion:
-            red = 50
-            blue = 200
-            yellow = 600
-            green = 1200
-
-            total = (red, blue, yellow, green)
-
-        class Rpc:
-            wisdom = 1
-            trader = 2
-            thief = 3
-            fairy = 4
-
-    class NodeType:
-        none = 0
-        area_normal = 1
-        area_corner = 2
-        Area = (area_normal, area_corner)
-        road_normal = 3
-        road_corner = 4
-        Road = (road_normal, road_corner)
+from setting import MazeBase, MazeSetting
+from cache import Config
+from hero import HeroBase, HeroState
+from tools import Tools, LoopException
 
 
 class TreeNode:
@@ -236,60 +85,6 @@ class TreeNode:
         return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
 
-
-#注意，出现random的属性，每次获取时值将不同
-class MazeSetting:
-    #行
-    rows = Setting.rows
-    #列
-    cols = Setting.cols
-    #保存的目录
-    save_dir = 'save'
-    #保存的文件后缀
-    save_ext = 'save'
-
-    @staticmethod
-    def save_file(num):
-        return '{save_dir}/{num}.{save_ext}'.format(save_dir=MazeSetting.save_dir, num=num, save_ext=MazeSetting.save_ext)
-
-    #保存的层数，10时占用20M左右内存，100时占用50M左右内存
-    save_floor = Setting.base
-    #每几层一个单元
-    base_floor = Setting.base
-
-    #每个宝石增加的属性值（总属性百分比）
-    attribute_value = 0.01
-
-    #第一个怪物造成的最低伤害
-    damage_min = 200
-
-    #第一个怪物造成的最高伤害
-    damage_max = 1000
-
-    #精英怪物造成的最低伤害
-    elite_min = 1000
-
-    #精英怪物造成的最高伤害
-    elite_max = 2000
-
-    #boss造成的最低伤害
-    boss_min = 2000
-
-    #boss造成的最高伤害
-    boss_max = 5000
-
-    #某一类怪物不超过damage_total_num的数量低于damage_total_min
-    damage_total_num = 3
-
-    damage_total_min = 100
-
-    #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
-    montecarlo_time = Setting.montecarlo
-
-    #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
-    extra_potion = 100
-
-
 class MonsterInfo:
     path = 'monster'
     data_fluctuate = 10
@@ -365,83 +160,6 @@ class Pos:
         if z == 1 and (x == 1 or y == 1):
             return True
         return False
-
-
-#每一个level的基础数值
-class HeroBase:
-    def __init__(self):
-        self.level = -1
-        self.health = 1000
-        self.attack = 10
-        self.defence = 10
-
-        self.key = {
-            MazeBase.Value.Color.yellow: 0,
-            MazeBase.Value.Color.blue: 0,
-            MazeBase.Value.Color.red: 0,
-            MazeBase.Value.Color.green: 0
-        }
-        self.base = 1
-
-        self.boss_attack = 0
-        self.boss_defence = 0
-
-    def update(self):
-        self.level += 1
-        self.floor = self.level * MazeSetting.base_floor + 1
-        self.base = int((self.attack + self.defence) * 0.5 * MazeSetting.attribute_value) + 1
-
-    @property
-    def floor_start(self):
-        return self.level * MazeSetting.base_floor + 1
-
-    @property
-    def floor_end(self):
-        return (self.level + 1) * MazeSetting.base_floor
-
-
-#key的绑定
-class HeroStateDict(dict):
-    __bind = {}
-
-    def __getitem__(self, color):
-        return self.__dict__[color]
-
-    def __setitem__(self, color, value):
-        self.__dict__[color] = value
-        if color in self.__bind:
-            self.__bind[color].text = str(value)
-
-    def bind(self, color, label):
-        self.__bind[color] = label
-        self[color] = self[color]
-
-#实时状态，bind将状态绑定到label上，可以实时显示
-class HeroState:
-    __bind = {}
-
-    def __init__(self, herobase):
-        self.floor = 0
-        self.health = herobase.health
-        self.attack = herobase.attack
-        self.defence = herobase.defence
-
-        self.key = HeroStateDict()
-        for color in MazeBase.Value.Color.total:
-            self.key[color] = herobase.key[color]
-
-    def __setattr__(self, name, value):
-        self.__dict__[name] = value
-        if name in self.__bind:
-            text = str(value)
-            if name == 'floor':
-                text = '{} F'.format(text)
-            self.__bind[name].text = text
-
-    def bind(self, name, label):
-        self.__bind[name] = label
-        value = getattr(self, name)
-        setattr(self, name, value)
 
 
 class Maze:
@@ -681,7 +399,7 @@ class Maze:
         return True
 
     def is_boss_floor(self, floor):
-        if not floor:
+        if floor <= 0:
             return False
         if not floor % MazeSetting.base_floor:
             return True
