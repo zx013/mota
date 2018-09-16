@@ -1,11 +1,3 @@
-[back]
-name = back.png
-size = 642, 448
-
-[title]
-name = title.png
-size = 442, 128
-
 [sadan]
 name = sadan.png
 size = 487, 289
