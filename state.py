@@ -103,6 +103,7 @@ class State(FloatLayout):
         return image
 
 
+    #设置状态栏的颜色
     def set_color(self, wall):
         default = {
             'title': (1, 1, 1, 1),
@@ -128,6 +129,7 @@ class State(FloatLayout):
             for k, v in val.items():
                 v.color = color.get(key, color.get('color', default[key]))
 
+    #显示怪物的属性
     def set_health(self, x, y, health=''):
         self.health[y][self.col - x - 1].text = str(health)
 

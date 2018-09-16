@@ -60,13 +60,13 @@ class Setting:
     montecarlo = 100
 
     #是否显示怪物血量
-    show_health = True
+    show_health = False
 
     #是否显示怪物攻击
-    show_attack = True
+    show_attack = False
 
     #是否显示怪物防御
-    show_defence = True
+    show_defence = False
 
     #是否在怪物上显示对应伤害
     show_damage = True

@@ -15,6 +15,7 @@ action = 2-4, 1
 name = wall-action-01.png
 static = 1, 2
 action = 2-4, 2
+color = 1, 1, 1, 1
 color-title = 1, 1, 1, 1
 color-floor = 1, 1, 1, 1
 color-health = 0.5, 1, 0.5, 1
