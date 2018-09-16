@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Aug 22 18:17:43 2018
-
 @author: zx013
 """
 
 '''
+#打包apk使用，目前可以打包，但运行时会卡住
 import sys
 import platform
 if platform.system().lower() == 'windows':
     from build import build
     build()
     sys.exit(0)
+'''
+
+'''
+目前剩余的问题
+开始菜单
+配置页面
+迷宫优化
+怪物手册
+楼层跳跃
+偶尔会出现空格子的情况
 '''
 
 #import jnius_config
@@ -93,7 +102,6 @@ class Map(FocusBehavior, FloatLayout):
                 self.back.add(i, j, Texture.next('ground'))
 
         self.hero = Hero(self.maze, self.state)
-        self.show_damage()
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
@@ -111,6 +119,8 @@ class Map(FocusBehavior, FloatLayout):
             self.floorlabel.text = str(self.hero.floor_down)
             self.hero.stair = MazeBase.Value.Stair.down
             Music.play('floor')
+        elif key == 'p': #测试作弊
+            self.maze.herostate.health += 1000
         return True
 
     def on_touch_down(self, touch):
@@ -304,7 +314,7 @@ class Map(FocusBehavior, FloatLayout):
         elif state == Opacity.End:
             self.hero.stair = None
 
-    def show_damage(self):
+    def show_monster(self):
         floor = self.hero.floor
         health = self.maze.herostate.health
         attack = self.maze.herostate.attack
@@ -346,7 +356,7 @@ class Map(FocusBehavior, FloatLayout):
         floor = self.hero.floor
         if Config.active(self.hero.name, dt):
             self.show_hero()
-        self.show_damage()
+        self.show_monster()
 
         show = {}
         static_texture = {}

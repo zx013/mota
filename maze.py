@@ -882,23 +882,30 @@ class Maze:
             if door:
                 door_set[door] += 1
             for color in MazeBase.Value.Color.total:
-                door_set[color] -= node.Key[color]
+                door_set[color] -= pnode.Key[color]
                 if door_set[color] > 0:
-                    random_node = list(set(node_list[1:node.Index]) - set(special_node))
+                    random_node = []
+                    #去除不需要放置钥匙的空间
+                    for rnode in set(node_list[1:node.Index]):
+                        if rnode.Space <= 1:
+                            continue
+                        if color != MazeBase.Value.Color.yellow:
+                            #门里面有相同的钥匙
+                            if rnode.Door == color:
+                                continue
+                            #不能拿到钥匙就可以开门
+                            if [fnode for fnode in rnode.Forward.values() if fnode.Door == color]:
+                                continue
+                        random_node.append(rnode)
                     while door_set[color] > 0:
-                        random.shuffle(random_node)
+                        random.shuffle(random_node) #尽量分散放置
                         for rnode in random_node:
-                            if rnode.Space > 1:
-                                if color != MazeBase.Value.Color.yellow:
-                                    #门里面有相同的钥匙
-                                    if rnode.Door == color:
-                                        continue
-                                    #不能拿到钥匙就可以开门
-                                    if [fnode for fnode in rnode.Forward.values() if fnode.Door == color]:
-                                        continue
-                                rnode.Key[color] += 1
-                                rnode.Space -= 1
-                                break
+                            rnode.Key[color] += 1
+                            rnode.Space -= 1
+                            break
+                        else:
+                            print('can not set key', color)
+                            raise Exception
                         door_set[color] -= 1
 
         #删除多余的钥匙
@@ -911,21 +918,21 @@ class Maze:
         while sum(door_base.values()) < 0:
             index += 1
             if index > LoopException.retry:
+                print('This will never run')
                 raise LoopException
-            for node in node_list[:0:-1]:
+
+            for node, pnode in Tools.iter_previous(node_list[:0:-1]):
                 door = node.Door
                 if door:
                     door_set[door] += 1
                 for color in MazeBase.Value.Color.total:
-                    door_set[color] -= node.Key[color]
+                    door_set[color] -= pnode.Key[color] #多余钥匙的数量
                     if door_set[color] < 0 and door_base[color] < 0:
-                        for rnode in node_list[node.Index:0:-1]:
-                            if rnode.Key[color] > 0:
-                                rnode.Key[color] -= 1
-                                rnode.Space += 1
-                                door_set[color] += 1
-                                door_base[color] += 1
-                                break
+                        while pnode.Key[color] > 0 and door_set[color] < 0: #有多余钥匙且当前单元有钥匙
+                            pnode.Key[color] -= 1
+                            pnode.Space += 1
+                            door_set[color] += 1
+                            door_base[color] += 1
 
 
     def set_monster(self, node_list):
@@ -1310,6 +1317,7 @@ class Maze:
         return min_path
 
 
+    #总是会少一点
     def set_potion(self, node_list):
         potion_choice = {
             MazeBase.Value.Potion.red: 27,
@@ -1318,8 +1326,13 @@ class Maze:
             MazeBase.Value.Potion.green: 1
         }
         #需要的总数
-        potion = MazeSetting.extra_potion
-
+        boss = node_list[-1]
+        potion = boss.Damage - self.herostate.health
+        if potion < 0:
+            potion = 0
+        potion += MazeSetting.extra_potion
+        
+        #预先放置一些，防止空的情况
         for node in node_list[1:-1]:
             #放置了特殊的物品可以不用放置其他的东西
             if node.AttackGem[MazeBase.Value.Gem.large] or node.DefenceGem[MazeBase.Value.Gem.large]:
@@ -1347,10 +1360,10 @@ class Maze:
 
         #boss区域不设置potion
         for node in node_list[-2::-1]:
-            while node.Space > 0 and potion > 0:
-                for color in MazeBase.Value.Potion.total:
-                    potion -= color * node.Potion[color]
+            for color in MazeBase.Value.Potion.total:
+                potion -= color * node.Potion[color]
 
+            while node.Space > 0 and potion > 0:
                 if potion >= MazeBase.Value.Potion.green:
                     node.Potion[MazeBase.Value.Potion.green] += 1
                     potion -= MazeBase.Value.Potion.green
