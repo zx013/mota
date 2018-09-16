@@ -128,25 +128,44 @@ class Hero:
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
     move_list = []
+
     opacity = Opacity() #不透明度
     stair = None #是否触发上下楼的动作
     action = set() #执行动画的点
-    wall = 2
-    wall_dynamic = 1
+
+    __wall = 2
+    __wall_dynamic = 1
     weapon = 1
 
-    def __init__(self, maze, row, col, **kwargs):
+    def __init__(self, maze, state, **kwargs):
         self.maze = maze
-        self.row = row
-        self.col = col
+        self.state = state
         self.pos = maze.maze_info[0]['init']
-        self.wall = 2
-        self.wall_dynamic = 1
-        self.weapon = 1
+        self.__wall = 2
+        self.__wall_dynamic = 1
+        self.__weapon = 1
+        self.state.set_color(self.wall)
 
     @property
     def name(self):
         return 'hero-{}-{}'.format(self.color, self.key)
+
+    @property
+    def wall(self):
+        return 'wall-{:0>2}'.format(self.__wall)
+
+    @property
+    def wall_dynamic(self):
+        return 'wall-dynamic-{:0>2}'.format(self.__wall_dynamic)
+
+    @property
+    def weapon_attack(self):
+        return 'weapon-attack-{:0>2}'.format(self.__weapon)
+
+    @property
+    def weapon_defence(self):
+        return 'weapon-defence-{:0>2}'.format(self.__weapon)
+
 
     def isfloor(self, floor):
         if self.maze.is_boss_floor(floor - 1): #往上时楼层还不存在
@@ -167,14 +186,15 @@ class Hero:
 
     @floor.setter
     def floor(self, floor):
-        if self.maze.is_boss_floor(floor - 1):
+        if self.floor == floor - 1 and self.maze.is_boss_floor(floor - 1):
             self.maze.update()
-            self.wall = randint(1, 3)
-            self.weapon = randint(1, 5)
+            self.__wall = randint(1, 3)
+            self.__weapon = randint(1, 5)
+            self.state.set_color(self.wall)
 
         update_pos = None
         self.old_pos = self.pos
-        if self.isfloor(floor):
+        if self.isfloor(floor) and floor in self.maze.maze_info:
             stair = self.maze.maze_info[floor]['stair']
             if self.floor == floor + 1: #下楼
                 update_pos = set(stair[MazeBase.Value.Stair.up]).pop()

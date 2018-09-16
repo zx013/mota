@@ -30,6 +30,7 @@ from setting import Setting, MazeBase
 from cache import Config, Texture, Music
 from maze import Maze
 from hero import Opacity, Hero
+from menu import Menu
 from state import State
 
 '''
@@ -41,45 +42,11 @@ from state import State
 长条形区域有时需要分割一下，不然显得太空旷
 长条区域可以放置多个怪物
 '''
-class Menu(FloatLayout):
-    def __init__(self, row, col, **kwargs):
-        self.row = row
-        self.col = col
-        super(Menu, self).__init__(size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
-
-        self.main()
-
-    def main(self):
-        label_list = []
-
-        label_list.append(self.add_label(-14, 7, '无', 8))
-        label_list.append(self.add_label(-7, 9, '尽', 8))
-        label_list.append(self.add_label(0, 10, '的', 8))
-        label_list.append(self.add_label(7, 9, '魔', 8))
-        label_list.append(self.add_label(14, 7, '塔', 8))
-
-        label_list.append(self.add_label(0, 6, '2 . 0', 4))
-
-        label_list.append(self.add_label(0, 0, '开 始', 6))
-        label_list.append(self.add_label(0, -7, '设 置', 6))
-
-        return label_list
-
-    def add_label(self, x, y, text='', font_size=4):
-        label = Label(text=text, pos=(x * Setting.size, y * Setting.size), font_name=Setting.font_path, font_size=font_size * Setting.size)
-        self.add_widget(label)
-        return label
-
-    def on_touch_down(self, touch):
-        print(touch)
-
 
 class Layer(GridLayout):
-    def __init__(self, row, col, **kwargs):
-        self.row = row
-        self.col = col
-        super(Layer, self).__init__(rows=self.row, cols=self.col, size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
-        self.image = [[None for j in range(self.col)] for i in range(self.row)]
+    def __init__(self, **kwargs):
+        super(Layer, self).__init__(rows=Setting.row_show, cols=Setting.col_show, size=(Texture.size * Setting.row_show, Texture.size * Setting.col_show), size_hint=(None, None), **kwargs)
+        self.image = [[None for j in range(Setting.col_show)] for i in range(Setting.row_show)]
         self.texture = None #默认的texture
 
     def add(self, i, j, texture=None):
@@ -92,8 +59,8 @@ class Layer(GridLayout):
 
 
 class Map(FocusBehavior, FloatLayout):
-    row = Setting.rows + 2
-    col = Setting.cols + 2
+    row = Setting.row_show
+    col = Setting.col_show
 
     def __init__(self, **kwargs):
         super(Map, self).__init__(**kwargs)
@@ -101,16 +68,16 @@ class Map(FocusBehavior, FloatLayout):
         self.maze = Maze()
         self.maze.update()
 
-        self.menu = Menu(self.row, self.col) #菜单
-        self.state = State(self.maze.herostate, self.row, self.col) #状态显示
+        self.menu = Menu() #菜单
+        self.state = State(self.maze.herostate,) #状态显示
         self.state.easy()
         #切换楼层时显示目标楼层数，3和40是经验数据
         self.floorlabel= Label(pos=(0, Setting.size * 3), font_name=Setting.font_path, font_size=str(Setting.size * 40)) #楼层变换时显示层数
         self.floorlabel.canvas.opacity = 0
 
-        self.front = Layer(self.row, self.col) #英雄移动
-        self.middle = Layer(self.row, self.col) #物品和怪物
-        self.back = Layer(self.row, self.col) #背景，全部用地面填充
+        self.front = Layer() #英雄移动
+        self.middle = Layer() #物品和怪物
+        self.back = Layer() #背景，全部用地面填充
 
         self.add_widget(self.back)
         self.add_widget(self.middle)
@@ -118,13 +85,13 @@ class Map(FocusBehavior, FloatLayout):
         self.add_widget(self.floorlabel)
         self.add_widget(self.state)
         self.add_widget(self.menu)
-        for i in range(self.row):
-            for j in range(self.col):
+        for i in range(Setting.row_show):
+            for j in range(Setting.col_show):
                 self.front.add(i, j, Texture.next('empty'))
                 self.middle.add(i, j)
                 self.back.add(i, j, Texture.next('ground'))
 
-        self.hero = Hero(self.maze, self.row, self.col)
+        self.hero = Hero(self.maze, self.state)
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
@@ -228,11 +195,9 @@ class Map(FocusBehavior, FloatLayout):
             pos_key = 'ground'
         elif pos_type == MazeBase.Type.Static.wall:
             if pos_value == MazeBase.Value.Wall.static:
-                pos_key = 'wall-{:0>2}'.format(self.hero.wall)
-                if self.maze.outside(pos): #有些墙会导致字体显示不清楚
-                    pos_key = 'wall-02'
+                pos_key = self.hero.wall
             elif pos_value == MazeBase.Value.Wall.dynamic:
-                pos_key = 'wall-dynamic-{:0>2}'.format(self.hero.wall_dynamic)
+                pos_key = self.hero.wall_dynamic
                 pos_style = 'dynamic'
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
@@ -263,14 +228,14 @@ class Map(FocusBehavior, FloatLayout):
             elif pos_value == MazeBase.Value.Gem.big:
                 pos_key = 'gem-attack-big'
             elif pos_value == MazeBase.Value.Gem.large:
-                pos_key = 'weapen-attack-{:0>2}'.format(self.hero.weapon)
+                pos_key = self.hero.weapon_attack
         elif pos_type == MazeBase.Type.Item.defence:
             if pos_value == MazeBase.Value.Gem.small:
                 pos_key = 'gem-defence-small'
             elif pos_value == MazeBase.Value.Gem.big:
                 pos_key = 'gem-defence-big'
             elif pos_value == MazeBase.Value.Gem.large:
-                pos_key = 'weapen-defence-{:0>2}'.format(self.hero.weapon)
+                pos_key = self.hero.weapon_defence
         elif pos_type == MazeBase.Type.Item.potion:
             if pos_value == MazeBase.Value.Potion.red:
                 pos_key = 'potion-red'

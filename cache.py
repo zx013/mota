@@ -4,35 +4,26 @@ import os
 import random
 from configparser import ConfigParser #python2应为from Configparser import ConfigParser
 from kivy.uix.image import Image
-from kivy.config import Config as DefaultConfig
 
 from setting import Setting
 
 
-#默认字体没有生效，很奇怪
 class ConfigBase:
     step = 0.05
 
     def __init__(self):
-        #长宽需要动态调整
-        DefaultConfig.set('kivy', 'window_icon', Setting.icon_path)
-        DefaultConfig.set('graphics', 'default_font', Setting.font_path)
-        DefaultConfig.set('graphics', 'height', (Setting.rows + 2) * TextureBase.size)
-        DefaultConfig.set('graphics', 'width', (Setting.cols + 2) * TextureBase.size)
-        DefaultConfig.set('graphics', 'resizable', 0)
         self.config = {}
         self.load()
 
     #解析读到的数字或范围
     def analyse_number(self, string, key):
+        plus = key in ('static', 'dynamic', 'action')
+
         if '-' in string:
             start, stop = string.split('-')
-            num = range(int(start) - 1, int(stop))
+            return range(int(start) - plus, int(stop) + 1 - plus)
         else:
-            num = int(string) - 1
-        if key in ['size']:
-            return num + 1
-        return num
+            return int(string) - plus
 
     #读取info配置
     def read_info(self, path):
@@ -46,10 +37,11 @@ class ConfigBase:
             for k, v in info[key].items():
                 if ',' not in v:
                     continue
-                row, col = v.split(',')
-                row = self.analyse_number(row, key)
-                col = self.analyse_number(col, key)
-                info[key][k] = (row, col)
+                num_list = [self.analyse_number(num, k) for num in v.split(',')]
+                info[key][k] = num_list
+                
+                if k in ('static', 'dynamic', 'action'):
+                    row, col = num_list
             #dynamic或action的第一个作为static
             if 'static' not in info[key]:
                 if 'dynamic' in info[key] or 'action' in info[key]:
@@ -105,7 +97,7 @@ class ConfigBase:
 
 
 class TextureBase:
-    size = 32
+    size = Setting.pos_size
 
     def __init__(self):
         self.base = {}

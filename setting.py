@@ -3,6 +3,7 @@
 @author: zx013
 """
 import os
+from kivy.config import Config
 
 #需要放到单独的模块
 #是否展示伤害数字
@@ -19,6 +20,12 @@ class Setting:
     #标题
     title = '无尽的魔塔'
 
+    title_width = 28
+
+    title_radius = 28
+
+    version = '2.0'
+
     #图标路径
     icon_path = os.path.join('data', 'icon.ico')
 
@@ -31,13 +38,32 @@ class Setting:
     #迷宫的大小，最小为5，最大不限，正常11，太大影响性能，最好为奇数
     size = 9
 
+    #每个点的大小（像素）
+    pos_size = 32
+
+    #行数，从左上开始往下
     rows = size
 
+    row_show = rows + 2
+
+    #列数，从左上开始往右
     cols = size
 
+    col_show = cols + 2
+
+    #蒙特卡洛模拟的次数
     montecarlo = 100
 
+    #是否在怪物上显示对应伤害
     show_damage = True
+
+
+#默认字体没有生效，很奇怪
+Config.set('kivy', 'window_icon', Setting.icon_path)
+Config.set('graphics', 'default_font', Setting.font_path)
+Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size)
+Config.set('graphics', 'width', (Setting.cols + 2) * Setting.pos_size)
+Config.set('graphics', 'resizable', 0)
 
 
 #注意，出现random的属性，每次获取时值将不同
