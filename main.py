@@ -69,7 +69,8 @@ class Map(FocusBehavior, FloatLayout):
         self.maze.update()
 
         self.menu = Menu() #菜单
-        self.state = State(self.maze.herostate,) #状态显示
+        self.menu.opacity = 0
+        self.state = State(self.maze.herostate) #状态显示
         self.state.easy()
         #切换楼层时显示目标楼层数，3和40是经验数据
         self.floorlabel= Label(pos=(0, Setting.size * 3), font_name=Setting.font_path, font_size=str(Setting.size * 40)) #楼层变换时显示层数
@@ -92,6 +93,7 @@ class Map(FocusBehavior, FloatLayout):
                 self.back.add(i, j, Texture.next('ground'))
 
         self.hero = Hero(self.maze, self.state)
+        self.show_damage()
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
@@ -162,7 +164,10 @@ class Map(FocusBehavior, FloatLayout):
             herostate.health += herobase.base * pos_value
             Music.play('getitem')
         elif pos_type == MazeBase.Type.Active.monster:
-            print('Fight monster {}'.format('-'.join(pos_value)))
+            damage = self.maze.get_damage(herostate.attack, herostate.defence, pos_value)
+            if herostate.health <= damage:
+                return False
+            herostate.health -= damage
             Music.play('blood')
             if pos_value[0] == 'boss':
                 self.maze.kill_boss(pos)
@@ -280,7 +285,7 @@ class Map(FocusBehavior, FloatLayout):
     #点击移动
     def show_move(self, dt):
         if not self.hero.move_list:
-            return
+            return None
 
         if Config.active('hero-click', dt):
             key = self.hero.move_list.pop(0)
@@ -289,7 +294,7 @@ class Map(FocusBehavior, FloatLayout):
     #上下楼切换
     def show_stair(self, dt):
         if not self.hero.stair:
-            return
+            return None
         state = self.hero.opacity.next(dt)
         if state == Opacity.Turn:
             if self.hero.stair == MazeBase.Value.Stair.down:
@@ -298,6 +303,24 @@ class Map(FocusBehavior, FloatLayout):
                 self.hero.floor += 1
         elif state == Opacity.End:
             self.hero.stair = None
+
+    def show_damage(self):
+        if not Setting.show_damage:
+            return None
+
+        floor = self.hero.floor
+        attack = self.maze.herostate.attack
+        defence = self.maze.herostate.defence
+        for i in range(self.row):
+            for j in range(self.col):
+                pos = (floor, i, j)
+                pos_type = self.maze.get_type(pos)
+                pos_value = self.maze.get_value(pos)
+                if pos_type == MazeBase.Type.Active.monster:
+                    damage = self.maze.get_damage(attack, defence, pos_value)
+                else:
+                    damage = ''
+                self.state.set_damage(i, j, damage)
 
     def show(self, dt):
         self.focus = True
@@ -313,6 +336,7 @@ class Map(FocusBehavior, FloatLayout):
         floor = self.hero.floor
         if Config.active(self.hero.name, dt):
             self.show_hero()
+        self.show_damage()
 
         show = {}
         static_texture = {}

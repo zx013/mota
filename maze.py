@@ -1072,6 +1072,25 @@ class Maze:
                 node.Defence += gem * pnode.DefenceGem[gem]
 
 
+    def get_damage(self, attack, defence, monster):
+        monster_info = self.monster[monster[0]][monster[1]]
+        monster_health = monster_info['health']
+        monster_attack = monster_info['attack']
+        monster_defence = monster_info['defence']
+
+        if attack <= monster_defence:
+            return float('inf')
+
+        if monster_info['magic']:
+            damage = (monster_health - 1) // (attack - monster_defence) * monster_attack
+        else:
+            damage = (monster_health - 1) // (attack - monster_defence) * (monster_attack - defence)
+        if damage < 0:
+            damage = 0
+
+        return damage
+
+
     def apply_monster(self, node_list):
         while True:
             random_list = [[] for node in node_list if node.IsMonster and not node.IsElite]
@@ -1226,44 +1245,22 @@ class Maze:
                 damage = 0
                 for node in node_list:
                     if node.IsBoss:
-                        node = None
                         continue
                     if node.IsDoor:
                         if key[node.Door] == 0:
-                            node = None
                             continue
                     if node.IsMonster:
-                        monster = node.Monster
-                        monster_info = MonsterInfo.data[monster[0]][monster[1]]
-                        monster_ismagic = monster_info['ismagic']
-
-                        monster_state = self.monster[monster[0]][monster[1]]
-                        monster_health = monster_state['health']
-                        monster_attack = monster_state['attack']
-                        monster_defence = monster_state['defence']
-
-                        if attack <= monster_defence:
-                            node = None
+                        damage = self.get_damage(attack, defence, node.Monster)
+                        if damage == float('inf'):
                             continue
-                        if monster_ismagic:
-                            damage = (monster_health - 1) // (attack - monster_defence) * monster_attack
-                        else:
-                            damage = (monster_health - 1) // (attack - monster_defence) * (monster_attack - defence)
-                        if damage < 0:
-                            damage = 0
-
                         if total_damage + damage > min_damage:
-                            node = None
                             continue
                     break
-
-                #该次遍历失败
-                if node == None:
+                else: #该次遍历失败
                     break
 
                 for color in MazeBase.Value.Color.total:
                     key[color] += node.Key[color]
-
 
                 for gem in MazeBase.Value.Gem.total:
                     attack += gem * node.AttackGem[gem]
@@ -1308,22 +1305,7 @@ class Maze:
         #重置伤害值，设置血瓶时使用
         for node in min_path:
             if node.IsMonster:
-                monster = node.Monster
-                monster_info = MonsterInfo.data[monster[0]][monster[1]]
-                monster_ismagic = monster_info['ismagic']
-
-                monster_state = self.monster[monster[0]][monster[1]]
-                monster_health = monster_state['health']
-                monster_attack = monster_state['attack']
-                monster_defence = monster_state['defence']
-
-                if monster_ismagic:
-                    damage = (monster_health - 1) // (node.Attack - monster_defence) * monster_attack
-                else:
-                    damage = (monster_health - 1) // (node.Attack - monster_defence) * (monster_attack - node.Defence)
-                if damage < 0:
-                    damage = 0
-                node.Damage = damage
+                node.Damage = self.get_damage(node.Attack, node.Defence, node.Monster)
 
         return min_path
 
@@ -1688,6 +1670,11 @@ class Maze:
                 setattr(self, k, v)
         except Exception as ex:
             print('load error: ', ex)
+
+
+    def get_monster(self, monster):
+        key1, key2 = monster
+        return self.monster[key1][key2]
 
 
     #向外扩张，每一圈计数加一

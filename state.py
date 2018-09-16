@@ -19,6 +19,14 @@ class State(FloatLayout):
         self.label = {}
         super(State, self).__init__(size=(Texture.size * self.row, Texture.size * self.col), size_hint=(None, None), **kwargs)
 
+        self.damage = [[None for j in range(self.row)] for i in range(self.col)]
+        for i in range(self.row):
+            for j in range(self.col):
+                label = Label(pos=((i - self.row / 2 + 0.5) * Texture.size, (j - self.col / 2 + 0.5) * Texture.size - 8), font_name=Setting.font_path, font_size=20)
+                self.damage[i][j] = label
+                self.add_widget(label)
+
+
     def easy(self):
         self.label = {}
 
@@ -94,3 +102,6 @@ class State(FloatLayout):
                 continue
             for k, v in val.items():
                 v.color = color.get(key, color.get('color', default[key]))
+
+    def set_damage(self, x, y, damage=''):
+        self.damage[y][self.col - x - 1].text = str(damage)
