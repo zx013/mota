@@ -498,56 +498,59 @@ class Maze:
             next_node.remove(node)
 
 
-    def overlay_pos(self, node_list):
-        pos_list = []
-        for node in node_list: #选取当前楼层的一个区域
+    def get_stair_pos(self, floor):
+        pos_set = set()
+        if self.is_initial_floor(floor):
+            return pos_set
+        for node in self.maze_info[floor]['node']:
             if node.Special:
                 continue
             for pos in node.Area:
-                type = self.pos_type(pos)
-                if type == MazeBase.NodeType.road_normal:
+                if self.pos_type(pos) == MazeBase.NodeType.road_normal:
                     continue
                 if self.get_beside(pos, MazeBase.Type.Static.door):
                     continue
-                pos_list.append([node, pos])
-        return pos_list
+                pos_set.add((pos[1], pos[2]))
+
+        #去除已设置的楼梯空间
+        pos_set -= self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]
+        pos_set -= self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]
+        return pos_set
 
     def create_stair(self, floor):
         self.maze_info[floor]['stair'] = {MazeBase.Value.Stair.up: set(), MazeBase.Value.Stair.down: set()}
-        down_node = list(self.maze_info[floor]['node'])
-        random.shuffle(down_node)
-        if self.is_initial_floor(floor - 1) or self.is_boss_floor(floor - 1):
-            down_overlay = self.overlay_pos(down_node)
-            down, down_pos = down_overlay.pop()
+        pos_set_down = self.get_stair_pos(floor)
+        pos_set_up = self.get_stair_pos(floor - 1)
+        pos_set = pos_set_down & pos_set_up #两层相同的位置
+        if pos_set:
+            pos_list = list(pos_set)
+            random.shuffle(pos_list)
+            pos = pos_list.pop()
+            pos_down = (floor, pos[0], pos[1])
+            pos_up = (floor - 1, pos[0], pos[1])
         else:
-            up_node = list(self.maze_info[floor - 1]['node'])
-            random.shuffle(up_node)
-            #生成下行楼梯和上一层上行楼梯
-            #两个区域重叠的点，尽可能避开特殊区域，如果没有合适的点，则楼梯不在同一位置
-            class StairException(Exception): pass
-            try:
-                down_overlay = self.overlay_pos(down_node)
-                up_overlay = self.overlay_pos(up_node)
-                if not down_overlay:
-                    down_overlay = map(lambda x: (x, random.choice(list(x.Area))), down_node)
-                if not up_overlay:
-                    up_overlay = map(lambda x: (x, random.choice(list(x.Area))), up_node)
-                for down, down_pos in down_overlay:
-                    for up, up_pos in up_overlay:
-                        if self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.down] & up.Area:
-                            continue
-                        if down_pos[1] == up_pos[1] and down_pos[2] == up_pos[2]:
-                            raise StairException
-                #没有上下楼同一位置的楼梯，上下楼楼梯设置为不同位置
-                #maze较小时可能触发
-                raise StairException
-            except StairException:
-                up_node.remove(up)
-                self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up].add(up_pos)
+            if not self.is_initial_floor(floor - 1):
+                print('No same pos, use different stair.')
+            pos_list_down = list(pos_set_down)
+            random.shuffle(pos_list_down)
+            if pos_list_down:
+                pos = pos_list_down.pop()
+                pos_down = (floor, pos[0], pos[1])
+            else:
+                pos_down = None
 
-        down_node.remove(down)
-        self.maze_info[floor]['stair'][MazeBase.Value.Stair.down].add(down_pos)
+            pos_list_up = list(pos_set_up)
+            random.shuffle(pos_list_up)
+            if pos_list_up:
+                pos = pos_list_up.pop()
+                pos_up = (floor - 1, pos[0], pos[1])
+            else:
+                pos_up = None
 
+        if pos_down:
+            self.maze_info[floor]['stair'][MazeBase.Value.Stair.down].add(pos_down)
+        if pos_up:
+            self.maze_info[floor - 1]['stair'][MazeBase.Value.Stair.up].add(pos_up)
 
 
     def create_tree(self, floor):
@@ -706,7 +709,7 @@ class Maze:
 
 
     #空间小于2不放置key，空间越小放置key概率越小
-    def set_door(self, node_list):
+    def __set_door(self, node_list):
         key_choice = {
             MazeBase.Value.Color.yellow: 60,
             MazeBase.Value.Color.blue: 20,
@@ -904,7 +907,8 @@ class Maze:
                             rnode.Space -= 1
                             break
                         else:
-                            print('can not set key', color)
+                            #可以不跳出，将钥匙保留至初始或上一阶段的boss区域
+                            print('Can not set key', color)
                             raise Exception
                         door_set[color] -= 1
 
@@ -933,6 +937,25 @@ class Maze:
                             pnode.Space += 1
                             door_set[color] += 1
                             door_base[color] += 1
+
+    #设置失败时清空状态重新设置，连续失败多次后才重新生成
+    def set_door(self, node_list):
+        for i in range(10):
+            try:
+                self.__set_door(node_list)
+                break
+            except Exception as ex:
+                print('Set door error, retry it.')
+                for node in node_list:
+                    node.IsDoor = False
+                    node.Door = MazeBase.Value.Color.none
+                    node.IsMonster = False
+                    for color in MazeBase.Value.Color.total:
+                        node.Space += node.Key[color]
+                        node.Key[color] = 0
+        else:
+            print('Can not find a way to set door.')
+            raise Exception
 
 
     def set_monster(self, node_list):
@@ -1331,7 +1354,7 @@ class Maze:
         if potion < 0:
             potion = 0
         potion += MazeSetting.extra_potion
-        
+
         #预先放置一些，防止空的情况
         for node in node_list[1:-1]:
             #放置了特殊的物品可以不用放置其他的东西
@@ -1597,11 +1620,11 @@ class Maze:
                     self.create_stair(floor)
                     self.create_tree(floor)
                     self.adjust(floor)
-
+    
                 #等楼梯设置好再进行
                 for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
                     self.process(floor)
-
+    
                 self.set_item()
                 self.set_boss()
             except LoopException:
