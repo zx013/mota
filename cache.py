@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 import os
 import random
-from configparser import ConfigParser #python2应为from Configparser import ConfigParser
+from kivy.config import ConfigParser
+#from configparser import ConfigParser #python2应为from Configparser import ConfigParser
 from kivy.uix.image import Image
 
 from setting import Setting
@@ -256,4 +257,3 @@ if 'Texture' not in dir():
 global Music
 if 'Music' not in dir():
     Music = MusicBase()
-

@@ -3,7 +3,6 @@
 @author: zx013
 """
 
-'''
 #打包apk使用，目前可以打包，但运行时会卡住
 import sys
 import platform
@@ -11,7 +10,7 @@ if platform.system().lower() == 'windows':
     from build import build
     build()
     sys.exit(0)
-'''
+
 
 '''
 扩展方法
@@ -24,7 +23,7 @@ if platform.system().lower() == 'windows':
 其他技能
 特殊道具（破墙等）
 机关门
-岩浆（不是很好加）
+地面的岩浆（不是很好加）
 密室
 
 优化点
@@ -337,8 +336,8 @@ class Map(FocusBehavior, FloatLayout):
                 pos = (floor, i, j)
                 pos_type = self.maze.get_type(pos)
                 pos_value = self.maze.get_value(pos)
-                
-                
+
+
                 if pos_type == MazeBase.Type.Active.monster:
                     damage = self.maze.get_damage(attack, defence, pos_value)
                     info = self.maze.get_monster(pos_value)
@@ -429,4 +428,4 @@ class Mota(App):
 if __name__ == '__main__':
     mota = Mota()
     mota.run()
-    mota.stop()
+    #mota.stop()

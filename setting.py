@@ -3,13 +3,11 @@
 @author: zx013
 """
 import os
+import platform
 from kivy.config import Config
 
-#需要放到单独的模块
-#是否展示伤害数字
 #是否开启背景音乐
 #是否开启音效
-#难度
 #是否开启楼层飞行器
 #默认移动动画间隔
 #默认开门动画间隔
@@ -36,6 +34,7 @@ class Setting:
     font_path = os.path.join('data', 'font.ttf')
 
     #难度，very-hard, hard, normal, easy, very-easy
+    #难度决定了蒙特卡洛模拟的次数，剩余的血量和初始的钥匙
     difficult_config = {
         'very-hard': {'montecarlo': 5000, 'remain_potion': 0, 'key': {}},
         'hard': {'montecarlo': 1000, 'remain_potion': 100, 'key': {}},
@@ -49,8 +48,8 @@ class Setting:
     #每个单元多少层
     base = 2
 
-    #迷宫的大小，最小为5，最大不限，正常11，太大影响性能，最好为奇数
-    size = 3
+    #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
+    size = 7
 
     #每个点的大小（像素）
     pos_size = 32
@@ -87,11 +86,15 @@ class Setting:
 
 
 #默认字体没有生效，很奇怪
-Config.set('kivy', 'window_icon', Setting.icon_path)
-Config.set('graphics', 'default_font', Setting.font_path)
-Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size)
-Config.set('graphics', 'width', (Setting.cols + 2) * Setting.pos_size)
-Config.set('graphics', 'resizable', 0)
+#android下这个直接就会卡住，必须注释掉才可以。。。
+'''
+if platform.system().lower() in ('windows', 'linux'):
+    Config.set('kivy', 'window_icon', Setting.icon_path)
+    Config.set('graphics', 'default_font', Setting.font_path)
+    Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size)
+    Config.set('graphics', 'width', (Setting.cols + 2) * Setting.pos_size)
+    Config.set('graphics', 'resizable', 0)
+'''
 
 
 #注意，出现random的属性，每次获取时值将不同
@@ -146,6 +149,8 @@ class MazeSetting:
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     remain_potion = max(Setting.remain_potion, Setting.difficult['remain_potion'])
+
+    start_key = Setting.difficult['key']
 
 
 #迷宫的基础属性
