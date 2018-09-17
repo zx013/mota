@@ -41,10 +41,6 @@ if platform.system().lower() == 'windows':
 增加捐赠二维码
 
 偶尔会出现空格子的情况，出现过两回，会显示上一层的东西，但走过去没有影响
-大小很小的时候，容易出现没有上行楼梯的情况，应不论何种情况都设置楼梯
-钥匙有时候会多出若干把，应该在计算钥匙分配时加入已有的钥匙
-蒙特卡洛模拟结果似乎不大对，需要验证一下
-圣水应该显示大小
 击败boss应放置些物品
 后台计算后续的楼层
 '''
@@ -358,6 +354,9 @@ class Map(FocusBehavior, FloatLayout):
                     self.state.set_defence(i, j, info['defence'])
                 if Setting.show_damage:
                     self.state.set_damage(i, j, health, damage)
+
+                if pos_type == MazeBase.Type.Item.holy:
+                    self.state.set_holy(i, j, pos_value)
 
     def show(self, dt):
         self.focus = True

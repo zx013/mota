@@ -21,6 +21,8 @@ class TreeNode:
         self.Backward = {} #节点之后的节点
         self.Up = None #上一层的开始节点
         self.Down = None #下一层的开始节点
+        self.UpPos = None
+        self.DownPos = None
 
         self.Deep = -1 #深度，离楼梯间最短路径的最短距离
         self.Special = special #特殊空间
@@ -58,6 +60,9 @@ class TreeNode:
         self.IsElite = False
         self.IsBoss = False
 
+        self.DoorPos = None
+        self.MonsterPos = None
+
         #英雄到达区域时获得的宝石属性总和，该值用来设置怪物
         self.Attack = 0
         self.Defence = 0
@@ -71,6 +76,23 @@ class TreeNode:
     @property
     def floor(self):
         return list(self.Area)[0][0]
+
+    @property
+    def space(self):
+        space = len(self.Area)
+        if self.Down:
+            space -= 1
+        if self.Up:
+            space -= 1
+        if self.Door and self.Monster:
+            space -= 1
+        space -= sum(self.Key.values())
+        space -= sum(self.AttackGem.values())
+        space -= sum(self.DefenceGem.values())
+        space -= sum(self.Potion.values())
+        if self.HolyWater:
+            space -= 1
+        return space
 
     @property
     def start_floor(self):
@@ -430,8 +452,12 @@ class Maze:
         if self.is_initial_floor(floor):
             pass
         elif self.is_boss_floor(floor): #boss层只有一个特殊区域
-            width = MazeSetting.rows // 2
-            height = MazeSetting.cols // 2
+            width = MazeSetting.rows // 3
+            if width < 1:
+                width = 1
+            height = MazeSetting.cols // 3
+            if height < 1:
+                height = 1
             while True:
                 x = random.randint(1, MazeSetting.rows - width + 1)
                 if x == 2 or x == MazeSetting.rows - width:
@@ -513,8 +539,9 @@ class Maze:
                 pos_set.add((pos[1], pos[2]))
 
         #去除已设置的楼梯空间
-        pos_set -= self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]
-        pos_set -= self.maze_info[floor]['stair'][MazeBase.Value.Stair.up]
+        stair = self.maze_info[floor]['stair']
+        pos_set -= set([(pos[1], pos[2]) for pos in stair[MazeBase.Value.Stair.down]])
+        pos_set -= set([(pos[1], pos[2]) for pos in stair[MazeBase.Value.Stair.up]])
         return pos_set
 
     def create_stair(self, floor):
@@ -580,7 +607,9 @@ class Maze:
         pos_down = set(self.maze_info[floor]['stair'][MazeBase.Value.Stair.down]).pop()
         node_down = self.find_node(pos_down)
         node_up.Up = node_down
+        node_up.UpPos = pos_up
         node_down.Down = node_up
+        node_down.DownPos = pos_down
 
 
     def adjust_corner(self, floor):
@@ -879,6 +908,15 @@ class Maze:
         node.Door = door
         key_set[door] += 1
 
+        #下楼区域没有Backward，所以不设置门
+        for node in node_list:
+            if not node.Backward:
+                if node.IsDoor:
+                    node.IsDoor = False
+                    node.Door = None
+                if node.IsMonster:
+                    node.IsMonster = False
+
         #放置key，使能够走通
         for pnode, node in Tools.iter_previous(node_list[1:]):
             door = node.Door
@@ -962,19 +1000,35 @@ class Maze:
         #没有door的需要放置monster
         #若空间小于等于1，不能放怪物，第一个区域不放置
         for node in node_list[1:-1]:
+            if not node.Backward:
+                continue
+            if node.Space == 0:
+                continue
+
             ismonster = False
             if node.IsMonster:
                 ismonster = True
             elif not node.IsDoor:
                 ismonster = True
-            elif node.Space == 0:
-                continue
             elif random.random() < 0.3 * (node.Space - 2):
                 ismonster = True
             if ismonster:
                 node.IsMonster = True
                 if node.IsDoor: #door will not in the area
                     node.Space -= 1
+
+        for node in node_list:
+            if not node.Backward:
+                continue
+            pos = set(node.Backward.keys()).pop()
+
+            if node.IsDoor:
+                node.DoorPos = pos
+                if node.IsMonster:
+                    beside = self.get_beside(pos, MazeBase.Type.Static.ground)
+                    pos = (beside & node.Area).pop()
+            if node.IsMonster:
+                node.MonsterPos = pos
 
 
     #每个单元提升50%左右
@@ -1163,6 +1217,10 @@ class Maze:
         node.IsMonster = True
         node.IsBoss = True
         node.Monster = ('boss', random.choice(list(MonsterInfo.data['boss'])))
+        if node.DoorPos:
+            beside = self.get_beside(node.DoorPos, MazeBase.Type.Static.ground)
+            node.MonsterPos = (beside & node.Area).pop()
+
         self.herobase.boss_attack = node.Attack
         self.herobase.boss_defence = node.Defence
 
@@ -1239,7 +1297,6 @@ class Maze:
                     attack += 1
                     continue
                 break
-
 
             #初始值不一定为100
             if monster[0] not in self.monster:
@@ -1424,16 +1481,12 @@ class Maze:
 
     def set_maze(self, node_list):
         for node in node_list:
-            for pos in node.Backward:
-                if node.IsDoor:
-                    self.set_type(pos, MazeBase.Type.Static.door)
-                    self.set_value(pos, node.Door)
-                    if node.IsMonster:
-                        beside = self.get_beside(pos, MazeBase.Type.Static.ground)
-                        pos = (beside & node.Area).pop()
-                if node.IsMonster:
-                    self.set_type(pos, MazeBase.Type.Active.monster)
-                    self.set_value(pos, node.Monster)
+            if node.DoorPos:
+                self.set_type(node.DoorPos, MazeBase.Type.Static.door)
+                self.set_value(node.DoorPos, node.Door)
+            if node.MonsterPos:
+                self.set_type(node.MonsterPos, MazeBase.Type.Active.monster)
+                self.set_value(node.MonsterPos, node.Monster)
 
             pos_area = []
             pos_list = []
@@ -1620,11 +1673,11 @@ class Maze:
                     self.create_stair(floor)
                     self.create_tree(floor)
                     self.adjust(floor)
-    
+
                 #等楼梯设置好再进行
                 for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
                     self.process(floor)
-    
+
                 self.set_item()
                 self.set_boss()
             except LoopException:

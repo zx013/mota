@@ -129,15 +129,21 @@ class State(FloatLayout):
             for k, v in val.items():
                 v.color = color.get(key, color.get('color', default[key]))
 
+    def real_pos(self, x, y):
+        return y, self.col - x - 1
+
     #显示怪物的属性
     def set_health(self, x, y, health=''):
-        self.health[y][self.col - x - 1].text = str(health)
+        x, y = self.real_pos(x, y)
+        self.health[x][y].text = str(health)
 
     def set_attack(self, x, y, attack=''):
-        self.attack[y][self.col - x - 1].text = str(attack)
+        x, y = self.real_pos(x, y)
+        self.attack[x][y].text = str(attack)
 
     def set_defence(self, x, y, defence=''):
-        self.defence[y][self.col - x - 1].text = str(defence)
+        x, y = self.real_pos(x, y)
+        self.defence[x][y].text = str(defence)
 
     def set_damage(self, x, y, health, damage=-1):
         if health <= damage:
@@ -150,5 +156,11 @@ class State(FloatLayout):
             text = str(damage)
         else:
             text = ''
-        self.damage[y][self.col - x - 1].text = text
-        self.damage[y][self.col - x - 1].color = color
+        x, y = self.real_pos(x, y)
+        self.damage[x][y].text = text
+        self.damage[x][y].color = color
+
+    def set_holy(self, x, y, holy):
+        x, y = self.real_pos(x, y)
+        self.damage[x][y].text = str(holy)
+        self.damage[x][y].color = (0, 1, 0, 1)
