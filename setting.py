@@ -35,11 +35,22 @@ class Setting:
     #字体路径
     font_path = os.path.join('data', 'font.ttf')
 
+    #难度，very-hard, hard, normal, easy, very-easy
+    difficult_config = {
+        'very-hard': {'montecarlo': 5000, 'remain_potion': 0, 'key': {}},
+        'hard': {'montecarlo': 1000, 'remain_potion': 100, 'key': {}},
+        'normal': {'montecarlo': 500, 'remain_potion': 500, 'key': {'yellow': 1}},
+        'easy': {'montecarlo': 100, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
+        'very-easy': {'montecarlo': 0, 'remain_potion': 5000, 'key': {'yellow': 1, 'blue': 1, 'red': 1}}
+    }
+    difficult_type = 'easy'
+    difficult = difficult_config[difficult_type]
+
     #每个单元多少层
     base = 2
 
     #迷宫的大小，最小为5，最大不限，正常11，太大影响性能，最好为奇数
-    size = 11
+    size = 3
 
     #每个点的大小（像素）
     pos_size = 32
@@ -56,8 +67,11 @@ class Setting:
     #显示的列数，包括外面一圈墙
     col_show = cols + 2
 
-    #蒙特卡洛模拟的次数
+    #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
     montecarlo = 100
+
+    #击败boss后剩余血量不超过该值加100
+    remain_potion = 100
 
     #是否显示怪物血量
     show_health = False
@@ -128,10 +142,10 @@ class MazeSetting:
     damage_total_min = 100
 
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
-    montecarlo_time = Setting.montecarlo
+    montecarlo = max(Setting.montecarlo, Setting.difficult['montecarlo'])
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
-    extra_potion = 100
+    remain_potion = max(Setting.remain_potion, Setting.difficult['remain_potion'])
 
 
 #迷宫的基础属性

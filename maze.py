@@ -1311,7 +1311,7 @@ class Maze:
         boss = node_list[-1]
 
         number = 0
-        while number < MazeSetting.montecarlo_time:
+        while number < MazeSetting.montecarlo:
             total_damage = 0
             attack = 0
             defence = 0
@@ -1408,9 +1408,7 @@ class Maze:
         #需要的总数
         boss = node_list[-1]
         potion = boss.Damage - self.herostate.health
-        if potion < 0:
-            potion = 0
-        potion += MazeSetting.extra_potion
+        potion += MazeSetting.remain_potion
 
         #预先放置一些，防止空的情况
         for node in node_list[1:-1]:
@@ -1476,7 +1474,7 @@ class Maze:
             node.HolyWater = ((node.HolyWater - 1) // 100 + 1) * 100
             potion -= node.HolyWater
             print('set holy: %d' % node.HolyWater)
-        print('best way: %d' % (MazeSetting.extra_potion - potion))
+        print('best way: %d' % (MazeSetting.remain_potion - potion))
 
 
     def set_maze(self, node_list):
