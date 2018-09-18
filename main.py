@@ -84,17 +84,17 @@ class Map(FocusBehavior, FloatLayout):
     col = Setting.col_show
 
     def __init__(self, **kwargs):
-        super(Map, self).__init__(**kwargs)
+        super(Map, self).__init__(size=(Texture.size * Setting.row_show, Texture.size * Setting.col_show), size_hint=(None, None), **kwargs)
 
         self.maze = Maze()
         self.maze.update()
 
         self.menu = Menu() #菜单
-        self.menu.opacity = 0
+        self.menu.opacity = 1
         self.state = State(self.maze.herostate) #状态显示
         self.state.easy()
         #切换楼层时显示目标楼层数，3和40是经验数据
-        self.floorlabel= Label(pos=(0, Setting.size * 3), font_name=Setting.font_path, font_size=str(Setting.size * 40)) #楼层变换时显示层数
+        self.floorlabel= Label(pos=(0, Setting.size * 3), size=(Texture.size * Setting.row_show, Texture.size * Setting.col_show), size_hint=(None, None), font_name=Setting.font_path, font_size=str(Setting.size * 40)) #楼层变换时显示层数
         self.floorlabel.canvas.opacity = 0
 
         self.front = Layer() #英雄移动
@@ -113,6 +113,7 @@ class Map(FocusBehavior, FloatLayout):
                 self.middle.add(i, j)
                 self.back.add(i, j, Texture.next('ground'))
 
+        self.touch = 'menu'
         self.hero = Hero(self.maze, self.state)
         Clock.schedule_interval(self.show, Config.step)
 
@@ -121,6 +122,29 @@ class Map(FocusBehavior, FloatLayout):
         key = keycode[1]
         if key in key_map:
             key = key_map[key]
+
+        if self.touch == 'hero':
+            self.key_down(key)
+        elif self.touch == 'menu':
+            self.menu.key_down(key)
+        return True
+
+    def on_touch_down(self, touch):
+        if self.touch == 'hero':
+            self.touch_down(touch.x, touch.y)
+        elif self.touch == 'menu':
+            self.menu.touch_down(touch.x, touch.y)
+        return True
+
+    def on_touch_up(self, touch):
+        if self.touch == 'hero':
+            self.touch_up(touch.x, touch.y)
+        elif self.touch == 'menu':
+            self.menu.touch_up(touch.x, touch.y)
+        return True
+
+
+    def key_down(self, key):
         if key in ('up', 'down', 'left', 'right'):
             self.move(key)
         elif key == 'q':
@@ -133,16 +157,18 @@ class Map(FocusBehavior, FloatLayout):
             Music.play('floor')
         elif key == 'p': #测试作弊
             self.maze.herostate.health += 1000
-        return True
 
-    def on_touch_down(self, touch):
-        if self.collide_point(*touch.pos):
-            x = self.row - int(touch.y / Texture.size) - 1
-            y = int(touch.x / Texture.size)
-            pos = (self.hero.floor, x, y)
-            self.hero.move_list = self.maze.find_path(self.hero.pos, pos)
-            return True
-        return False
+    def touch_down(self, x, y):
+        if not self.collide_point(x, y):
+            return False
+        show_x = self.row - int(y / Texture.size) - 1
+        show_y = int(x / Texture.size)
+        pos = (self.hero.floor, show_x, show_y)
+        self.hero.move_list = self.maze.find_path(self.hero.pos, pos)
+
+    def touch_up(self, x, y):
+        if not self.collide_point(x, y):
+            return False
 
 
     def ismove(self, pos):
