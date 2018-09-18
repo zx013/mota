@@ -3,6 +3,7 @@
 @author: zx013
 """
 
+'''
 #打包apk使用，目前可以打包，但运行时会卡住
 import sys
 import platform
@@ -10,6 +11,7 @@ if platform.system().lower() == 'windows':
     from build import build
     build()
     sys.exit(0)
+'''
 
 
 '''
@@ -87,7 +89,7 @@ class Map(FocusBehavior, FloatLayout):
         super(Map, self).__init__(size=(Texture.size * Setting.row_show, Texture.size * Setting.col_show), size_hint=(None, None), **kwargs)
 
         self.maze = Maze()
-        self.maze.update()
+        #self.maze.update()
 
         self.menu = Menu() #菜单
         self.menu.opacity = 1

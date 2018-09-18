@@ -1,0 +1,31 @@
+#:import Setting setting.Setting
+
+<MenuLabel>:
+    idx: 0
+    idy: 0
+    fsize: 4
+    length: sum([1 if c.isalpha() else 0.5 for c in self.text])
+    pos_hint: {'center_x': self.idx * Setting.size / self.parent.width + 0.5, 'center_y': self.idy * Setting.size / self.parent.height + 0.5}
+    size: (self.length * self.font_size, self.font_size)
+    size_hint: (None, None)
+    font_size: self.fsize * Setting.size
+    font_name: Setting.font_path
+
+<Menu>:
+    FloatLayout:
+        MenuLabel:
+            idx: 0
+            idy: 6
+            text: ' '.join([c for c in Setting.version])
+            fsize: 4
+        MenuLabel:
+            idx: 0
+            idy: 0
+            text: '开 始'
+            fsize: 6
+    
+        MenuLabel:
+            idx: 0
+            idy: -7
+            text: '设 置'
+            fsize: 6
