@@ -6,8 +6,7 @@ import os
 import platform
 from kivy.config import Config
 
-#是否开启背景音乐
-#是否开启音效
+
 #是否开启楼层飞行器
 #默认移动动画间隔
 #默认开门动画间隔
@@ -49,7 +48,7 @@ class Setting:
     base = 2
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
-    size = 7
+    size = 11
 
     #每个点的大小（像素）
     pos_size = 32
@@ -83,6 +82,28 @@ class Setting:
 
     #是否在怪物上显示对应伤害
     show_damage = True
+
+    #触控还是虚拟按键
+    touch = True
+
+    #移动速度（触控或鼠标操作时）
+    speed = 10
+
+    #是否是wasd操作
+    keyboard_wasd = True
+
+    #背景音乐
+    sound_back = True
+
+    #背景音量
+    sound_back_volume = 15
+
+    #音效
+    sound_effect = True
+
+    #音效音量
+    sound_effect_volume = 20
+
 
 
 #默认字体没有生效，很奇怪

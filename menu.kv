@@ -1,5 +1,6 @@
 #:import Setting setting.Setting
 #:import Texture cache.Texture
+#:import FadeTransition kivy.uix.screenmanager.FadeTransition
 
 <MenuLabel>:
     #简化后的参数
@@ -28,7 +29,127 @@
     color: self.select_color if self.state == 'down' else self.default_color
 
 
+<MenuParameter>:
+    idx: 0
+    idy: 0
+    text: ''
+    attr: 'title'
+    min: 0
+    max: 100
+    MenuLabel:
+        idx: self.parent.idx
+        idy: self.parent.idy
+        text: self.parent.text
+        fsize: 3
+        disabled: True
+    MenuLabel:
+        id: base
+        idx: self.parent.idx + 6
+        idy: self.parent.idy
+        text: str(getattr(Setting, self.parent.attr))
+        fsize: 3
+        disabled: True
+    MenuLabel:
+        idx: self.parent.idx + 10
+        idy: self.parent.idy
+        text: '+'
+        fsize: 3
+        on_touch_up:
+            self.state = 'normal'
+        on_release:
+            attr = getattr(Setting, self.parent.attr)
+            attr += attr < self.parent.max
+            setattr(Setting, self.parent.attr, attr)
+            base.text = str(attr)
+    MenuLabel:
+        idx: self.parent.idx + 14
+        idy: self.parent.idy
+        text: '-'
+        fsize: 3
+        on_touch_up:
+            self.state = 'normal'
+        on_release:
+            attr = getattr(Setting, self.parent.attr)
+            attr -= attr > self.parent.min
+            setattr(Setting, self.parent.attr, attr)
+            base.text = str(attr)
+
+
+<MenuSetting>:
+    idx: 0
+    idy: 0
+    type: ''
+    MenuLabel:
+        idx: self.parent.idx
+        idy: self.parent.idy
+        text: '基本'
+        fsize: 4
+        color: self.select_color if self.parent.type == 'base' else self.default_color
+        on_touch_up:
+            self.state = 'normal'
+        on_release:
+            self.parent.root.current = 'setting-base'
+    MenuLabel:
+        idx: self.parent.idx + 5
+        idy: self.parent.idy
+        text: '|'
+        fsize: 6
+        disabled: True
+    MenuLabel:
+        idx: self.parent.idx + 10
+        idy: self.parent.idy
+        text: '操作'
+        fsize: 4
+        color: self.select_color if self.parent.type == 'operate' else self.default_color
+        on_touch_up:
+            self.state = 'normal'
+        on_release:
+            self.parent.root.current = 'setting-operate'
+    MenuLabel:
+        idx: self.parent.idx + 15
+        idy: self.parent.idy
+        text: '|'
+        fsize: 6
+        disabled: True
+    MenuLabel:
+        idx: self.parent.idx + 20
+        idy: self.parent.idy
+        text: '声音'
+        fsize: 4
+        color: self.select_color if self.parent.type == 'sound' else self.default_color
+        on_touch_up:
+            self.state = 'normal'
+        on_release:
+            self.parent.root.current = 'setting-sound'
+    MenuLabel:
+        idx: self.parent.idx + 25
+        idy: self.parent.idy
+        text: '|'
+        fsize: 6
+        disabled: True
+    MenuLabel:
+        idx: self.parent.idx + 30
+        idy: self.parent.idy
+        text: '其它'
+        fsize: 4
+        color: self.select_color if self.parent.type == 'other' else self.default_color
+        on_touch_up:
+            self.state = 'normal'
+        on_release:
+            self.parent.root.current = 'setting-other'
+    MenuLabel:
+        idx: 0
+        idy: -15
+        text: '返回'
+        fsize: 3
+        on_touch_up:
+            self.state = 'normal'
+        on_release:
+            self.parent.root.current = 'main'
+
+
 <MenuManager>:
+    transition: FadeTransition()
     size: (Texture.size * Setting.row_show, Texture.size * Setting.col_show)
     size_hint: (None, None)
 
@@ -43,43 +164,55 @@
             idy: self.parent.title_y[0]
             text: Setting.title[0]
             fsize: 8
+            disabled: True
         MenuLabel:
             idx: self.parent.title_x[1]
             idy: self.parent.title_y[1]
             text: Setting.title[1]
             fsize: 8
+            disabled: True
         MenuLabel:
             idx: self.parent.title_x[2]
             idy: self.parent.title_y[2]
             text: Setting.title[2]
             fsize: 8
+            disabled: True
         MenuLabel:
             idx: self.parent.title_x[3]
             idy: self.parent.title_y[3]
             text: Setting.title[3]
             fsize: 8
+            disabled: True
         MenuLabel:
             idx: self.parent.title_x[4]
             idy: self.parent.title_y[4]
             text: Setting.title[4]
             fsize: 8
+            disabled: True
         MenuLabel:
             idx: 0
             idy: 6
             text: ' '.join([c for c in Setting.version])
             fsize: 4
+            disabled: True
         MenuLabel:
             idx: 0
             idy: 0
             text: '开 始'
             fsize: 6
-            on_release: root.current = 'start'
+            on_touch_up:
+                self.state = 'normal'
+            on_release:
+                root.current = 'start'
         MenuLabel:
             idx: 0
             idy: -7
             text: '设 置'
             fsize: 6
-            on_release: root.current = 'setting'
+            on_touch_up:
+                self.state = 'normal'
+            on_release:
+                root.current = 'setting-base'
 
     Screen:
         name: 'start'
@@ -89,93 +222,257 @@
             idy: 5
             text: '开 始'
             fsize: 4
+            on_touch_up:
+                self.state = 'normal'
         MenuLabel:
             idx: 0
             idy: 0
             text: '读 档'
             fsize: 4
             disabled: True
+            on_touch_up:
+                self.state = 'normal'
         MenuLabel:
             idx: 0
             idy: -5
             text: '返 回'
             fsize: 3
-            on_release: root.current = 'main'
+            on_touch_up:
+                self.state = 'normal'
+            on_release:
+                root.current = 'main'
 
     Screen:
-        name: 'setting'
+        name: 'setting-base'
 
-        FloatLayout:
-            MenuLabel:
-                idx: -12
-                idy: 10
-                text: '新手'
-                fsize: 3
-                group: 'different'
-                selected: Setting.difficult_type == 'very-easy'
-                on_release: Setting.difficult_type = 'very-easy'
-            MenuLabel:
-                idx: -6
-                idy: 10
-                text: '容易'
-                fsize: 3
-                group: 'different'
-                selected: Setting.difficult_type == 'easy'
-                on_release: Setting.difficult_type = 'easy'
-            MenuLabel:
-                idx: 0
-                idy: 10
-                text: '正常'
-                fsize: 3
-                group: 'different'
-                selected: Setting.difficult_type == 'normal'
-                on_release: Setting.difficult_type = 'normal'
-            MenuLabel:
-                idx: 6
-                idy: 10
-                text: '困难'
-                fsize: 3
-                group: 'different'
-                selected: Setting.difficult_type == 'hard'
-                on_release: Setting.difficult_type = 'hard'
-            MenuLabel:
-                idx: 12
-                idy: 10
-                text: '噩梦'
-                fsize: 3
-                group: 'different'
-                selected: Setting.difficult_type == 'very-hard'
-                on_release: Setting.difficult_type = 'very-hard'
+        MenuSetting:
+            idx: -15
+            idy: 12
+            type: 'base'
+            root: root
 
         FloatLayout:
             MenuLabel:
                 idx: -10
                 idy: 6
-                text: '层数'
-                fsize: 3
-                disabled: True
+                text: '新 手'
+                fsize: 4
+                group: 'different'
+                allow_no_selection: False
+                selected: Setting.difficult_type == 'very-easy'
+                on_release: Setting.difficult_type = 'very-easy'
             MenuLabel:
-                idx: -5
-                idy: 6
-                text: str(Setting.base)
-                fsize: 3
-                disabled: True
+                idx: -10
+                idy: 2
+                text: '容 易'
+                fsize: 4
+                group: 'different'
+                allow_no_selection: False
+                selected: Setting.difficult_type == 'easy'
+                on_release: Setting.difficult_type = 'easy'
             MenuLabel:
-                idx: 0
-                idy: 6
-                text: '+'
-                fsize: 3
-                disabled: True
+                idx: -10
+                idy: -2
+                text: '正 常'
+                fsize: 4
+                group: 'different'
+                allow_no_selection: False
+                selected: Setting.difficult_type == 'normal'
+                on_release: Setting.difficult_type = 'normal'
             MenuLabel:
-                idx: 5
-                idy: 6
-                text: '-'
+                idx: -10
+                idy: -6
+                text: '困 难'
+                fsize: 4
+                group: 'different'
+                allow_no_selection: False
+                selected: Setting.difficult_type == 'hard'
+                on_release: Setting.difficult_type = 'hard'
+            MenuLabel:
+                idx: -10
+                idy: -10
+                text: '噩 梦'
+                fsize: 4
+                group: 'different'
+                allow_no_selection: False
+                selected: Setting.difficult_type == 'very-hard'
+                on_release: Setting.difficult_type = 'very-hard'
+
+        MenuParameter:
+            idx: 0
+            idy: 6
+            text: '层数'
+            attr: 'base'
+            min: 2
+
+        MenuParameter:
+            idx: 0
+            idy: 2
+            text: '大小'
+            attr: 'size'
+            min: 3
+
+        FloatLayout:
+            MenuLabel:
+                idx: 6
+                idy: -2
+                text: '血 量'
                 fsize: 3
-                disabled: True
+                selected: Setting.show_health
+                on_release: Setting.show_health = not Setting.show_health
+            MenuLabel:
+                idx: 2
+                idy: -6
+                text: '攻 击'
+                fsize: 3
+                selected: Setting.show_attack
+                on_release: Setting.show_attack = not Setting.show_attack
+            MenuLabel:
+                idx: 10
+                idy: -6
+                text: '防 御'
+                fsize: 3
+                selected: Setting.show_defence
+                on_release: Setting.show_defence = not Setting.show_defence
+            MenuLabel:
+                idx: 6
+                idy: -10
+                text: '伤 害'
+                fsize: 3
+                selected: Setting.show_damage
+                on_release: Setting.show_damage = not Setting.show_damage
+
+    Screen:
+        name: 'setting-operate'
+
+        MenuSetting:
+            idx: -15
+            idy: 12
+            type: 'operate'
+            root: root
 
         MenuLabel:
             idx: 0
-            idy: -15
-            text: '返回'
+            idy: 6
+            text: '触 控'
+            fsize: 4
+        MenuLabel:
+            idx: -10
+            idy: 2
+            text: '触 控'
             fsize: 3
-            on_release: root.current = 'main'
+            group: 'touch'
+            allow_no_selection: False
+            selected: Setting.touch
+            on_release: Setting.touch = True
+        MenuLabel:
+            idx: 10
+            idy: 2
+            text: '虚 拟'
+            fsize: 3
+            group: 'touch'
+            allow_no_selection: False
+            selected: not Setting.touch
+            on_release: Setting.touch = False
+        MenuLabel:
+            idx: 0
+            idy: -4
+            text: '键 盘'
+            fsize: 4
+            disabled: True
+        MenuLabel:
+            idx: -10
+            idy: -10
+            text: '      W\nA    S    D'
+            fsize: 3
+            group: 'keyboard'
+            allow_no_selection: False
+            selected: Setting.keyboard_wasd
+            on_release: Setting.keyboard_wasd = True
+        MenuLabel:
+            idx: 10
+            idy: -10
+            text: '       ↑\n←   ↓   →'
+            fsize: 3
+            group: 'keyboard'
+            allow_no_selection: False
+            selected: not Setting.keyboard_wasd
+            on_release: Setting.keyboard_wasd = False
+
+    Screen:
+        name: 'setting-sound'
+
+        MenuSetting:
+            idx: -15
+            idy: 12
+            type: 'sound'
+            root: root
+
+        MenuLabel:
+            idx: 0
+            idy: 6
+            text: '背 景'
+            fsize: 4
+            selected: Setting.sound_back
+            on_release: Setting.sound_back = not Setting.sound_back
+        MenuParameter:
+            idx: -6
+            idy: 2
+            text: '音 量'
+            attr: 'sound_back_volume'
+            min: 0
+            max: 100
+        MenuLabel:
+            idx: 0
+            idy: -4
+            text: '音 效'
+            fsize: 4
+            selected: Setting.sound_effect
+            on_release: Setting.sound_effect = not Setting.sound_effect
+        MenuParameter:
+            idx: -6
+            idy: -8
+            text: '音 量'
+            attr: 'sound_effect_volume'
+            min: 0
+            max: 100
+
+    Screen:
+        name: 'setting-other'
+
+        MenuSetting:
+            idx: -15
+            idy: 12
+            type: 'other'
+            root: root
+
+        MenuLabel:
+            idx: 0
+            idy: 6
+            text: ''
+            fsize: 3
+            disabled: True
+        MenuLabel:
+            idx: 0
+            idy: 2
+            text: '制 作:  zx013'
+            fsize: 3
+            disabled: True
+        MenuLabel:
+            idx: 0
+            idy: -2
+            text: '音 乐:  zx013'
+            fsize: 3
+            disabled: True
+        MenuLabel:
+            idx: 0
+            idy: -6
+            text: '美 术:  zx013'
+            fsize: 3
+            disabled: True
+        MenuLabel:
+            idx: 0
+            idy: -10
+            text: '联系及反馈: zxlib@foxmail.com'
+            fsize: 2
+            disabled: True
