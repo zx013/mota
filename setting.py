@@ -48,7 +48,10 @@ class Setting:
     base = 2
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
-    size = 11
+    size = 7
+
+    #放缩倍数
+    multiple = 2
 
     #每个点的大小（像素）
     pos_size = 32
@@ -64,6 +67,9 @@ class Setting:
 
     #显示的列数，包括外面一圈墙
     col_show = cols + 2
+
+    row_size = pos_size * row_show * multiple
+    col_size = pos_size * col_show * multiple
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
     montecarlo = 100
@@ -107,14 +113,15 @@ class Setting:
 
 
 #默认字体没有生效，很奇怪
+Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size * Setting.multiple)
+Config.set('graphics', 'width', (Setting.cols + 2) * Setting.pos_size * Setting.multiple)
+Config.set('graphics', 'default_font', Setting.font_path)
+Config.set('graphics', 'resizable', 0)
 #android下这个直接就会卡住，必须注释掉才可以。。。
 '''
 if platform.system().lower() in ('windows', 'linux'):
     Config.set('kivy', 'window_icon', Setting.icon_path)
-    Config.set('graphics', 'default_font', Setting.font_path)
-    Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size)
-    Config.set('graphics', 'width', (Setting.cols + 2) * Setting.pos_size)
-    Config.set('graphics', 'resizable', 0)
+
 '''
 
 

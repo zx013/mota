@@ -1,6 +1,7 @@
+#:import FadeTransition kivy.uix.screenmanager.FadeTransition
 #:import Setting setting.Setting
 #:import Texture cache.Texture
-#:import FadeTransition kivy.uix.screenmanager.FadeTransition
+#:import Mota mota.Mota
 
 <MenuLabel>:
     #简化后的参数
@@ -11,12 +12,12 @@
 
     #根据地图大小动态变化的大小和位置
     length: sum([1 if c.isalpha() else 0.5 for c in self.text])
-    pos_hint: {'center_x': self.idx * Setting.size / self.parent.width + 0.5, 'center_y': self.idy * Setting.size / self.parent.height + 0.5} if self.parent else {}
-    size: (self.length * self.font_size, self.font_size)
+    pos_hint: {'center_x': self.idx * Setting.size * Setting.multiple / self.parent.width + 0.5, 'center_y': self.idy * Setting.size * Setting.multiple / self.parent.height + 0.5} if self.parent else {}
+    size: (self.length * self.font_size * Setting.multiple, self.font_size * Setting.multiple)
     size_hint: (None, None)
 
     #字体
-    font_size: self.fsize * Setting.size
+    font_size: self.fsize * Setting.size * Setting.multiple
     font_name: Setting.font_path
 
     #是否被选中，初始化状态
@@ -150,7 +151,7 @@
 
 <MenuManager>:
     transition: FadeTransition()
-    size: (Texture.size * Setting.row_show, Texture.size * Setting.col_show)
+    size: (Setting.row_size, Setting.col_size)
     size_hint: (None, None)
 
     Screen:
@@ -224,6 +225,8 @@
             fsize: 4
             on_touch_up:
                 self.state = 'normal'
+            on_release:
+                root.current = 'mota'
         MenuLabel:
             idx: 0
             idy: 0
@@ -241,6 +244,10 @@
                 self.state = 'normal'
             on_release:
                 root.current = 'main'
+
+    Screen:
+        name: 'mota'
+        Mota:
 
     Screen:
         name: 'setting-base'

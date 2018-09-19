@@ -204,11 +204,13 @@ class Hero:
 
     @floor.setter
     def floor(self, floor):
-        if self.floor == floor - 1 and self.maze.is_boss_floor(floor - 1):
-            self.maze.update()
-            self.__wall = randint(1, 3)
-            self.__weapon = randint(1, 5)
-            self.state.set_color(self.wall)
+        if self.floor == floor - 1:
+            if self.maze.is_initial_floor(floor - 1) or self.maze.is_boss_floor(floor - 1):
+                self.maze.update()
+                if self.maze.is_boss_floor(floor - 1):
+                    self.__wall = randint(1, 3)
+                    self.__weapon = randint(1, 5)
+                    self.state.set_color(self.wall)
 
         update_pos = None
         self.old_pos = self.pos

@@ -7,7 +7,6 @@ Created on Wed Aug 22 18:19:24 2018
 
 import os
 import sys
-import platform
 
 #获取在wsl中的路径
 def wsl_path(path):
@@ -20,7 +19,7 @@ def build(path='.'):
     path = os.getcwd()
     if os.path.isfile(os.path.join(path, 'main.py')):
         path = wsl_path(path)
-        cmd = "powershell debian run 'source /root/.bashrc; cd {}; rm -rf /root/.buildozer/android/platform/build/dists/zx013/build; cp -rf /root/buildozer.spec .; buildozer android release'".format(path)
+        cmd = "powershell debian run 'source /root/.bashrc; cd {}; rm -rf /root/.buildozer/android/platform/build/dists/zx013/build; cp -rf /root/buildozer.spec .; buildozer android release; sleep 2'".format(path)
         print(cmd)
         os.system(cmd)
     else:
