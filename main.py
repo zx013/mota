@@ -131,6 +131,7 @@ class Map(FocusBehavior, FloatLayout):
             self.menu.key_down(key)
         return True
 
+    '''
     def on_touch_down(self, touch):
         if self.touch == 'hero':
             self.touch_down(touch.x, touch.y)
@@ -171,7 +172,7 @@ class Map(FocusBehavior, FloatLayout):
     def touch_up(self, x, y):
         if not self.collide_point(x, y):
             return False
-
+    '''
 
     def ismove(self, pos):
         if pos in self.hero.action:

@@ -1,18 +1,68 @@
 #:import Setting setting.Setting
+#:import Texture cache.Texture
 
 <MenuLabel>:
+    #简化后的参数
     idx: 0
     idy: 0
+    text: ''
     fsize: 4
+
+    #根据地图大小动态变化的大小和位置
     length: sum([1 if c.isalpha() else 0.5 for c in self.text])
-    pos_hint: {'center_x': self.idx * Setting.size / self.parent.width + 0.5, 'center_y': self.idy * Setting.size / self.parent.height + 0.5}
+    pos_hint: {'center_x': self.idx * Setting.size / self.parent.width + 0.5, 'center_y': self.idy * Setting.size / self.parent.height + 0.5} if self.parent else {}
     size: (self.length * self.font_size, self.font_size)
     size_hint: (None, None)
+
+    #字体
     font_size: self.fsize * Setting.size
     font_name: Setting.font_path
 
-<Menu>:
-    FloatLayout:
+    #是否被选中，初始化状态
+    selected: False
+    state: 'down' if self.selected else 'normal'
+
+    #选中后的颜色配置
+    select_color: (1, 1, 0, 1)
+    default_color: (1, 1, 1, 1)
+    color: self.select_color if self.state == 'down' else self.default_color
+
+
+<MenuManager>:
+    size: (Texture.size * Setting.row_show, Texture.size * Setting.col_show)
+    size_hint: (None, None)
+
+    Screen:
+        name: 'main'
+        step: Setting.title_width / (len(Setting.title) - 1)
+        title_x: [- Setting.title_width / 2 + n * self.step for n, c in enumerate(Setting.title)]
+        title_y: [7 + (Setting.title_radius ** 2 - x ** 2) ** 0.5 - (Setting.title_radius ** 2 - 14 ** 2) ** 0.5 for x in self.title_x]
+
+        MenuLabel:
+            idx: self.parent.title_x[0]
+            idy: self.parent.title_y[0]
+            text: Setting.title[0]
+            fsize: 8
+        MenuLabel:
+            idx: self.parent.title_x[1]
+            idy: self.parent.title_y[1]
+            text: Setting.title[1]
+            fsize: 8
+        MenuLabel:
+            idx: self.parent.title_x[2]
+            idy: self.parent.title_y[2]
+            text: Setting.title[2]
+            fsize: 8
+        MenuLabel:
+            idx: self.parent.title_x[3]
+            idy: self.parent.title_y[3]
+            text: Setting.title[3]
+            fsize: 8
+        MenuLabel:
+            idx: self.parent.title_x[4]
+            idy: self.parent.title_y[4]
+            text: Setting.title[4]
+            fsize: 8
         MenuLabel:
             idx: 0
             idy: 6
@@ -23,9 +73,109 @@
             idy: 0
             text: '开 始'
             fsize: 6
-    
+            on_release: root.current = 'start'
         MenuLabel:
             idx: 0
             idy: -7
             text: '设 置'
             fsize: 6
+            on_release: root.current = 'setting'
+
+    Screen:
+        name: 'start'
+
+        MenuLabel:
+            idx: 0
+            idy: 5
+            text: '开 始'
+            fsize: 4
+        MenuLabel:
+            idx: 0
+            idy: 0
+            text: '读 档'
+            fsize: 4
+            disabled: True
+        MenuLabel:
+            idx: 0
+            idy: -5
+            text: '返 回'
+            fsize: 3
+            on_release: root.current = 'main'
+
+    Screen:
+        name: 'setting'
+
+        FloatLayout:
+            MenuLabel:
+                idx: -12
+                idy: 10
+                text: '新手'
+                fsize: 3
+                group: 'different'
+                selected: Setting.difficult_type == 'very-easy'
+                on_release: Setting.difficult_type = 'very-easy'
+            MenuLabel:
+                idx: -6
+                idy: 10
+                text: '容易'
+                fsize: 3
+                group: 'different'
+                selected: Setting.difficult_type == 'easy'
+                on_release: Setting.difficult_type = 'easy'
+            MenuLabel:
+                idx: 0
+                idy: 10
+                text: '正常'
+                fsize: 3
+                group: 'different'
+                selected: Setting.difficult_type == 'normal'
+                on_release: Setting.difficult_type = 'normal'
+            MenuLabel:
+                idx: 6
+                idy: 10
+                text: '困难'
+                fsize: 3
+                group: 'different'
+                selected: Setting.difficult_type == 'hard'
+                on_release: Setting.difficult_type = 'hard'
+            MenuLabel:
+                idx: 12
+                idy: 10
+                text: '噩梦'
+                fsize: 3
+                group: 'different'
+                selected: Setting.difficult_type == 'very-hard'
+                on_release: Setting.difficult_type = 'very-hard'
+
+        FloatLayout:
+            MenuLabel:
+                idx: -10
+                idy: 6
+                text: '层数'
+                fsize: 3
+                disabled: True
+            MenuLabel:
+                idx: -5
+                idy: 6
+                text: str(Setting.base)
+                fsize: 3
+                disabled: True
+            MenuLabel:
+                idx: 0
+                idy: 6
+                text: '+'
+                fsize: 3
+                disabled: True
+            MenuLabel:
+                idx: 5
+                idy: 6
+                text: '-'
+                fsize: 3
+                disabled: True
+
+        MenuLabel:
+            idx: 0
+            idy: -15
+            text: '返回'
+            fsize: 3
+            on_release: root.current = 'main'
