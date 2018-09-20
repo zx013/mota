@@ -33,6 +33,7 @@ Created on Wed Sep 19 22:16:01 2018
 偶尔会出现空格子的情况，出现过两回，会显示上一层的东西，但走过去没有影响
 击败boss应放置些物品
 后台计算后续的楼层
+放大后GridLayout中间有一条小缝
 '''
 
 #import jnius_config

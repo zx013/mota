@@ -69,6 +69,8 @@ class HeroState:
     __bind = {}
 
     def __init__(self, herobase):
+        self.schedule = ''
+        self.progress = 0 #保存update时的进度
         self.floor = 0
         self.health = herobase.health
         self.attack = herobase.attack
@@ -124,6 +126,16 @@ class HeroState:
             color[key] = val
 
         return dict(default, **color)
+
+    def update(self, schedule, progress=0, reset=False):
+        self.schedule = schedule
+        if reset:
+            progress = 0
+        else:
+            progress += progress
+            if progress > 100:
+                progress = 100
+        self.progress = progress
 
     def bind(self, name, label):
         self.__bind[name] = label

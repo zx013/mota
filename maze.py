@@ -1309,8 +1309,12 @@ class Maze:
         min_path = node_list
         boss = node_list[-1]
 
+        #最后还有10的进度
+        step = int((90 - self.herostate.progress) / 100 * MazeSetting.montecarlo)
         number = 0
         while number < MazeSetting.montecarlo:
+            if number % step == 0:
+                self.herostate.update('优化路线。。。', 1)
             total_damage = 0
             attack = 0
             defence = 0
@@ -1623,22 +1627,47 @@ class Maze:
 
     #先确定一个较优路线，再通过蒙特卡洛模拟逼近最优路线
     def set_item(self):
+        self.herostate.update('创建迷宫结构。。。', 5)
         for f in range(self.herobase.floor_start, self.herobase.floor_end + 1):
             self.set_stair(f)
         node_list = self.ergodic(self.herobase.floor_start, MazeSetting.base_floor)
+
+        self.herostate.update('重置空白区域。。。', 3)
         self.set_space(node_list)
+
+        self.herostate.update('放置钥匙。。。', 3)
         self.set_door(node_list)
+
+        self.herostate.update('放置怪物。。。', 3)
         self.set_monster(node_list)
+
+        self.herostate.update('放置宝石。。。', 3)
         self.set_gem(node_list)
+
         self.set_elite(node_list)
+
+        self.herostate.update('设置属性。。。', 3)
         self.set_attribute(node_list)
+
+        self.herostate.update('设置怪物。。。', 3)
         self.apply_monster(node_list)
+
+        self.herostate.update('设置精英。。。', 3)
         self.apply_elite(node_list)
+
+        self.herostate.update('设置魔王。。。', 3)
         self.apply_boss(node_list)
+
+        self.herostate.update('分配怪物属性。。。', 3)
         self.adjust_monster(node_list)
 
+        self.herostate.update('优化路线。。。', 3)
         node_list = self.montecarlo(node_list, self.herobase.floor_start, MazeSetting.base_floor)
+
+        self.herostate.update('放置药水。。。', 2)
         self.set_potion(node_list)
+
+        self.herostate.update('整理物品。。。', 3)
         self.set_maze(node_list)
 
 
@@ -1655,6 +1684,7 @@ class Maze:
 
 
     def update(self):
+        self.herostate.update('开始加载。。。', reset=True)
         self.herobase.update() #进入下一个level
         #set_items该值才会被刷新
         self.herobase.attack += self.herobase.base * self.herobase.boss_attack
@@ -1662,6 +1692,7 @@ class Maze:
 
         for i in range(3):
             try:
+                self.herostate.update('绘制迷宫。。。', reset=True)
                 for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
                     self.init(floor)
                     self.create_special(floor)
@@ -1677,12 +1708,15 @@ class Maze:
 
                 self.set_item()
                 self.set_boss()
+                self.herostate.update('完成放置。。。', 5)
             except LoopException:
                 #生成异常时重新生成
                 print('loop reset')
+                self.herostate.update('生成失败。。。')
                 continue
             except Exception as ex:
                 print('reset :', ex)
+                self.herostate.update('生成失败。。。')
                 continue
             break
 

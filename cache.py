@@ -3,7 +3,6 @@
 import os
 import random
 from kivy.config import ConfigParser
-#from configparser import ConfigParser #python2应为from Configparser import ConfigParser
 from kivy.uix.image import Image
 
 from setting import Setting
