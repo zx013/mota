@@ -57,13 +57,13 @@ from state import State
 
 class Layer(GridLayout):
     def __init__(self, **kwargs):
-        super(Layer, self).__init__(rows=Setting.row_show, cols=Setting.col_show, size=(Texture.size * Setting.row_show * Setting.multiple, Texture.size * Setting.col_show * Setting.multiple), size_hint=(None, None), **kwargs)
+        super(Layer, self).__init__(rows=Setting.row_show, cols=Setting.col_show, size=(Setting.pos_size * Setting.row_show * Setting.multiple, Setting.pos_size * Setting.col_show * Setting.multiple), size_hint=(None, None), **kwargs)
         self.image = [[None for j in range(Setting.col_show)] for i in range(Setting.row_show)]
         self.texture = None #默认的texture
 
     def add(self, i, j, texture=None):
         self.texture = texture
-        image = Image(size=(Texture.size * Setting.multiple, Texture.size * Setting.multiple), size_hint=(None, None))
+        image = Image(size=(Setting.pos_size * Setting.multiple, Setting.pos_size * Setting.multiple), size_hint=(None, None))
         image.texture = texture
         self.image[i][j] = image
         self.add_widget(image)
@@ -135,8 +135,8 @@ class Mota(FocusBehavior, FloatLayout):
         x, y = touch.pos
         if not self.collide_point(x, y):
             return False
-        show_x = self.row - int(y / (Texture.size * Setting.multiple)) - 1
-        show_y = int(x / (Texture.size * Setting.multiple))
+        show_x = self.row - int(y / (Setting.pos_size * Setting.multiple)) - 1
+        show_y = int(x / (Setting.pos_size * Setting.multiple))
         pos = (self.hero.floor, show_x, show_y)
         self.hero.move_list = self.maze.find_path(self.hero.pos, pos)
         return True

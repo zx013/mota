@@ -35,19 +35,19 @@ class State(FloatLayout):
         }
         for i in range(self.row):
             for j in range(self.col):
-                label = Label(pos=((i - self.row / 2 + 0.5) * Texture.size, (j - self.col / 2 + 0.5) * Texture.size + 14), color=(1, 1, 0.5, 1), **kwargs)
+                label = Label(pos=(((i - self.row / 2 + 0.5) * Setting.pos_size) * Setting.multiple, ((j - self.col / 2 + 0.5) * Setting.pos_size + 14) * Setting.multiple), color=(1, 1, 0.5, 1), **kwargs)
                 self.health[i][j] = label
                 self.add_widget(label)
 
-                label = Label(pos=((i - self.row / 2 + 0.5) * Texture.size - 12, (j - self.col / 2 + 0.5) * Texture.size + 2), color=(1, 0.5, 0.5, 1), **kwargs)
+                label = Label(pos=(((i - self.row / 2 + 0.5) * Setting.pos_size - 12) * Setting.multiple, ((j - self.col / 2 + 0.5) * Setting.pos_size + 2) * Setting.multiple), color=(1, 0.5, 0.5, 1), **kwargs)
                 self.attack[i][j] = label
                 self.add_widget(label)
 
-                label = Label(pos=((i - self.row / 2 + 0.5) * Texture.size + 12, (j - self.col / 2 + 0.5) * Texture.size + 2), color=(0.5, 0.5, 1, 1), **kwargs)
+                label = Label(pos=(((i - self.row / 2 + 0.5) * Setting.pos_size + 12) * Setting.multiple, ((j - self.col / 2 + 0.5) * Setting.pos_size + 2) * Setting.multiple), color=(0.5, 0.5, 1, 1), **kwargs)
                 self.defence[i][j] = label
                 self.add_widget(label)
 
-                label = Label(pos=((i - self.row / 2 + 0.5) * Texture.size, (j - self.col / 2 + 0.5) * Texture.size - 10), **kwargs)
+                label = Label(pos=(((i - self.row / 2 + 0.5) * Setting.pos_size) * Setting.multiple, ((j - self.col / 2 + 0.5) * Setting.pos_size - 10) * Setting.multiple), **kwargs)
                 self.damage[i][j] = label
                 self.add_widget(label)
 
@@ -86,7 +86,7 @@ class State(FloatLayout):
     #offset用来微调
     def add_label(self, x, y, offset=(0, 0), bind='', key_color=None, font_size=20, halign='center', color=(1, 1, 1, 1)):
         offset_x, offset_y = offset
-        label = Label(pos=((x * Texture.size + offset_x) * Setting.multiple, (y * Texture.size + offset_y) * Setting.multiple), font_name=Setting.font_path, font_size=font_size * Setting.multiple, halign=halign, color=color, outline_width=Setting.multiple, outline_color=(0.25, 0.25, 0.25))
+        label = Label(pos=((x * Setting.pos_size + offset_x) * Setting.multiple, (y * Setting.pos_size + offset_y) * Setting.multiple), font_name=Setting.font_path, font_size=font_size * Setting.multiple, halign=halign, color=color, outline_width=Setting.multiple, outline_color=(0.25, 0.25, 0.25))
         if bind:
             if bind == 'key':
                 self.herostate.key.bind(key_color, label)
@@ -97,7 +97,7 @@ class State(FloatLayout):
 
     def add_image(self, x, y, offset=(0, 0), name=''):
         offset_x, offset_y = offset
-        image = Image(pos=((x * Texture.size + offset_x) * Setting.multiple, (y * Texture.size + offset_y) * Setting.multiple))
+        image = Image(pos=((x * Setting.pos_size + offset_x) * Setting.multiple, (y * Setting.pos_size + offset_y) * Setting.multiple))
         image.texture = Texture.next(name)
         self.add_widget(image)
         return image

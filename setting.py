@@ -12,6 +12,10 @@ from kivy.config import Config
 #默认开门动画间隔
 #默认怪物动画间隔
 
+class classproperty(property):
+    def __get__(self, cls, owner):
+        return classmethod(self.fget).__get__(None, owner)()
+
 #全局设置
 class Setting:
     #标题
@@ -57,19 +61,32 @@ class Setting:
     pos_size = 32
 
     #行数，从左上开始往下
-    rows = size
+    @classproperty
+    def rows(cls):
+        return cls.size
 
     #显示的行数，包括外面一圈墙
-    row_show = rows + 2
+    @classproperty
+    def row_show(cls):
+        return cls.rows + 2
 
     #列数，从左上开始往右
     cols = size
 
     #显示的列数，包括外面一圈墙
-    col_show = cols + 2
+    @classproperty
+    def col_show(cls):
+        return cls.cols + 2
 
-    row_size = pos_size * row_show * multiple
-    col_size = pos_size * col_show * multiple
+    #高度
+    @classproperty
+    def row_size(cls):
+        return cls.pos_size * cls.row_show * cls.multiple
+
+    #宽度
+    @classproperty
+    def col_size(cls):
+        return cls.pos_size * cls.col_show * cls.multiple
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
     montecarlo = 100
@@ -110,8 +127,6 @@ class Setting:
     #音效音量
     sound_effect_volume = 20
 
-
-
 #默认字体没有生效，很奇怪
 Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size * Setting.multiple)
 Config.set('graphics', 'width', (Setting.cols + 2) * Setting.pos_size * Setting.multiple)
@@ -129,9 +144,15 @@ if platform.system().lower() in ('windows', 'linux'):
 #迷宫设置
 class MazeSetting:
     #行
-    rows = Setting.rows
+    @classproperty
+    def rows(cls):
+        return Setting.rows
+
     #列
-    cols = Setting.cols
+    @classproperty
+    def cols(cls):
+        return Setting.cols
+
     #保存的目录
     save_dir = 'save'
     #保存的文件后缀
@@ -142,9 +163,14 @@ class MazeSetting:
         return '{save_dir}/{num}.{save_ext}'.format(save_dir=MazeSetting.save_dir, num=num, save_ext=MazeSetting.save_ext)
 
     #保存的层数，10时占用20M左右内存，100时占用50M左右内存
-    save_floor = Setting.base
+    @classproperty
+    def save_floor(cls):
+        return Setting.base
+
     #每几层一个单元
-    base_floor = Setting.base
+    @classproperty
+    def base_floor(cls):
+        return Setting.base
 
     #每个宝石增加的属性值（总属性百分比）
     attribute_value = 0.01
@@ -173,12 +199,18 @@ class MazeSetting:
     damage_total_min = 100
 
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
-    montecarlo = max(Setting.montecarlo, Setting.difficult['montecarlo'])
+    @classproperty
+    def montecarlo(cls):
+        return max(Setting.montecarlo, Setting.difficult['montecarlo'])
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
-    remain_potion = max(Setting.remain_potion, Setting.difficult['remain_potion'])
+    @classproperty
+    def remain_potion(cls):
+        return max(Setting.remain_potion, Setting.difficult['remain_potion'])
 
-    start_key = Setting.difficult['key']
+    @classproperty
+    def start_key(cls):
+        return Setting.difficult['key']
 
 
 #迷宫的基础属性

@@ -3,14 +3,15 @@
 @author: zx013
 """
 
-
-#打包apk使用，目前可以打包，但运行时会卡住
-import sys
-import platform
-if platform.system().lower() == 'windows':
-    from build import build
-    build()
-    sys.exit(0)
+#打包apk使用
+build_apk = False
+if build_apk:
+    import sys
+    import platform
+    if platform.system().lower() == 'windows':
+        from build import build
+        build()
+        sys.exit(0)
 
 
 from kivy.app import App
