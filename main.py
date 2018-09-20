@@ -4,7 +4,7 @@
 """
 
 #打包apk使用
-build_apk = True
+build_apk = False
 if build_apk:
     import sys
     import platform
@@ -37,6 +37,4 @@ class MotaApp(App):
 
 
 if __name__ == '__main__':
-    mota = MotaApp()
-    mota.run()
-    #mota.stop()
+    MotaApp().run()

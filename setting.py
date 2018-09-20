@@ -5,11 +5,44 @@
 import os
 import platform
 from kivy.config import Config
+from kivy.storage.dictstore import DictStore
 
 
 class classproperty(property):
     def __get__(self, cls, owner):
         return classmethod(self.fget).__get__(None, owner)()
+
+class Store:
+    store_name = 'setting.store'
+
+    store = DictStore(store_name)
+
+    @classmethod
+    def save(self):
+        self.store.put('setting',
+            base=Setting.base,
+            size=Setting.size,
+            difficult_type=Setting.difficult_type,
+            montecarlo=Setting.montecarlo,
+            show_health=Setting.show_health,
+            show_attack=Setting.show_attack,
+            show_defence=Setting.show_defence,
+            show_damage=Setting.show_damage,
+            touch=Setting.touch,
+            speed=Setting.speed,
+            keyboard_wasd=Setting.keyboard_wasd,
+            sound_back=Setting.sound_back,
+            sound_back_volume=Setting.sound_back_volume,
+            sound_effect=Setting.sound_effect,
+            sound_effect_volume=Setting.sound_effect_volume
+        )
+
+    @classmethod
+    def load(self, name, default=None):
+        if 'setting' not in self.store:
+            return default
+        return self.store.get('setting').get(name, default)
+
 
 #全局设置
 class Setting:
@@ -40,14 +73,14 @@ class Setting:
         'easy': {'montecarlo': 100, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
         'very-easy': {'montecarlo': 0, 'remain_potion': 5000, 'key': {'yellow': 1, 'blue': 1, 'red': 1}}
     }
-    difficult_type = 'easy'
+    difficult_type = Store.load('difficult_type', 'normal')
     difficult = difficult_config[difficult_type]
 
     #每个单元多少层
-    base = 3
+    base = Store.load('base', 10)
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
-    size = 11
+    size = Store.load('size', 1)
 
     #放缩倍数
     multiple = 2
@@ -66,7 +99,9 @@ class Setting:
         return cls.rows + 2
 
     #列数，从左上开始往右
-    cols = size
+    @classproperty
+    def cols(cls):
+        return cls.size
 
     #显示的列数，包括外面一圈墙
     @classproperty
@@ -84,43 +119,45 @@ class Setting:
         return cls.pos_size * cls.col_show * cls.multiple
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
-    montecarlo = 100
+    montecarlo = Store.load('montecarlo', 100)
 
     #击败boss后剩余血量不超过该值加100
     remain_potion = 100
 
     #是否显示怪物血量
-    show_health = False
+    show_health = Store.load('show_health', False)
 
     #是否显示怪物攻击
-    show_attack = False
+    show_attack = Store.load('show_attack', False)
 
     #是否显示怪物防御
-    show_defence = False
+    show_defence = Store.load('show_defence', False)
 
     #是否在怪物上显示对应伤害
-    show_damage = True
+    show_damage = Store.load('show_damage', True)
 
     #触控还是虚拟按键
-    touch = True
+    touch = Store.load('touch', True)
 
     #移动速度（触控或鼠标操作时）
-    speed = 10
+    speed = Store.load('speed', 10)
 
     #是否是wasd操作
-    keyboard_wasd = True
+    keyboard_wasd = Store.load('keyboard_wasd', False)
 
     #背景音乐
-    sound_back = True
+    sound_back = Store.load('sound_back', True)
 
     #背景音量
-    sound_back_volume = 15
+    sound_back_volume = Store.load('sound_back_volume', 15)
 
     #音效
-    sound_effect = True
+    sound_effect = Store.load('sound_back', True)
 
     #音效音量
-    sound_effect_volume = 20
+    sound_effect_volume = Store.load('sound_effect_volume', 20)
+
+
 
 #默认字体没有生效，很奇怪
 Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size * Setting.multiple)

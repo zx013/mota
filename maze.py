@@ -192,7 +192,6 @@ class Maze:
         self.monster = {}
         self.herobase = HeroBase()
         self.herostate = HeroState(self.herobase)
-        self.set_init()
         MonsterInfo.load()
 
     def init(self, floor):

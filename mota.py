@@ -77,6 +77,7 @@ class Mota(FocusBehavior, FloatLayout):
         super(Mota, self).__init__(**kwargs)
 
         self.maze = Maze()
+        self.maze.set_init()
         #self.maze.update()
 
         self.state = State(self.maze.herostate) #状态显示
