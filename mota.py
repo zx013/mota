@@ -24,8 +24,6 @@ Created on Wed Sep 19 22:16:01 2018
 长条区域可以放置多个怪物
 
 目前剩余的问题
-开始菜单
-配置页面
 怪物手册
 楼层跳跃
 存档功能
@@ -47,6 +45,10 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
+from kivy.lang import Builder
+
+with open('mota.kv', 'r', encoding='utf-8') as fp:
+    Builder.load_string(fp.read())
 
 from setting import Setting, MazeBase
 from cache import Config, Texture, Music
@@ -55,57 +57,46 @@ from hero import Opacity, Hero
 from state import State
 
 
-class Layer(GridLayout):
-    def __init__(self, **kwargs):
-        super(Layer, self).__init__(rows=Setting.row_show, cols=Setting.col_show, size=(Setting.pos_size * Setting.row_show * Setting.multiple, Setting.pos_size * Setting.col_show * Setting.multiple), size_hint=(None, None), **kwargs)
-        self.image = [[None for j in range(Setting.col_show)] for i in range(Setting.row_show)]
-        self.texture = None #默认的texture
-
+class MotaImage(Image): pass
+class MotaLayer(GridLayout):
     def add(self, i, j, texture=None):
         self.texture = texture
-        image = Image(size=(Setting.pos_size * Setting.multiple, Setting.pos_size * Setting.multiple), size_hint=(None, None))
+        image = MotaImage()
         image.texture = texture
         self.image[i][j] = image
         self.add_widget(image)
         return image
 
+class FloorLabel(Label): pass
 
 class Mota(FocusBehavior, FloatLayout):
     row = Setting.row_show
     col = Setting.col_show
 
     def __init__(self, **kwargs):
-        super(Mota, self).__init__(size=(Setting.row_size, Setting.col_size), size_hint=(None, None), **kwargs)
+        super(Mota, self).__init__(**kwargs)
 
         self.maze = Maze()
         #self.maze.update()
 
-        #self.menu = Menu() #菜单
-        #self.menu.opacity = 1
         self.state = State(self.maze.herostate) #状态显示
-        self.state.easy()
-        #切换楼层时显示目标楼层数，3和40是经验数据
-        self.floorlabel= Label(pos=(0, Setting.size * 3), size=(Setting.row_size, Setting.col_size), size_hint=(None, None), font_name=Setting.font_path, font_size=str(Setting.size * 40 * Setting.multiple)) #楼层变换时显示层数
-        self.floorlabel.canvas.opacity = 0
-
-        self.front = Layer() #英雄移动
-        self.middle = Layer() #物品和怪物
-        self.back = Layer() #背景，全部用地面填充
+        self.floorlabel = FloorLabel()
+        self.front = MotaLayer()
+        self.middle = MotaLayer()
+        self.back = MotaLayer()
 
         self.add_widget(self.back)
         self.add_widget(self.middle)
         self.add_widget(self.front)
         self.add_widget(self.floorlabel)
         self.add_widget(self.state)
-        #self.add_widget(self.menu)
         for i in range(Setting.row_show):
             for j in range(Setting.col_show):
                 self.front.add(i, j, Texture.next('empty'))
                 self.middle.add(i, j)
                 self.back.add(i, j, Texture.next('ground'))
 
-        #self.touch = 'menu'
-        self.hero = Hero(self.maze, self.state)
+        self.hero = Hero(self.maze)
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):

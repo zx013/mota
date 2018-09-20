@@ -7,11 +7,6 @@ import platform
 from kivy.config import Config
 
 
-#是否开启楼层飞行器
-#默认移动动画间隔
-#默认开门动画间隔
-#默认怪物动画间隔
-
 class classproperty(property):
     def __get__(self, cls, owner):
         return classmethod(self.fget).__get__(None, owner)()
@@ -49,10 +44,10 @@ class Setting:
     difficult = difficult_config[difficult_type]
 
     #每个单元多少层
-    base = 2
+    base = 3
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
-    size = 7
+    size = 11
 
     #放缩倍数
     multiple = 2

@@ -1,0 +1,147 @@
+#:import Setting setting.Setting
+#:import MazeBase setting.MazeBase
+#:import Texture cache.Texture
+
+<StateLabel>:
+    idx: 0
+    idy: 0
+    offset: (0, 0)
+    fsize: 20
+
+    pos: ((self.idx * Setting.pos_size + self.offset[0]) * Setting.multiple, (self.idy * Setting.pos_size + self.offset[1]) * Setting.multiple)
+    font_name: Setting.font_path
+    font_size: self.fsize * Setting.multiple
+    halign: 'center'
+    color: (1, 1, 1, 1)
+    outline_width: Setting.multiple
+    outline_color: (0.25, 0.25, 0.25)
+
+
+<StateImage>:
+    idx: 0
+    idy: 0
+    offset: (0, 0)
+    name: ''
+
+    pos_hint: {'center_x': (self.idx * Setting.pos_size + self.offset[0]) * Setting.multiple / self.parent.width + 0.5, 'center_y': (self.idy * Setting.pos_size + self.offset[1]) * Setting.multiple / self.parent.height + 0.5} if self.parent else {}
+    size: (Setting.pos_size * Setting.multiple, Setting.pos_size * Setting.multiple)
+    size_hint: (None, None)
+    texture: Texture.next(self.name)
+    allow_stretch: True
+
+
+<State>:
+    size: (Setting.row_size, Setting.col_size)
+    size_hint: (None, None)
+
+    FloatLayout:
+        StateLabel:
+            idx: 0
+            idy: - (Setting.col_show - 1) / 2
+            text: Setting.title
+            fsize: 24
+        StateLabel:
+            idx: (Setting.row_show - 3) / 2
+            idy: - (Setting.col_show - 1) / 2
+            fsize: 24
+            init: root.herostate.bind('floor', self)
+
+    FloatLayout:
+        StateLabel:
+            idx: 0
+            idy: (Setting.col_show - 1) / 2
+            offset: (0, 3)
+            fsize: 28
+            init: root.herostate.bind('health', self)
+        StateImage:
+            idx: - (Setting.row_show - 2.5) / 2
+            idy: (Setting.col_show - 1.5) / 2
+            name: 'attack-16'
+        StateLabel:
+            idx: - (Setting.row_show - 3) / 2
+            idy: (Setting.col_show - 1) / 2
+            offset: (0, 2)
+            fsize: 24
+            halign: 'left'
+            init: root.herostate.bind('attack', self)
+        StateImage:
+            idx: (Setting.row_show - 1.5) / 2
+            idy: (Setting.col_show - 1.5) / 2
+            name: 'defence-16'
+        StateLabel:
+            idx: (Setting.row_show - 3) / 2
+            idy: (Setting.col_show - 1) / 2
+            offset: (0, 2)
+            fsize: 24
+            halign: 'right'
+            init: root.herostate.bind('defence', self)
+
+    FloatLayout:
+        StateImage:
+            idx: (Setting.row_show - 0.5) / 2
+            idy: - (Setting.col_show - 9) / 2
+            name: 'key-yellow-16'
+        StateLabel:
+            idx: (Setting.row_show - 1) / 2
+            idy: - (Setting.col_show - 8.5) / 2
+            offset: (-1, 1)
+            fsize: 20
+            init: root.herostate.key.bind(MazeBase.Value.Color.yellow, self)
+        StateImage:
+            idx: (Setting.row_show - 0.5) / 2
+            idy: - (Setting.col_show - 7) / 2
+            name: 'key-blue-16'
+        StateLabel:
+            idx: (Setting.row_show - 1) / 2
+            idy: - (Setting.col_show - 6.5) / 2
+            offset: (-1, 1)
+            fsize: 20
+            init: root.herostate.key.bind(MazeBase.Value.Color.blue, self)
+        StateImage:
+            idx: (Setting.row_show - 0.5) / 2
+            idy: - (Setting.col_show - 5) / 2
+            name: 'key-red-16'
+        StateLabel:
+            idx: (Setting.row_show - 1) / 2
+            idy: - (Setting.col_show - 4.5) / 2
+            offset: (-1, 1)
+            fsize: 20
+            init: root.herostate.key.bind(MazeBase.Value.Color.red, self)
+        StateImage:
+            idx: (Setting.row_show - 0.5) / 2
+            idy: - (Setting.col_show - 3) / 2
+            name: 'key-green-16'
+        StateLabel:
+            idx: (Setting.row_show - 1) / 2
+            idy: - (Setting.col_show - 2.5) / 2
+            offset: (-1, 1)
+            fsize: 20
+            init: root.herostate.key.bind(MazeBase.Value.Color.green, self)
+
+
+<MotaImage>:
+    size: (Setting.pos_size * Setting.multiple, Setting.pos_size * Setting.multiple)
+    size_hint: (None, None)
+    allow_stretch: True
+
+<MotaLayer>:
+    rows: Setting.row_show
+    cols: Setting.col_show
+    size: (Setting.pos_size * Setting.row_show * Setting.multiple, Setting.pos_size * Setting.col_show * Setting.multiple)
+    size_hint: (None, None)
+    image: [[None for j in range(Setting.col_show)] for i in range(Setting.row_show)]
+    texture: None
+
+
+<FloorLabel>:
+    pos: (0, Setting.size * 3)
+    size: (Setting.row_size, Setting.col_size)
+    size_hint: (None, None)
+    font_name: Setting.font_path
+    font_size: str(Setting.size * 40 * Setting.multiple)
+    #canvas.opacity = 0
+
+
+<Mota>:
+    size: (Setting.row_size, Setting.col_size)
+    size_hint: (None, None)

@@ -3,6 +3,7 @@
 @author: zx013
 """
 from setting import MazeBase, MazeSetting
+from cache import Config
 
 from random import randint
 
@@ -51,17 +52,19 @@ class HeroStateDict(dict):
         if color in self.__bind:
             self.__bind[color].text = str(value)
 
+    def set_color(self, color):
+        for key, label in self.__bind.items():
+            label.color = color
+
     def bind(self, color, label):
         self.__bind[color] = label
-        self[color] = self[color]
+
+    def active(self):
+        for color in self.__bind.keys():
+            self[color] = self[color]
 
 
 #实时状态，bind将状态绑定到label上，可以实时显示
-#3000: (0, 1, 0, 1)
-#1000: (0.5, 1, 0.5, 1)
-#500: (1, 1, 0.5, 1)
-#200: (1, 0.5, 0, 1)
-#100: (1, 0, 0, 1)
 class HeroState:
     __bind = {}
 
@@ -93,13 +96,44 @@ class HeroState:
                     label.color = (0.5, 1, 0.5, 1) #浅绿
                 else:
                     label.color = (0, 1, 0, 1) #绿色
-                    
             label.text = text
+        elif name == 'wall':
+            color = self.get_color(value)
+            for key, label in self.__bind.items():
+                label.color = color.get(key, color['color'])
+            self.key.set_color(color['key'])
+
+    #可以加入缓存
+    def get_color(self, wall):
+        default = {
+            'color': (1, 1, 1, 1),
+            'title': (1, 1, 1, 1),
+            'floor': (1, 1, 1, 1),
+            'health': (0.5, 1, 0.5, 1),
+            'attack': (1, 0.5, 0.5, 1),
+            'defence': (0.5, 0.5, 1, 1),
+            'key': (1, 1, 0.5, 1)
+        }
+
+        color = {}
+        for key, val in Config.config[wall].items():
+            if 'color' not in key:
+                continue
+            if '-' in key:
+                key = key.split('-')[1]
+            color[key] = val
+
+        return dict(default, **color)
 
     def bind(self, name, label):
         self.__bind[name] = label
-        value = getattr(self, name)
-        setattr(self, name, value)
+
+    #所有bind之后，使用active激活，使初始化时能够显示数字，在bind中直接设置会导致后续设置和开始的重叠
+    def active(self):
+        for name in self.__bind.keys():
+            value = getattr(self, name)
+            setattr(self, name, value)
+        self.key.active()
 
 
 class Opacity:
@@ -152,17 +186,19 @@ class Hero:
     action = set() #执行动画的点
 
     __wall = 2
+    __wall_max = 3
     __wall_dynamic = 1
-    weapon = 1
+    __wall_dynamic_max = 1 #暂时没有使用
+    __weapon = 1
+    __weapon_max = 5
 
-    def __init__(self, maze, state, **kwargs):
+    def __init__(self, maze, **kwargs):
         self.maze = maze
-        self.state = state
         self.pos = maze.maze_info[0]['init']
         self.__wall = 2
         self.__wall_dynamic = 1
         self.__weapon = 1
-        self.state.set_color(self.wall)
+        self.maze.herostate.wall = self.wall
 
     @property
     def name(self):
@@ -191,7 +227,7 @@ class Hero:
         if floor in self.maze.maze_info: #楼层存在
             stair = self.maze.maze_info[floor]['stair']
             if self.floor == floor + 1: #下楼
-                if not self.maze.is_boss_floor(floor) and MazeBase.Value.Stair.up in stair: #楼梯存在
+                if not self.maze.is_initial_floor(floor) and not self.maze.is_boss_floor(floor) and MazeBase.Value.Stair.up in stair: #楼梯存在
                     return True
             elif self.floor == floor - 1: #上楼
                 if MazeBase.Value.Stair.down in stair:
@@ -208,9 +244,9 @@ class Hero:
             if self.maze.is_initial_floor(floor - 1) or self.maze.is_boss_floor(floor - 1):
                 self.maze.update()
                 if self.maze.is_boss_floor(floor - 1):
-                    self.__wall = randint(1, 3)
-                    self.__weapon = randint(1, 5)
-                    self.state.set_color(self.wall)
+                    self.__wall = randint(1, self.__wall_max)
+                    self.__weapon = randint(1, self.__weapon_max)
+                    self.maze.herostate.wall = self.wall
 
         update_pos = None
         self.old_pos = self.pos

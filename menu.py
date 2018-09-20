@@ -4,7 +4,6 @@
 @author: zzy
 """
 from kivy.uix.label import Label
-#from kivy.uix.scatter import Scatter
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager
