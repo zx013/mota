@@ -226,11 +226,11 @@ class Hero:
 
     @property
     def weapon_attack(self):
-        return 'weapon-attack-{:0>2}'.format(self.__weapon)
+        return 'weapen-attack-{:0>2}'.format(self.__weapon)
 
     @property
     def weapon_defence(self):
-        return 'weapon-defence-{:0>2}'.format(self.__weapon)
+        return 'weapen-defence-{:0>2}'.format(self.__weapon)
 
 
     def isfloor(self, floor):

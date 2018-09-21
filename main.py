@@ -4,7 +4,7 @@
 """
 
 #打包apk使用
-build_apk = True
+build_apk = False
 if build_apk:
     import sys
     import platform

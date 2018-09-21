@@ -77,7 +77,12 @@ class Mota(FocusBehavior, FloatLayout):
     def __init__(self, **kwargs):
         super(Mota, self).__init__(**kwargs)
 
+        key = Setting.difficult['key']
         self.maze = Maze()
+        self.maze.herostate.key[MazeBase.Value.Color.yellow] += key.get('yellow', 0)
+        self.maze.herostate.key[MazeBase.Value.Color.blue] += key.get('blue', 0)
+        self.maze.herostate.key[MazeBase.Value.Color.red] += key.get('red', 0)
+        self.maze.herostate.key[MazeBase.Value.Color.green] += key.get('green', 0)
         self.maze.set_init()
         #self.maze.update()
 

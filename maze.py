@@ -73,6 +73,9 @@ class TreeNode:
         #圣水，开始时放置，用来调整第一个节点无法放置足够药水的问题
         self.HolyWater = 0
 
+        #蒙特卡洛模拟时的临时数据
+        self.Montecarlo = 0
+
     @property
     def floor(self):
         return list(self.Area)[0][0]
@@ -1039,7 +1042,8 @@ class Maze:
         }
 
         gem_choice_special = {
-            MazeBase.Value.Gem.big: 10,
+            MazeBase.Value.Gem.small: 9,
+            MazeBase.Value.Gem.big: 3,
             MazeBase.Value.Gem.large: 1
         }
         #确保攻防加成接近
@@ -1224,6 +1228,10 @@ class Maze:
         self.herobase.boss_defence = node.Defence
 
 
+    #怪物类型
+    #高攻，低防
+    #中攻，高防
+    #中攻，高血
     def adjust_monster(self, node_list):
         number_enable = [False for node in node_list]
         for number, node in enumerate(node_list):
@@ -1333,21 +1341,32 @@ class Maze:
             while node_list:
                 node = None
                 damage = 0
+                node_enable = []
                 for node in node_list:
+                    node.Montecarlo = 0
                     if node.IsBoss:
                         continue
                     if node.IsDoor:
                         if key[node.Door] == 0:
                             continue
+                        node.Montecarlo += 100 * node.Door
                     if node.IsMonster:
                         damage = self.get_damage(attack, defence, node.Monster)
                         if damage == float('inf'):
                             continue
                         if total_damage + damage > min_damage:
                             continue
+                        if damage > MazeSetting.elite_max:
+                            continue
+                        node.Montecarlo += damage
+                    node_enable.append(node)
+                if not node_enable:
                     break
-                else: #该次遍历失败
-                    break
+                #node_enable.sort(key=lambda x: x.Montecarlo)
+                #first_enable = node_enable[0].Montecarlo
+                #node_enable = [node for node in node_enable]
+                #print(node_enable)
+                node = random.choice(node_enable)
 
                 for color in MazeBase.Value.Color.total:
                     key[color] += node.Key[color]

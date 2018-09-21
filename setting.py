@@ -67,10 +67,10 @@ class Setting:
     #难度，very-hard, hard, normal, easy, very-easy
     #难度决定了蒙特卡洛模拟的次数，剩余的血量和初始的钥匙
     difficult_config = {
-        'very-hard': {'montecarlo': 5000, 'remain_potion': 0, 'key': {}},
-        'hard': {'montecarlo': 1000, 'remain_potion': 100, 'key': {}},
-        'normal': {'montecarlo': 500, 'remain_potion': 500, 'key': {'yellow': 1}},
-        'easy': {'montecarlo': 100, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
+        'very-hard': {'montecarlo': 100000, 'remain_potion': 0, 'key': {}},
+        'hard': {'montecarlo': 10000, 'remain_potion': 100, 'key': {}},
+        'normal': {'montecarlo': 5000, 'remain_potion': 500, 'key': {'yellow': 1}},
+        'easy': {'montecarlo': 1000, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
         'very-easy': {'montecarlo': 0, 'remain_potion': 5000, 'key': {'yellow': 1, 'blue': 1, 'red': 1}}
     }
     difficult_type = Store.load('difficult_type', 'normal')
@@ -80,10 +80,10 @@ class Setting:
     base = Store.load('base', 10)
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
-    size = Store.load('size', 1)
+    size = Store.load('size', 11)
 
     #放缩倍数
-    multiple = 2
+    multiple = 1.0
 
     #每个点的大小（像素）
     pos_size = 32
@@ -111,12 +111,12 @@ class Setting:
     #高度
     @classproperty
     def row_size(cls):
-        return cls.pos_size * cls.row_show * cls.multiple
+        return int(cls.pos_size * cls.row_show * cls.multiple)
 
     #宽度
     @classproperty
     def col_size(cls):
-        return cls.pos_size * cls.col_show * cls.multiple
+        return int(cls.pos_size * cls.col_show * cls.multiple)
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
     montecarlo = Store.load('montecarlo', 100)
@@ -160,8 +160,8 @@ class Setting:
 
 
 #默认字体没有生效，很奇怪
-Config.set('graphics', 'height', (Setting.rows + 2) * Setting.pos_size * Setting.multiple)
-Config.set('graphics', 'width', (Setting.cols + 2) * Setting.pos_size * Setting.multiple)
+Config.set('graphics', 'height', int(Setting.row_show * Setting.pos_size * Setting.multiple))
+Config.set('graphics', 'width', int(Setting.col_show * Setting.pos_size * Setting.multiple))
 Config.set('graphics', 'default_font', Setting.font_path)
 Config.set('graphics', 'resizable', 0)
 #android下这个直接就会卡住，必须注释掉才可以。。。
@@ -208,7 +208,7 @@ class MazeSetting:
     attribute_value = 0.01
 
     #第一个怪物造成的最低伤害
-    damage_min = 200
+    damage_min = 500
 
     #第一个怪物造成的最高伤害
     damage_max = 1000
