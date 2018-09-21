@@ -1233,6 +1233,7 @@ class Maze:
     #中攻，高防
     #中攻，高血
     def adjust_monster(self, node_list):
+        damage_increase = 1
         number_enable = [False for node in node_list]
         for number, node in enumerate(node_list):
             if not node.IsMonster:
@@ -1275,27 +1276,28 @@ class Maze:
                     damage_list.append(damage)
                     node.Damage = damage
 
+                #print(damage_increase, damage_list)
                 damage = damage_list[0]
                 if node.IsBoss:
-                    if damage < MazeSetting.boss_min:
+                    if damage < MazeSetting.boss_min * damage_increase:
                         attack += random.randint(1, 20)
                         continue
-                    if damage > MazeSetting.boss_max:
+                    if damage > MazeSetting.boss_max * damage_increase:
                         defence -= 1
                         continue
                 elif node.IsElite:
-                    if damage < MazeSetting.elite_min:
+                    if damage < MazeSetting.elite_min * damage_increase:
                         attack += random.randint(1, 10)
                         continue
-                    if damage > MazeSetting.elite_max:
+                    if damage > MazeSetting.elite_max * damage_increase:
                         defence -= 1
                         continue
                 else:
-                    if damage < MazeSetting.damage_min:
+                    if damage < MazeSetting.damage_min * damage_increase:
                         #第一个怪物伤害太低
                         attack += random.randint(1, 5)
                         continue
-                    if damage > MazeSetting.damage_max:
+                    if damage > MazeSetting.damage_max * damage_increase:
                         #第一个怪物伤害太高
                         #正常来说，defence不会小于-100（即实际值小于0）
                         defence -= 1
@@ -1304,6 +1306,7 @@ class Maze:
                     attack += 1
                     continue
                 break
+            damage_increase *= 1.02
 
             #初始值不一定为100
             if monster[0] not in self.monster:
@@ -1312,6 +1315,7 @@ class Maze:
 
 
     #蒙特卡洛模拟获取尽可能的最优解
+    #后期可以用深度学习求解，蒙特卡洛效率太低
     def montecarlo(self, node_list, floor, across):
         min_damage = sum([node.Damage for node in node_list if node.IsMonster and not node.IsBoss])
         min_path = node_list
@@ -1349,24 +1353,36 @@ class Maze:
                     if node.IsDoor:
                         if key[node.Door] == 0:
                             continue
-                        node.Montecarlo += 100 * node.Door
+                        #node.Montecarlo += 100 * node.Door
                     if node.IsMonster:
                         damage = self.get_damage(attack, defence, node.Monster)
                         if damage == float('inf'):
                             continue
                         if total_damage + damage > min_damage:
                             continue
-                        if damage > MazeSetting.elite_max:
-                            continue
+                        #if damage > MazeSetting.elite_max:
+                        #    continue
                         node.Montecarlo += damage
+                    for gem in MazeBase.Value.Gem.total:
+                        node.Montecarlo -= node.AttackGem[gem] * 1000
+                        node.Montecarlo -= node.DefenceGem[gem] * 3500
                     node_enable.append(node)
                 if not node_enable:
                     break
-                #node_enable.sort(key=lambda x: x.Montecarlo)
-                #first_enable = node_enable[0].Montecarlo
-                #node_enable = [node for node in node_enable]
-                #print(node_enable)
-                node = random.choice(node_enable)
+
+                #倾向于贪心算法
+                node_easy = []
+                if not node_easy:
+                    node_easy = [node for node in node_enable if node.Montecarlo < 0]
+                if not node_easy:
+                    node_easy = [node for node in node_enable if node.Montecarlo < 100]
+                if not node_easy:
+                    node_easy = [node for node in node_enable if node.Montecarlo < 1000]
+
+                if node_easy:
+                    node = random.choice(node_easy)
+                else:
+                    node = random.choice(node_enable)
 
                 for color in MazeBase.Value.Color.total:
                     key[color] += node.Key[color]
