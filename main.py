@@ -15,6 +15,7 @@ if build_apk:
 
 
 from kivy.app import App
+from setting import Setting #必须先加载setting，这样multiple就可以最先初始化
 from menu import MenuManager
 
 
