@@ -3,6 +3,8 @@ import os
 import random
 import pickle
 from functools import reduce
+#from multiprocessing import Process as Thread
+from threading import Thread
 
 from setting import MazeBase, MazeSetting
 from cache import Config
@@ -72,9 +74,6 @@ class TreeNode:
 
         #圣水，开始时放置，用来调整第一个节点无法放置足够药水的问题
         self.HolyWater = 0
-
-        #蒙特卡洛模拟时的临时数据
-        self.Montecarlo = 0
 
     @property
     def floor(self):
@@ -1233,7 +1232,6 @@ class Maze:
     #中攻，高防
     #中攻，高血
     def adjust_monster(self, node_list):
-        damage_increase = 1
         number_enable = [False for node in node_list]
         for number, node in enumerate(node_list):
             if not node.IsMonster:
@@ -1276,28 +1274,28 @@ class Maze:
                     damage_list.append(damage)
                     node.Damage = damage
 
-                #print(damage_increase, damage_list)
+                #print(damage_list)
                 damage = damage_list[0]
                 if node.IsBoss:
-                    if damage < MazeSetting.boss_min * damage_increase:
+                    if damage < MazeSetting.boss_min:
                         attack += random.randint(1, 20)
                         continue
-                    if damage > MazeSetting.boss_max * damage_increase:
+                    if damage > MazeSetting.boss_max:
                         defence -= 1
                         continue
                 elif node.IsElite:
-                    if damage < MazeSetting.elite_min * damage_increase:
+                    if damage < MazeSetting.elite_min:
                         attack += random.randint(1, 10)
                         continue
-                    if damage > MazeSetting.elite_max * damage_increase:
+                    if damage > MazeSetting.elite_max:
                         defence -= 1
                         continue
                 else:
-                    if damage < MazeSetting.damage_min * damage_increase:
+                    if damage < MazeSetting.damage_min:
                         #第一个怪物伤害太低
                         attack += random.randint(1, 5)
                         continue
-                    if damage > MazeSetting.damage_max * damage_increase:
+                    if damage > MazeSetting.damage_max:
                         #第一个怪物伤害太高
                         #正常来说，defence不会小于-100（即实际值小于0）
                         defence -= 1
@@ -1306,7 +1304,6 @@ class Maze:
                     attack += 1
                     continue
                 break
-            damage_increase *= 1.02
 
             #初始值不一定为100
             if monster[0] not in self.monster:
@@ -1316,17 +1313,20 @@ class Maze:
 
     #蒙特卡洛模拟获取尽可能的最优解
     #后期可以用深度学习求解，蒙特卡洛效率太低
-    def montecarlo(self, node_list, floor, across):
+    def __montecarlo(self, index):
+        node_list, floor, across, total = self.montecarlo_args
+
+        montecarlostate = {} #保存蒙特卡洛模拟出错时的中间状态
         min_damage = sum([node.Damage for node in node_list if node.IsMonster and not node.IsBoss])
         min_path = node_list
         boss = node_list[-1]
 
         #最后还有10的进度
-        step = int((90 - self.herostate.progress) / 100 * MazeSetting.montecarlo)
+        #step = int((90 - self.herostate.progress) / 100 * MazeSetting.montecarlo)
         number = 0
-        while number < MazeSetting.montecarlo:
-            if number % step == 0:
-                self.herostate.update('优化路线。。。', 1)
+        while number < total:
+            #if number % step == 0:
+            #    self.herostate.update('优化路线。。。', 1)
             total_damage = 0
             attack = 0
             defence = 0
@@ -1346,8 +1346,8 @@ class Maze:
                 node = None
                 damage = 0
                 node_enable = []
-                for node in node_list:
-                    node.Montecarlo = 0
+                for num, node in enumerate(node_list):
+                    montecarlo = 0
                     if node.IsBoss:
                         continue
                     if node.IsDoor:
@@ -1360,29 +1360,55 @@ class Maze:
                             continue
                         if total_damage + damage > min_damage:
                             continue
-                        #if damage > MazeSetting.elite_max:
-                        #    continue
-                        node.Montecarlo += damage
+                        if damage > MazeSetting.elite_max:
+                            continue
+                        montecarlo += damage
+                    
+                    next_attack = attack
+                    next_defence = defence
+                    next_key = dict(key)
                     for gem in MazeBase.Value.Gem.total:
-                        node.Montecarlo -= node.AttackGem[gem] * 1000
-                        node.Montecarlo -= node.DefenceGem[gem] * 3500
-                    node_enable.append(node)
+                        montecarlo -= node.AttackGem[gem] * 1000
+                        montecarlo -= node.DefenceGem[gem] * 300
+                        next_attack += gem * node.AttackGem[gem]
+                        next_defence += gem * node.DefenceGem[gem]
+                    for color in MazeBase.Value.Color.total:
+                        next_key[color] += node.Key[color]
+
+                    #下一步有一定次数走不通
+                    next_state = [next_attack, next_defence]
+                    for color in MazeBase.Value.Color.total:
+                        next_state.append(next_key[color])
+                    next_state = tuple(next_state)
+                    if montecarlostate.get(next_state, 0) > 100:
+                        continue
+                    
+                    node_enable.append((node, 0))
                 if not node_enable:
+                    state = [attack, defence]
+                    for color in MazeBase.Value.Color.total:
+                        state.append(key[color])
+                    state = tuple(state)
+                    if state in montecarlostate:
+                        montecarlostate[state] += 1
+                    else:
+                        montecarlostate[state] = 1
+                    #print(state, montecarlostate[state])
                     break
 
-                #倾向于贪心算法
+                #倾向于贪心算法，有时候走不通，应该是开始时的贪心导致后续都无法前进
                 node_easy = []
-                if not node_easy:
-                    node_easy = [node for node in node_enable if node.Montecarlo < 0]
-                if not node_easy:
-                    node_easy = [node for node in node_enable if node.Montecarlo < 100]
-                if not node_easy:
-                    node_easy = [node for node in node_enable if node.Montecarlo < 1000]
+                if not node_easy and random.random() < 0.5:
+                    node_easy = [node for node, montecarlo in node_enable if montecarlo < 0]
+                if not node_easy and random.random() < 0.5:
+                    node_easy = [node for node, montecarlo in node_enable if montecarlo < 100]
+                if not node_easy and random.random() < 0.5:
+                    node_easy = [node for node, montecarlo in node_enable if montecarlo < 1000]
 
                 if node_easy:
                     node = random.choice(node_easy)
                 else:
-                    node = random.choice(node_enable)
+                    node = random.choice(node_enable)[0]
 
                 for color in MazeBase.Value.Color.total:
                     key[color] += node.Key[color]
@@ -1424,17 +1450,36 @@ class Maze:
                 min_damage = total_damage
                 min_path = node_path
 
+        self.montecarlo_result[index] = min_damage, min_path
+        return min_damage, min_path
 
+    def montecarlo(self, node_list, floor, across):
+        self.montecarlo_args = [node_list, floor, across, MazeSetting.montecarlo]
+        self.montecarlo_result = {}
+        n = 3
+        t = [0] * n
+        for i in range(n):
+            t[i] = Thread(target=self.__montecarlo, args=(i,))
+        for i in range(n):
+            t[i].start()
+        for i in range(n):
+            t[i].join()
+
+        min_damage, min_path = float('inf'), node_list
+        for damage, path in self.montecarlo_result.values():
+            print(damage, min_damage)
+            if damage < min_damage:
+                min_damage = damage
+                min_path = path
+        #min_damage, min_path = self.__montecarlo(node_list, floor, across)
         #重设属性值
         self.set_attribute(min_path)
         #重置伤害值，设置血瓶时使用
         for node in min_path:
             if node.IsMonster:
                 node.Damage = self.get_damage(node.Attack, node.Defence, node.Monster)
-
         return min_path
-
-
+        
     #总是会少一点
     def set_potion(self, node_list):
         potion_choice = {
@@ -1726,24 +1771,25 @@ class Maze:
         self.herobase.defence += self.herobase.base * self.herobase.boss_defence
 
         for i in range(3):
-            try:
-                self.herostate.update('绘制迷宫。。。', reset=True)
-                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
-                    self.init(floor)
-                    self.create_special(floor)
-                    self.create_wall(floor)
-                    self.crack_wall(floor)
-                    self.create_stair(floor)
-                    self.create_tree(floor)
-                    self.adjust(floor)
+            #try:
+            self.herostate.update('绘制迷宫。。。', reset=True)
+            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                self.init(floor)
+                self.create_special(floor)
+                self.create_wall(floor)
+                self.crack_wall(floor)
+                self.create_stair(floor)
+                self.create_tree(floor)
+                self.adjust(floor)
 
-                #等楼梯设置好再进行
-                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
-                    self.process(floor)
+            #等楼梯设置好再进行
+            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                self.process(floor)
 
-                self.set_item()
-                self.set_boss()
-                self.herostate.update('完成放置。。。', 5)
+            self.set_item()
+            self.set_boss()
+            self.herostate.update('完成放置。。。', 5)
+            '''
             except LoopException:
                 #生成异常时重新生成
                 print('loop reset')
@@ -1753,6 +1799,7 @@ class Maze:
                 print('reset :', ex)
                 self.herostate.update('生成失败。。。')
                 continue
+            '''
             break
 
         self.update_monster()
