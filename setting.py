@@ -6,6 +6,7 @@ import os
 import platform
 from kivy.config import Config
 from kivy.storage.dictstore import DictStore
+from jnius import autoclass, cast
 
 
 class classproperty(property):
@@ -67,10 +68,10 @@ class Setting:
     #难度，very-hard, hard, normal, easy, very-easy
     #难度决定了蒙特卡洛模拟的次数，剩余的血量和初始的钥匙
     difficult_config = {
-        'very-hard': {'montecarlo': 100000, 'remain_potion': 0, 'key': {}},
-        'hard': {'montecarlo': 10000, 'remain_potion': 100, 'key': {}},
-        'normal': {'montecarlo': 5000, 'remain_potion': 500, 'key': {'yellow': 1}},
-        'easy': {'montecarlo': 1000, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
+        'very-hard': {'montecarlo': 10000, 'remain_potion': 0, 'key': {}},
+        'hard': {'montecarlo': 3000, 'remain_potion': 100, 'key': {}},
+        'normal': {'montecarlo': 1000, 'remain_potion': 500, 'key': {'yellow': 1}},
+        'easy': {'montecarlo': 100, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
         'very-easy': {'montecarlo': 0, 'remain_potion': 5000, 'key': {'yellow': 1, 'blue': 1, 'red': 1}}
     }
     difficult_type = Store.load('difficult_type', 'normal')
@@ -158,6 +159,16 @@ class Setting:
     sound_effect_volume = Store.load('sound_effect_volume', 20)
 
 
+#if platform.system().lower() == 'android':
+try:
+    PythonActivity = autoclass('org.renpy.android.PythonActivity')
+    CurrentActivity = cast('android.app.Activity', PythonActivity.mActivity)
+    display = CurrentActivity.getWindowManager().getDefaultDisplay()
+    width = display.getWidth()
+    height = display.getHeight()
+    Setting.multiple = width / (Setting.row_show * Setting.pos_size)
+except:
+    pass
 
 #默认字体没有生效，很奇怪
 Config.set('graphics', 'height', int(Setting.row_show * Setting.pos_size * Setting.multiple))

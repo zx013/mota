@@ -1467,7 +1467,6 @@ class Maze:
 
         min_damage, min_path = float('inf'), node_list
         for damage, path in self.montecarlo_result.values():
-            print(damage, min_damage)
             if damage < min_damage:
                 min_damage = damage
                 min_path = path
