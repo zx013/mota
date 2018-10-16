@@ -1873,6 +1873,7 @@ class Maze:
         around -= pos_list | self.around[num - 1]
         return around
 
+    #需要绕过人物
     #@except_default([])
     def find_path(self, start_pos, end_pos):
         move_map = {

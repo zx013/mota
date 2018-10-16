@@ -3,7 +3,7 @@
 @author: zx013
 """
 from setting import MazeBase, MazeSetting
-from cache import Config
+from cache import Config, Music
 
 from random import randint
 
@@ -254,6 +254,7 @@ class Hero:
     def floor(self, floor):
         if self.floor == floor - 1:
             if self.maze.is_initial_floor(floor - 1) or self.maze.is_boss_floor(floor - 1):
+                Music.background(change=True)
                 self.maze.update()
                 if self.maze.is_boss_floor(floor - 1):
                     self.__wall = randint(1, self.__wall_max)

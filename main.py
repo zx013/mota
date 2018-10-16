@@ -2,17 +2,15 @@
 """
 @author: zx013
 """
-
 #打包apk使用
-build_apk = False
+build_apk = True
 if build_apk:
-    import sys
     import platform
+    import sys
     if platform.system().lower() == 'windows':
         from build import build
         build()
-        sys.exit(0)
-
+        sys.exit()
 
 from kivy.app import App
 from setting import Setting #必须先加载setting，这样multiple就可以最先初始化

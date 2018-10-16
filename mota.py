@@ -77,6 +77,7 @@ class Mota(FocusBehavior, FloatLayout):
 
     def __init__(self, **kwargs):
         super(Mota, self).__init__(**kwargs)
+        #Music.background(init=True)
 
         key = Setting.difficult['key']
         self.maze = Maze()
@@ -353,6 +354,8 @@ class Mota(FocusBehavior, FloatLayout):
                     self.state.set_holy(i, j, pos_value)
 
     def show(self, dt):
+        #Music.background()
+
         self.focus = True
 
         self.show_move(dt)

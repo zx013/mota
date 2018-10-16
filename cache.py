@@ -210,8 +210,9 @@ class MusicBase:
         self.music = {}
         self.back = None
         self.back_list = []
+        self.back_pos = 0
         for name in os.listdir(self.path):
-            continue #加载太多似乎会出错
+            continue
             if not name.endswith('.mp3') and not name.endswith('.wav'):
                 continue
             key = name.split('.')[0]
@@ -220,23 +221,32 @@ class MusicBase:
                 if index != 'init':
                     self.back_list.append(index)
             self.music[key] = SoundLoader.load(os.path.join('music', name))
-            #self.music[key] = music
+            self.music[key].unload()
 
-    def background(self, init=False):
+    def background(self, init=False, change=False):
         if init:
             key = 'init'
         else:
             key = random.choice(self.back_list)
         key = 'background-{}'.format(key)
+        if key not in self.music:
+            return None
 
-        if self.back:
-            self.back.stop()
-
-        if key in self.music:
+        play = False
+        if change or not self.back:
+            if self.back:
+                self.back.stop()
             self.back = self.music[key]
+            play = True
+
+        if self.back_pos > self.back.get_pos():
+            play = True
+
+        if play:
             self.back.loop = True
             self.back.seek(0)
             self.back.play()
+        self.back_pos = self.back.get_pos()
 
     def play(self, key):
         if key in self.music:

@@ -128,7 +128,7 @@ class Setting:
         return int(self.pos_size * self.col_show * self.multiple)
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
-    montecarlo = 10000 #Store.load('montecarlo', 100)
+    montecarlo = Store.load('montecarlo', 100)
 
     #击败boss后剩余血量不超过该值加100
     remain_potion = 100

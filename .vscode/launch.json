@@ -5,12 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Terminal/Console",
+            "name": "Terminal",
             "type": "python",
             "request": "launch",
             "stopOnEntry": false,
             "pythonPath": "${config:python.pythonPath}",
-            "program": "${workspaceFolder}/main.py",
+            //"program": "${workspaceFolder}/main.py",
+            "program": "${file}",
             "cwd": "${workspaceRoot}",
             "args": [
             ],
