@@ -17,7 +17,7 @@
     #根据地图大小动态变化的大小和位置
     length: sum([1 if c.isalpha() else 0.5 for c in self.text])
     pos_hint: {'center_x': self.idx * self.ssize * Setting.multiple / self.parent.width + 0.5, 'center_y': self.idy * self.ssize * Setting.multiple / self.parent.height + 0.5} if self.parent else {}
-    size: (self.length * self.font_size * Setting.multiple, self.font_size * Setting.multiple)
+    size: (self.length * self.font_size, self.font_size)
     size_hint: (None, None)
 
     #字体

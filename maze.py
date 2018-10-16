@@ -26,6 +26,8 @@ class TreeNode:
         self.UpPos = None
         self.DownPos = None
 
+        self.Failure = 0
+
         self.Deep = -1 #深度，离楼梯间最短路径的最短距离
         self.Special = special #特殊空间
         self.Space = len(area) #空间大小
@@ -1316,7 +1318,6 @@ class Maze:
     def __montecarlo(self, index):
         node_list, floor, across, total = self.montecarlo_args
 
-        montecarlostate = {} #保存蒙特卡洛模拟出错时的中间状态
         min_damage = sum([node.Damage for node in node_list if node.IsMonster and not node.IsBoss])
         min_path = node_list
         boss = node_list[-1]
@@ -1342,18 +1343,18 @@ class Maze:
             node_len = len(node_list)
             random.shuffle(node_list)
 
+            last_node = None
             while node_list:
                 node = None
                 damage = 0
-                node_enable = []
-                for num, node in enumerate(node_list):
+                montecarlo_node = []
+                for node in node_list:
                     montecarlo = 0
                     if node.IsBoss:
                         continue
                     if node.IsDoor:
                         if key[node.Door] == 0:
                             continue
-                        #node.Montecarlo += 100 * node.Door
                     if node.IsMonster:
                         damage = self.get_damage(attack, defence, node.Monster)
                         if damage == float('inf'):
@@ -1363,53 +1364,34 @@ class Maze:
                         if damage > MazeSetting.elite_max:
                             continue
                         montecarlo += damage
-                    
-                    next_attack = attack
-                    next_defence = defence
-                    next_key = dict(key)
-                    for gem in MazeBase.Value.Gem.total:
-                        montecarlo -= node.AttackGem[gem] * 1000
-                        montecarlo -= node.DefenceGem[gem] * 300
-                        next_attack += gem * node.AttackGem[gem]
-                        next_defence += gem * node.DefenceGem[gem]
-                    for color in MazeBase.Value.Color.total:
-                        next_key[color] += node.Key[color]
 
-                    #下一步有一定次数走不通
-                    next_state = [next_attack, next_defence]
-                    for color in MazeBase.Value.Color.total:
-                        next_state.append(next_key[color])
-                    next_state = tuple(next_state)
-                    if montecarlostate.get(next_state, 0) > 100:
-                        continue
-                    
-                    node_enable.append((node, 0))
-                if not node_enable:
-                    state = [attack, defence]
-                    for color in MazeBase.Value.Color.total:
-                        state.append(key[color])
-                    state = tuple(state)
-                    if state in montecarlostate:
-                        montecarlostate[state] += 1
-                    else:
-                        montecarlostate[state] = 1
-                    #print(state, montecarlostate[state])
+                    for gem in MazeBase.Value.Gem.total:
+                        if node.AttackGem[gem]:
+                            montecarlo -= 400
+                        montecarlo -= node.AttackGem[gem] * 100
+                        montecarlo -= node.DefenceGem[gem] * 50
+
+                    montecarlo += node.Failure
+                    montecarlo_node.append((node, montecarlo))
+                if not montecarlo_node:
+                    if last_node:
+                        last_node.Failure += 1
                     break
 
                 #倾向于贪心算法，有时候走不通，应该是开始时的贪心导致后续都无法前进
-                node_easy = []
-                if not node_easy and random.random() < 0.5:
-                    node_easy = [node for node, montecarlo in node_enable if montecarlo < 0]
-                if not node_easy and random.random() < 0.5:
-                    node_easy = [node for node, montecarlo in node_enable if montecarlo < 100]
-                if not node_easy and random.random() < 0.5:
-                    node_easy = [node for node, montecarlo in node_enable if montecarlo < 1000]
+                montecarlo_easy = []
+                for i in range(-500, 1001, 100):
+                    if not montecarlo_easy:
+                        montecarlo_easy = [(node, montecarlo) for node, montecarlo in montecarlo_node if montecarlo < i]
+                        break
 
-                if node_easy:
-                    node = random.choice(node_easy)
-                else:
-                    node = random.choice(node_enable)[0]
+                if not montecarlo_easy:
+                    montecarlo_easy = montecarlo_node
+                node, montecarlo = random.choice(montecarlo_easy)
+                #if node.Failure > 100:
+                #    print([_m for _n, _m in montecarlo_node], montecarlo, node.Failure)
 
+                #更新状态
                 for color in MazeBase.Value.Color.total:
                     key[color] += node.Key[color]
 
@@ -1418,21 +1400,19 @@ class Maze:
                     defence += gem * node.DefenceGem[gem]
 
                 total_damage += damage
-                node_path.append(node)
 
                 #随机插入到列表中
-                for __node in list(set(node.Forward.values()) - set(node_list)):
+                forward_node = list(set(node.Forward.values()) - set(node_list))
+                if node.Up:
+                    forward_node.append(node.Up)
+                for __node in forward_node:
                     node_list.insert(random.randint(0, node_len), __node)
                     node_len += 1
 
-                if floor + across > node.floor + 1:
-                    if node.Area & self.maze_info[node.floor]['stair'][MazeBase.Value.Stair.up]:
-                        __node = set(self.maze_info[node.floor + 1]['tree']).pop()
-                        node_list.insert(random.randint(0, node_len), __node)
-                        node_len += 1
-
+                node_path.append(node)
                 node_list.remove(node)
                 node_len -= 1
+                last_node = node
 
             number += 1
 
@@ -1440,6 +1420,7 @@ class Maze:
             if len(node_list) > 1:
                 continue
 
+            #未到boss
             if not node_list[0].IsBoss:
                 continue
 
@@ -1456,7 +1437,7 @@ class Maze:
     def montecarlo(self, node_list, floor, across):
         self.montecarlo_args = [node_list, floor, across, MazeSetting.montecarlo]
         self.montecarlo_result = {}
-        n = 3
+        n = 1
         t = [0] * n
         for i in range(n):
             t[i] = Thread(target=self.__montecarlo, args=(i,))
@@ -1478,7 +1459,7 @@ class Maze:
             if node.IsMonster:
                 node.Damage = self.get_damage(node.Attack, node.Defence, node.Monster)
         return min_path
-        
+
     #总是会少一点
     def set_potion(self, node_list):
         potion_choice = {

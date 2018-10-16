@@ -84,10 +84,13 @@ class Setting:
     size = Store.load('size', 11)
 
     #放缩倍数
-    multiple = 1.0
+    multiple = 2.0
 
     #每个点的大小（像素）
     pos_size = 32
+
+    #较小的图片
+    pos_small = pos_size / 2
 
     #行数，从左上开始往下
     @classproperty
@@ -120,7 +123,7 @@ class Setting:
         return int(cls.pos_size * cls.col_show * cls.multiple)
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
-    montecarlo = Store.load('montecarlo', 100)
+    montecarlo = 10000 #Store.load('montecarlo', 100)
 
     #击败boss后剩余血量不超过该值加100
     remain_potion = 100
