@@ -15,10 +15,11 @@
     #调节配置中的size时不影响菜单
     ssize: Setting.size
 
-    #根据地图大小动态变化的大小和位置
-    length: sum([1 if c.isalpha() else 0.5 for c in self.text])
+    #根据地图大小动态变化的大小和位置，需要单独使用self.text，否则会为空
+    length: max([0.5 * len(s.encode('gbk')) for s in self.text.split('\n')]) if self.text else 0
+    line: len(self.text.split('\n')) if self.text else 1
     pos_hint: {'center_x': self.idx * self.ssize * Setting.multiple / self.parent.width + 0.5, 'center_y': self.idy * self.ssize * Setting.multiple / self.parent.height + 0.5} if self.parent else {}
-    size: (self.length * self.font_size, self.font_size)
+    size: (self.length * self.font_size, self.line * self.font_size)
     size_hint: (None, None)
 
     #字体

@@ -1608,13 +1608,13 @@ class Maze:
                     self.set_value(pos, gem)
 
             for color in MazeBase.Value.Color.total[::-1]:
-                for i in range(node.Key[color]):
+                for _ in range(node.Key[color]):
                     pos = pos_area.pop(0)
                     self.set_type(pos, MazeBase.Type.Item.key)
                     self.set_value(pos, color)
 
             for potion in MazeBase.Value.Potion.total[::-1]:
-                for i in range(node.Potion[potion]):
+                for _ in range(node.Potion[potion]):
                     pos = pos_area.pop(0)
                     self.set_type(pos, MazeBase.Type.Item.potion)
                     self.set_value(pos, potion)
