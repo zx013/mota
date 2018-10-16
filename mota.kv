@@ -25,7 +25,7 @@
     name: ''
 
     pos_hint: {'center_x': (self.idx * Setting.pos_size + self.offset[0]) * Setting.multiple / self.parent.width + 0.5, 'center_y': (self.idy * Setting.pos_size + self.offset[1]) * Setting.multiple / self.parent.height + 0.5} if self.parent else {}
-    size: (Setting.pos_size * Setting.multiple, Setting.pos_size * Setting.multiple)
+    size: (Setting.pos_real, Setting.pos_real)
     size_hint: (None, None)
     texture: Texture.next(self.name)
     allow_stretch: True
@@ -127,17 +127,16 @@
 
 
 <MotaImage>:
-    size: (int(Setting.pos_size * Setting.multiple), int(Setting.pos_size * Setting.multiple))
+    size: (Setting.pos_real, Setting.pos_real)
     size_hint: (None, None)
     allow_stretch: True
 
 <MotaLayer>:
     rows: Setting.row_show
     cols: Setting.col_show
-    size: (Setting.row_show * int(Setting.pos_size * Setting.multiple), Setting.col_show * int(Setting.pos_size * Setting.multiple))
+    size: (Setting.row_show * Setting.pos_real, Setting.col_show * Setting.pos_real)
     size_hint: (None, None)
     image: [[None for j in range(Setting.col_show)] for i in range(Setting.row_show)]
-    texture: None
 
 
 <FloorLabel>:

@@ -84,13 +84,18 @@ class Setting:
     size = Store.load('size', 11)
 
     #放缩倍数
-    multiple = 2.0
+    multiple = 1.0
 
     #每个点的大小（像素）
     pos_size = 32
 
     #较小的图片
     pos_small = pos_size / 2
+
+    #最终大小
+    @classproperty
+    def pos_real(self):
+        return int(self.pos_size * self.multiple)
 
     #行数，从左上开始往下
     @classproperty
@@ -174,8 +179,8 @@ except:
     pass
 
 #默认字体没有生效，很奇怪
-Config.set('graphics', 'height', int(Setting.row_show * Setting.pos_size * Setting.multiple))
-Config.set('graphics', 'width', int(Setting.col_show * Setting.pos_size * Setting.multiple))
+Config.set('graphics', 'height', int(Setting.row_show * Setting.pos_real))
+Config.set('graphics', 'width', int(Setting.col_show * Setting.pos_real))
 Config.set('graphics', 'default_font', Setting.font_path)
 Config.set('graphics', 'resizable', 0)
 #android下这个直接就会卡住，必须注释掉才可以。。。

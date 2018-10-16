@@ -629,7 +629,7 @@ class Maze:
         rect = [[wall, wall, ground, wall, wall],
                 [wall, ground, ground, ground, wall],
                 [wall, wall, ground, wall, wall]]
-        print(rect)
+        rect = rect
 
     def adjust_crack(self, floor):
         for node in self.ergodic(floor, 1):

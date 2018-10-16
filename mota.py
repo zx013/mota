@@ -59,11 +59,12 @@ from state import State
 
 
 class MotaImage(Image): pass
-class MotaLayer(GridLayout):
+class MotaLayer(FloatLayout):
     def add(self, i, j, texture=None):
-        self.texture = texture
         image = MotaImage()
         image.texture = texture
+        image.size = (Setting.pos_real + 1, Setting.pos_real + 1)
+        image.pos = (j * Setting.pos_real, (Setting.col_show - i - 1) * Setting.pos_real)
         self.image[i][j] = image
         self.add_widget(image)
         return image
