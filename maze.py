@@ -147,7 +147,7 @@ class MonsterInfo:
 class Pos:
     @staticmethod
     def inside(pos):
-        z, x, y = pos
+        _, x, y = pos
         if 0 < x < MazeSetting.rows + 1:
             if 0 < y < MazeSetting.cols + 1:
                 return True
@@ -161,8 +161,8 @@ class Pos:
 
     @staticmethod
     def sub(pos1, pos2):
-        z1, x1, y1 = pos1
-        z2, x2, y2 = pos2
+        _, x1, y1 = pos1
+        _, x2, y2 = pos2
         return (x1 - x2, y1 - y2)
 
     @staticmethod
@@ -220,7 +220,7 @@ class Maze:
             self.monster = {}
 
     def outside(self, pos):
-        z, x, y = pos
+        _, x, y = pos
         if x < 1 or x > MazeSetting.rows:
             return True
         if y < 1 or y > MazeSetting.cols:
@@ -289,7 +289,7 @@ class Maze:
     def is_pure(self, pos):
         if len(self.get_beside(pos, MazeBase.Type.Static.wall)) != 1:
             return False
-        z, x, y = zip(*self.get_around(pos, MazeBase.Type.Static.wall))
+        _, x, y = zip(*self.get_around(pos, MazeBase.Type.Static.wall))
         if len(set(x)) != 1 and len(set(y)) != 1:
             return False
         return True
@@ -378,7 +378,7 @@ class Maze:
         beside = self.get_beside(pos, MazeBase.Type.Static.ground)
         if len(beside) != 2:
             return False
-        (z1, x1, y1), (z2, x2, y2) = beside
+        (_, x1, y1), (_, x2, y2) = beside
         if x1 != x2 and y1 != y2:
             return False
         return True
@@ -403,7 +403,7 @@ class Maze:
             ground -= area
 
     def find_node(self, pos):
-        z, x, y = pos
+        z, _, _ = pos
         for node in self.maze_info[z]['node']:
             if pos in node.Area:
                 return node
@@ -629,10 +629,11 @@ class Maze:
         rect = [[wall, wall, ground, wall, wall],
                 [wall, ground, ground, ground, wall],
                 [wall, wall, ground, wall, wall]]
+        print(rect)
 
     def adjust_crack(self, floor):
         for node in self.ergodic(floor, 1):
-            for pos, forward in node.Forward.items():
+            for _, forward in node.Forward.items():
                 crack = node.Crack & forward.Crack
                 if len(crack) <= 1:
                     continue
@@ -867,7 +868,7 @@ class Maze:
                 door_total -= num
 
         #设置门的数量分配
-        for i in range(door_total - sum(door_number.values())):
+        for _ in range(door_total - sum(door_number.values())):
             door = Tools.dict_choice(key_choice)
             door_set[door] += 1
 
@@ -981,11 +982,11 @@ class Maze:
 
     #设置失败时清空状态重新设置，连续失败多次后才重新生成
     def set_door(self, node_list):
-        for i in range(10):
+        for _ in range(10):
             try:
                 self.__set_door(node_list)
                 break
-            except Exception as ex:
+            except Exception:
                 print('Set door error, retry it.')
                 for node in node_list:
                     node.IsDoor = False
@@ -1316,7 +1317,7 @@ class Maze:
     #蒙特卡洛模拟获取尽可能的最优解
     #后期可以用深度学习求解，蒙特卡洛效率太低
     def __montecarlo(self, index):
-        node_list, floor, across, total = self.montecarlo_args
+        node_list, floor, total = self.montecarlo_args
 
         min_damage = sum([node.Damage for node in node_list if node.IsMonster and not node.IsBoss])
         min_path = node_list
@@ -1435,7 +1436,7 @@ class Maze:
         return min_damage, min_path
 
     def montecarlo(self, node_list, floor, across):
-        self.montecarlo_args = [node_list, floor, across, MazeSetting.montecarlo]
+        self.montecarlo_args = [node_list, floor, MazeSetting.montecarlo]
         self.montecarlo_result = {}
         n = 1
         t = [0] * n
@@ -1597,11 +1598,11 @@ class Maze:
             pos_area += pos_list
 
             for gem in MazeBase.Value.Gem.total[::-1]:
-                for i in range(node.AttackGem[gem]):
+                for _ in range(node.AttackGem[gem]):
                     pos = pos_area.pop(0)
                     self.set_type(pos, MazeBase.Type.Item.attack)
                     self.set_value(pos, gem)
-                for i in range(node.DefenceGem[gem]):
+                for _ in range(node.DefenceGem[gem]):
                     pos = pos_area.pop(0)
                     self.set_type(pos, MazeBase.Type.Item.defence)
                     self.set_value(pos, gem)
@@ -1733,8 +1734,8 @@ class Maze:
 
     #更新为具体数值
     def update_monster(self):
-        for name1, info1 in self.monster.items():
-            for name2, info2 in info1.items():
+        for _, info1 in self.monster.items():
+            for _, info2 in info1.items():
                 info2['health'] *= self.herobase.base
                 info2['attack'] *= self.herobase.base
                 if not info2['magic']:
@@ -1750,7 +1751,7 @@ class Maze:
         self.herobase.attack += self.herobase.base * self.herobase.boss_attack
         self.herobase.defence += self.herobase.base * self.herobase.boss_defence
 
-        for i in range(3):
+        for _ in range(3):
             #try:
             self.herostate.update('绘制迷宫。。。', reset=True)
             for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
@@ -1893,7 +1894,7 @@ class Maze:
             if end_pos in around:
                 pos = end_pos
                 for i in range(num)[::-1]:
-                    old_z, old_x, old_y = pos
+                    _, old_x, old_y = pos
                     new_z, new_x, new_y = (self.get_beside_except(pos, MazeBase.Type.Static.wall) & self.around[i]).pop()
                     pos = new_z, new_x, new_y
                     move = (new_x - old_x, new_y - old_y)

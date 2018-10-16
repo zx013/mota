@@ -1,3 +1,4 @@
+#:kivy 1.10
 #:import Setting setting.Setting
 #:import MazeBase setting.MazeBase
 #:import Texture cache.Texture
@@ -126,14 +127,14 @@
 
 
 <MotaImage>:
-    size: (Setting.pos_size * Setting.multiple, Setting.pos_size * Setting.multiple)
+    size: (int(Setting.pos_size * Setting.multiple), int(Setting.pos_size * Setting.multiple))
     size_hint: (None, None)
     allow_stretch: True
 
 <MotaLayer>:
     rows: Setting.row_show
     cols: Setting.col_show
-    size: (Setting.pos_size * Setting.row_show * Setting.multiple, Setting.pos_size * Setting.col_show * Setting.multiple)
+    size: (Setting.row_show * int(Setting.pos_size * Setting.multiple), Setting.col_show * int(Setting.pos_size * Setting.multiple))
     size_hint: (None, None)
     image: [[None for j in range(Setting.col_show)] for i in range(Setting.row_show)]
     texture: None

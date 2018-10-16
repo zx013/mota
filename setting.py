@@ -94,33 +94,33 @@ class Setting:
 
     #行数，从左上开始往下
     @classproperty
-    def rows(cls):
-        return cls.size
+    def rows(self):
+        return self.size
 
     #显示的行数，包括外面一圈墙
     @classproperty
-    def row_show(cls):
-        return cls.rows + 2
+    def row_show(self):
+        return self.rows + 2
 
     #列数，从左上开始往右
     @classproperty
-    def cols(cls):
-        return cls.size
+    def cols(self):
+        return self.size
 
     #显示的列数，包括外面一圈墙
     @classproperty
-    def col_show(cls):
-        return cls.cols + 2
+    def col_show(self):
+        return self.cols + 2
 
     #高度
     @classproperty
-    def row_size(cls):
-        return int(cls.pos_size * cls.row_show * cls.multiple)
+    def row_size(self):
+        return int(self.pos_size * self.row_show * self.multiple)
 
     #宽度
     @classproperty
-    def col_size(cls):
-        return int(cls.pos_size * cls.col_show * cls.multiple)
+    def col_size(self):
+        return int(self.pos_size * self.col_show * self.multiple)
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
     montecarlo = 10000 #Store.load('montecarlo', 100)
@@ -191,12 +191,12 @@ if platform.system().lower() in ('windows', 'linux'):
 class MazeSetting:
     #行
     @classproperty
-    def rows(cls):
+    def rows(self):
         return Setting.rows
 
     #列
     @classproperty
-    def cols(cls):
+    def cols(self):
         return Setting.cols
 
     #保存的目录
@@ -210,12 +210,12 @@ class MazeSetting:
 
     #保存的层数，10时占用20M左右内存，100时占用50M左右内存
     @classproperty
-    def save_floor(cls):
+    def save_floor(self):
         return Setting.base
 
     #每几层一个单元
     @classproperty
-    def base_floor(cls):
+    def base_floor(self):
         return Setting.base
 
     #每个宝石增加的属性值（总属性百分比）
@@ -244,18 +244,18 @@ class MazeSetting:
 
     damage_total_min = 100
 
-    #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间，10000时基本为最优解
+    #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间
     @classproperty
-    def montecarlo(cls):
+    def montecarlo(self):
         return max(Setting.montecarlo, Setting.difficult['montecarlo'])
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     @classproperty
-    def remain_potion(cls):
+    def remain_potion(self):
         return max(Setting.remain_potion, Setting.difficult['remain_potion'])
 
     @classproperty
-    def start_key(cls):
+    def start_key(self):
         return Setting.difficult['key']
 
 

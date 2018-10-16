@@ -207,7 +207,6 @@ class Mota(FocusBehavior, FloatLayout):
 
 
     def get_key(self, pos, pos_style='static'):
-        floor, x, y = pos
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
 
