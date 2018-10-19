@@ -26,8 +26,6 @@ class TreeNode:
         self.UpPos = None
         self.DownPos = None
 
-        self.Failure = 0
-
         self.Deep = -1 #深度，离楼梯间最短路径的最短距离
         self.Special = special #特殊空间
         self.Space = len(area) #空间大小
@@ -72,10 +70,12 @@ class TreeNode:
         self.Defence = 0
 
         self.Monster = None
-        self.Damage = 0
+        self.Damage = 0 #多线程
 
         #圣水，开始时放置，用来调整第一个节点无法放置足够药水的问题
         self.HolyWater = 0
+
+        self.Montecarlo = 0
 
     @property
     def floor(self):
@@ -109,6 +109,39 @@ class TreeNode:
     @property
     def forbid(self):
         return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
+
+    #没有怪物的
+    #怪物低伤害，攻击宝石
+    #怪物低伤害，防御宝石
+    #怪物低伤害，其他
+    def montecarlo(self, maze, attack, defence, key, total_damage, min_damage):
+        if self.IsBoss:
+            return False
+        if self.IsDoor:
+            if key[self.Door] == 0:
+                return False
+        damage = 0
+        if self.IsMonster:
+            damage = maze.get_damage(attack, defence, self.Monster)
+            if damage == float('inf'):
+                return False
+            if total_damage + damage > min_damage:
+                return False
+            if damage > MazeSetting.elite_max:
+                return False
+        self.Damage = damage
+
+        montecarlo = 0
+        montecarlo += self.Damage
+        for gem in MazeBase.Value.Gem.total:
+            if self.AttackGem[gem]:
+                montecarlo -= 400
+            montecarlo -= self.AttackGem[gem] * 200
+            montecarlo -= self.DefenceGem[gem] * 50
+
+        montecarlo += random.randint(-100, 100)
+        self.Montecarlo = montecarlo
+        return True
 
 
 class MonsterInfo:
@@ -1316,7 +1349,7 @@ class Maze:
 
     #蒙特卡洛模拟获取尽可能的最优解
     #后期可以用深度学习求解，蒙特卡洛效率太低
-    def __montecarlo(self, index):
+    def __montecarlo(self):
         node_list, floor, total = self.montecarlo_args
 
         min_damage = sum([node.Damage for node in node_list if node.IsMonster and not node.IsBoss])
@@ -1344,53 +1377,20 @@ class Maze:
             node_len = len(node_list)
             random.shuffle(node_list)
 
-            last_node = None
             while node_list:
                 node = None
-                damage = 0
                 montecarlo_node = []
                 for node in node_list:
-                    montecarlo = 0
-                    if node.IsBoss:
+                    if not node.montecarlo(self, attack, defence, key, total_damage, min_damage):
                         continue
-                    if node.IsDoor:
-                        if key[node.Door] == 0:
-                            continue
-                    if node.IsMonster:
-                        damage = self.get_damage(attack, defence, node.Monster)
-                        if damage == float('inf'):
-                            continue
-                        if total_damage + damage > min_damage:
-                            continue
-                        if damage > MazeSetting.elite_max:
-                            continue
-                        montecarlo += damage
-
-                    for gem in MazeBase.Value.Gem.total:
-                        if node.AttackGem[gem]:
-                            montecarlo -= 400
-                        montecarlo -= node.AttackGem[gem] * 100
-                        montecarlo -= node.DefenceGem[gem] * 50
-
-                    montecarlo += node.Failure
-                    montecarlo_node.append((node, montecarlo))
+                    montecarlo_node.append(node)
                 if not montecarlo_node:
-                    if last_node:
-                        last_node.Failure += 1
                     break
 
-                #倾向于贪心算法，有时候走不通，应该是开始时的贪心导致后续都无法前进
-                montecarlo_easy = []
-                for i in range(-500, 1001, 100):
-                    if not montecarlo_easy:
-                        montecarlo_easy = [(node, montecarlo) for node, montecarlo in montecarlo_node if montecarlo < i]
-                        break
-
-                if not montecarlo_easy:
-                    montecarlo_easy = montecarlo_node
-                node, montecarlo = random.choice(montecarlo_easy)
-                #if node.Failure > 100:
-                #    print([_m for _n, _m in montecarlo_node], montecarlo, node.Failure)
+                montecarlo_node = sorted(montecarlo_node, key=lambda x: x.Montecarlo)
+                #print([node.Montecarlo for node in montecarlo_node])
+                #贪心算法，有时候走不通，应该是开始时的贪心导致后续都无法前进
+                node = montecarlo_node[0]
 
                 #更新状态
                 for color in MazeBase.Value.Color.total:
@@ -1400,7 +1400,7 @@ class Maze:
                     attack += gem * node.AttackGem[gem]
                     defence += gem * node.DefenceGem[gem]
 
-                total_damage += damage
+                total_damage += node.Damage
 
                 #随机插入到列表中
                 forward_node = list(set(node.Forward.values()) - set(node_list))
@@ -1413,7 +1413,6 @@ class Maze:
                 node_path.append(node)
                 node_list.remove(node)
                 node_len -= 1
-                last_node = node
 
             number += 1
 
@@ -1432,26 +1431,18 @@ class Maze:
                 min_damage = total_damage
                 min_path = node_path
 
-        self.montecarlo_result[index] = min_damage, min_path
+        self.montecarlo_result = [min_damage, min_path]
         return min_damage, min_path
 
     def montecarlo(self, node_list, floor, across):
         self.montecarlo_args = [node_list, floor, MazeSetting.montecarlo]
-        self.montecarlo_result = {}
-        n = 1
-        t = [0] * n
-        for i in range(n):
-            t[i] = Thread(target=self.__montecarlo, args=(i,))
-        for i in range(n):
-            t[i].start()
-        for i in range(n):
-            t[i].join()
+        self.montecarlo_result = []
 
-        min_damage, min_path = float('inf'), node_list
-        for damage, path in self.montecarlo_result.values():
-            if damage < min_damage:
-                min_damage = damage
-                min_path = path
+        t = Thread(target=self.__montecarlo)
+        t.start()
+        t.join()
+
+        min_damage, min_path = self.montecarlo_result
         #min_damage, min_path = self.__montecarlo(node_list, floor, across)
         #重设属性值
         self.set_attribute(min_path)
@@ -1865,7 +1856,7 @@ class Maze:
         around = set()
         for pos in pos_list:
             beside = self.get_beside_except(pos, MazeBase.Type.Static.wall)
-            stair = self.get_beside(pos, MazeBase.Type.Static.stair)
+            stair = self.get_beside(pos, MazeBase.Type.Static.stair) | self.get_beside(pos, MazeBase.Type.Active.rpc)
             beside -= stair
             if end_pos in stair:
                 beside.add(end_pos)
@@ -1873,7 +1864,6 @@ class Maze:
         around -= pos_list | self.around[num - 1]
         return around
 
-    #需要绕过人物
     #@except_default([])
     def find_path(self, start_pos, end_pos):
         move_map = {

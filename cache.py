@@ -227,6 +227,8 @@ class MusicBase:
         if init:
             key = 'init'
         else:
+            if not self.back_list:
+                return None
             key = random.choice(self.back_list)
         key = 'background-{}'.format(key)
         if key not in self.music:

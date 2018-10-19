@@ -68,11 +68,11 @@ class Setting:
     #难度，very-hard, hard, normal, easy, very-easy
     #难度决定了蒙特卡洛模拟的次数，剩余的血量和初始的钥匙
     difficult_config = {
-        'very-hard': {'montecarlo': 10000, 'remain_potion': 0, 'key': {}},
-        'hard': {'montecarlo': 3000, 'remain_potion': 100, 'key': {}},
-        'normal': {'montecarlo': 1000, 'remain_potion': 500, 'key': {'yellow': 1}},
-        'easy': {'montecarlo': 100, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
-        'very-easy': {'montecarlo': 0, 'remain_potion': 5000, 'key': {'yellow': 1, 'blue': 1, 'red': 1}}
+        'very-hard': {'montecarlo': 1000, 'remain_potion': 100, 'key': {}},
+        'hard': {'montecarlo': 500, 'remain_potion': 200, 'key': {}},
+        'normal': {'montecarlo': 100, 'remain_potion': 500, 'key': {'yellow': 1}},
+        'easy': {'montecarlo': 10, 'remain_potion': 1000, 'key': {'yellow': 1, 'blue': 1}},
+        'very-easy': {'montecarlo': 1, 'remain_potion': 3000, 'key': {'yellow': 1, 'blue': 1, 'red': 1}}
     }
     difficult_type = Store.load('difficult_type', 'normal')
     difficult = difficult_config[difficult_type]
@@ -252,7 +252,7 @@ class MazeSetting:
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间
     @classproperty
     def montecarlo(self):
-        return max(Setting.montecarlo, Setting.difficult['montecarlo'])
+        return 1000 #max(Setting.montecarlo, Setting.difficult['montecarlo'])
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     @classproperty

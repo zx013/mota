@@ -3,7 +3,7 @@
 @author: zx013
 """
 #打包apk使用
-build_apk = True
+build_apk = False
 if build_apk:
     import platform
     import sys
