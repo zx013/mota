@@ -51,7 +51,7 @@ class Setting:
     title = '无尽的魔塔'
 
     #标题宽度
-    title_width = 28
+    title_width = 24
 
     #标题所在的圆的半径，越小越突出
     title_radius = 28
@@ -81,7 +81,7 @@ class Setting:
     base = Store.load('base', 10)
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
-    size = Store.load('size', 11)
+    size = 11 #Store.load('size', 11)
 
     #放缩倍数
     multiple = 1.0
@@ -96,6 +96,11 @@ class Setting:
     @classproperty
     def pos_real(self):
         return int(self.pos_size * self.multiple)
+
+    #将pos_real按size放大
+    @classproperty
+    def pos_realx(self):
+        return self.pos_real * self.size / 11
 
     #行数，从左上开始往下
     @classproperty
@@ -126,6 +131,26 @@ class Setting:
     @classproperty
     def col_size(self):
         return int(self.pos_size * self.col_show * self.multiple)
+
+    @classmethod
+    def pos_x(self, x):
+        return (x + 0.5 * self.pos_size) * self.row_show * self.multiple
+
+    @classmethod
+    def pos_y(self, y):
+        return (y + 0.5 * self.pos_size) * self.col_show * self.multiple
+
+    @classmethod
+    def pos_rx(self, x, offset=0):
+        return (x * self.row_show + offset) / (self.pos_size * self.row_show) + 0.5
+
+    @classmethod
+    def pos_ry(self, y, offset=0):
+        return (y * self.col_show + offset) / (self.pos_size * self.col_show) + 0.5
+
+    @classmethod
+    def pos_hint(self, x, y, offset=(0, 0)):
+        return {'center_x': self.pos_rx(x, offset[0]), 'center_y': self.pos_ry(y, offset[1])}
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
     montecarlo = Store.load('montecarlo', 100)

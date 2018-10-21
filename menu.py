@@ -4,6 +4,7 @@
 @author: zzy
 """
 from kivy.uix.label import Label
+from kivy.uix.image import Image
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager
@@ -15,5 +16,8 @@ with open('menu.kv', 'r', encoding='utf-8') as fp:
 class MenuManager(ScreenManager): pass
 
 class MenuLabel(ToggleButtonBehavior, Label): pass
+class MenuImage(Image): pass
 class MenuParameter(FloatLayout): pass
 class MenuSetting(FloatLayout): pass
+class MenuMonster(FloatLayout): pass
+class MenuMonsterManual(FloatLayout): pass

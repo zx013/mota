@@ -1195,7 +1195,9 @@ class Maze:
 
 
     def get_damage(self, attack, defence, monster):
-        monster_info = self.monster[monster[0]][monster[1]]
+        monster_info = self.get_monster(monster)
+        if monster_info == {}:
+            return -1
         monster_health = monster_info['health']
         monster_attack = monster_info['attack']
         monster_defence = monster_info['defence']
@@ -1848,7 +1850,7 @@ class Maze:
 
     def get_monster(self, monster):
         key1, key2 = monster
-        return self.monster[key1][key2]
+        return self.monster.get(key1, {}).get(key2, {})
 
 
     #向外扩张，每一圈计数加一
