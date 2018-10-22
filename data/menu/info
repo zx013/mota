@@ -5,3 +5,7 @@ size = 487, 289
 [menu-start]
 name = start.png
 size = 64, 64
+
+[monster-manual]
+name = manual.png
+size = 64, 64

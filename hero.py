@@ -14,6 +14,8 @@ class HeroBase:
         self.health = 1000
         self.attack = 10
         self.defence = 10
+        self.gold = 0
+        self.experience = 0
 
         self.key = {
             MazeBase.Value.Color.yellow: 0,
@@ -75,6 +77,8 @@ class HeroState:
         self.health = herobase.health
         self.attack = herobase.attack
         self.defence = herobase.defence
+        self.gold = herobase.gold
+        self.experience = herobase.experience
 
         self.key = HeroStateDict()
         for color in MazeBase.Value.Color.total:
@@ -114,6 +118,8 @@ class HeroState:
             'health': (0.5, 1, 0.5, 1),
             'attack': (1, 0.5, 0.5, 1),
             'defence': (0.5, 0.5, 1, 1),
+            'gold': (1, 0.84, 0, 1),
+            'experience': (0.53, 0.81, 0.92, 1),
             'key': (1, 1, 0.5, 1)
         }
 

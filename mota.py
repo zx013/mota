@@ -182,11 +182,14 @@ class Mota(FocusBehavior, FloatLayout):
             herostate.health += herobase.base * pos_value
             Music.play('getitem')
         elif pos_type == MazeBase.Type.Active.monster:
+            monster = self.maze.get_monster(pos_value)
             damage = self.maze.get_damage(herostate.attack, herostate.defence, pos_value)
             if herostate.health <= damage:
                 return False
             herostate.health -= damage
-            Music.play('blood')
+            herostate.gold += monster['gold']
+            herostate.experience += monster['experience']
+            Music.play('blood') #获取剑后使用剑的声音和动画
             if pos_value[0] == 'boss':
                 self.maze.kill_boss(pos)
         elif pos_type == MazeBase.Type.Active.rpc:

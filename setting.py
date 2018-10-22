@@ -84,7 +84,7 @@ class Setting:
     size = 11 #Store.load('size', 11)
 
     #放缩倍数
-    multiple = 1.0
+    multiple = 0.3
 
     #每个点的大小（像素）
     pos_size = 32
@@ -132,22 +132,27 @@ class Setting:
     def col_size(self):
         return int(self.pos_size * self.col_show * self.multiple)
 
+    #转换x为绝对坐标
     @classmethod
     def pos_x(self, x):
         return (x + 0.5 * self.pos_size) * self.row_show * self.multiple
 
+    #转换y为绝对坐标
     @classmethod
     def pos_y(self, y):
         return (y + 0.5 * self.pos_size) * self.col_show * self.multiple
 
+    #转换x为相对坐标
     @classmethod
     def pos_rx(self, x, offset=0):
         return (x * self.row_show + offset) / (self.pos_size * self.row_show) + 0.5
 
+    #转换y为相对坐标
     @classmethod
     def pos_ry(self, y, offset=0):
         return (y * self.col_show + offset) / (self.pos_size * self.col_show) + 0.5
 
+    #转换位置为相对坐标
     @classmethod
     def pos_hint(self, x, y, offset=(0, 0)):
         return {'center_x': self.pos_rx(x, offset[0]), 'center_y': self.pos_ry(y, offset[1])}

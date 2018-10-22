@@ -4,6 +4,7 @@
 #:import Store setting.Store
 #:import Setting setting.Setting
 #:import Mota mota.Mota
+#:import functools functools
 
 
 <MenuLabel>:
@@ -110,7 +111,7 @@
             self.state = 'normal'
         on_release:
             Store.save()
-            self.parent.root.current = 'setting-base'
+            root.root.current = 'setting-base'
     MenuLabel:
         idx: self.parent.idx + 4.2
         idy: self.parent.idy
@@ -127,7 +128,7 @@
             self.state = 'normal'
         on_release:
             Store.save()
-            self.parent.root.current = 'setting-operate'
+            root.root.current = 'setting-operate'
     MenuLabel:
         idx: self.parent.idx + 12.6
         idy: self.parent.idy
@@ -144,7 +145,7 @@
             self.state = 'normal'
         on_release:
             Store.save()
-            self.parent.root.current = 'setting-sound'
+            root.root.current = 'setting-sound'
     MenuLabel:
         idx: self.parent.idx + 21
         idy: self.parent.idy
@@ -161,7 +162,7 @@
             self.state = 'normal'
         on_release:
             Store.save()
-            self.parent.root.current = 'setting-other'
+            root.root.current = 'setting-other'
     MenuLabel:
         idx: 0
         idy: -11.7
@@ -171,7 +172,7 @@
             self.state = 'normal'
         on_release:
             Store.save()
-            self.parent.root.current = 'main'
+            root.root.current = 'main'
 
 
 <MenuMonster>:
@@ -276,7 +277,7 @@
     MenuLabel:
         idx: root.idx + 4.25
         idy: root.idy + 6.75
-        text: '魔法' if root.info.get('magic', False) else '无'
+        text: '魔法' if root.info.get('ismagic', False) else '无'
         fsize: root.fsize
         disabled: True
         color: (1, 1, 0.5, 1)
@@ -312,7 +313,7 @@
 
 <MenuMonsterManual>:
     maze: None
-    monster_list: (('slime', 'green'), ('slime', 'red'), ('slime', 'black'), ('slime', 'king'), ('knight', 'yellow'), ('knight', 'red'), ('knight', 'blue'), ('knight', 'black'))
+    monster_list: ()
     page: 0
     number: 3
     MenuMonster:
@@ -359,6 +360,7 @@
         text: '返 回'
         fsize: 2
         on_release:
+            root.root.current = 'mota'
 
 
 <MenuManager>:
@@ -453,11 +455,9 @@
             idy: 0
             text: '继 续'
             fsize: 4
-            #disabled: True
+            disabled: True
             on_touch_up:
                 self.state = 'normal'
-            on_release:
-                root.current = 'monster-manual'
         MenuLabel:
             idx: 0
             idy: -4.5
@@ -472,6 +472,16 @@
         name: 'mota'
         Mota:
             id: mota
+        MenuLabel:
+            idx: -12
+            idy: -14.5
+            text: '怪物'
+            fsize: 3
+            color: (1, 1, 1, 1)
+            #切换到怪物手册时更新怪物列表，可能需要排序
+            on_release:
+                root.current = 'monster-manual'
+                monster_manual.monster_list = tuple(set(functools.reduce(lambda x, y: x + y, [[pos[1] for pos in row if pos[0] == MazeBase.Type.Active.monster] for row in mota.maze.maze[mota.maze.herostate.floor]])))
 
     Screen:
         name: 'setting-base'
@@ -711,4 +721,7 @@
     Screen:
         name: 'monster-manual'
         MenuMonsterManual:
+            id: monster_manual
             maze: mota.maze
+            monster_list: ()
+            root: root

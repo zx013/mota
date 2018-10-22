@@ -70,7 +70,9 @@ class TreeNode:
         self.Defence = 0
 
         self.Monster = None
-        self.Damage = 0 #多线程
+        self.Damage = 0
+        self.Gold = 0
+        self.Experience = 0
 
         #圣水，开始时放置，用来调整第一个节点无法放置足够药水的问题
         self.HolyWater = 0
@@ -110,26 +112,28 @@ class TreeNode:
     def forbid(self):
         return filter(lambda x: Pos.inside(x) and (not (Pos.beside(x) & self.Crack)), reduce(lambda x, y: x ^ y, map(lambda x: Pos.corner(x) - self.Cover, self.Crack)))
 
-    #没有怪物的
-    #怪物低伤害，攻击宝石
-    #怪物低伤害，防御宝石
-    #怪物低伤害，其他
+    #可以给每个类型一个权值，通过计算优化权值
     def montecarlo(self, maze, attack, defence, key, total_damage, min_damage):
         if self.IsBoss:
             return False
         if self.IsDoor:
             if key[self.Door] == 0:
                 return False
-        damage = 0
+
+        self.Damage = 0
+        self.Gold = 0
+        self.Experience = 0
         if self.IsMonster:
-            damage = maze.get_damage(attack, defence, self.Monster)
-            if damage == float('inf'):
+            self.Damage = maze.get_damage(attack, defence, self.Monster)
+            if self.Damage == float('inf'):
                 return False
-            if total_damage + damage > min_damage:
+            if total_damage + self.Damage > min_damage:
                 return False
-            if damage > MazeSetting.elite_max:
+            if self.Damage > MazeSetting.elite_max:
                 return False
-        self.Damage = damage
+            monster = maze.get_monster(self.Monster)
+            self.Gold += monster['gold']
+            self.Experience += monster['experience']
 
         montecarlo = 0
         montecarlo += self.Damage
@@ -1205,7 +1209,7 @@ class Maze:
         if attack <= monster_defence:
             return float('inf')
 
-        if monster_info['magic']:
+        if monster_info['ismagic']:
             damage = (monster_health - 1) // (attack - monster_defence) * monster_attack
         else:
             damage = (monster_health - 1) // (attack - monster_defence) * (monster_attack - defence)
@@ -1271,6 +1275,8 @@ class Maze:
     #中攻，高血
     def adjust_monster(self, node_list):
         number_enable = [False for node in node_list]
+        gold = 1
+        experience = 1
         for number, node in enumerate(node_list):
             if not node.IsMonster:
                 continue
@@ -1346,7 +1352,9 @@ class Maze:
             #初始值不一定为100
             if monster[0] not in self.monster:
                 self.monster[monster[0]] = {}
-            self.monster[monster[0]][monster[1]] = {'health': monster_health, 'attack': attack, 'defence': defence, 'magic': monster_ismagic}
+            self.monster[monster[0]][monster[1]] = {'health': monster_health, 'attack': attack, 'defence': defence, 'ismagic': monster_ismagic, 'gold': int(gold), 'experience': int(experience)}
+            gold += 0.8 * random.random()
+            experience += 0.2 * random.random()
 
 
     #蒙特卡洛模拟获取尽可能的最优解
@@ -1367,6 +1375,8 @@ class Maze:
             total_damage = 0
             attack = 0
             defence = 0
+            gold = 0
+            experience = 0
             key = {
                 MazeBase.Value.Color.yellow: 0,
                 MazeBase.Value.Color.blue: 0,
@@ -1401,6 +1411,9 @@ class Maze:
                 for gem in MazeBase.Value.Gem.total:
                     attack += gem * node.AttackGem[gem]
                     defence += gem * node.DefenceGem[gem]
+
+                gold += node.Gold
+                experience += node.Experience
 
                 total_damage += node.Damage
 
@@ -1451,7 +1464,10 @@ class Maze:
         #重置伤害值，设置血瓶时使用
         for node in min_path:
             if node.IsMonster:
+                monster = self.get_monster(node.Monster)
                 node.Damage = self.get_damage(node.Attack, node.Defence, node.Monster)
+                node.Gold += monster['gold']
+                node.Experience += monster['experience']
         return min_path
 
     #总是会少一点
@@ -1731,7 +1747,7 @@ class Maze:
             for _, info2 in info1.items():
                 info2['health'] *= self.herobase.base
                 info2['attack'] *= self.herobase.base
-                if not info2['magic']:
+                if not info2['ismagic']:
                     info2['attack'] += self.herobase.defence
                 info2['defence'] *= self.herobase.base
                 info2['defence'] += self.herobase.attack
