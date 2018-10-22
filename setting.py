@@ -84,7 +84,7 @@ class Setting:
     size = 11 #Store.load('size', 11)
 
     #放缩倍数
-    multiple = 0.3
+    multiple = 1.0
 
     #每个点的大小（像素）
     pos_size = 32
@@ -158,7 +158,7 @@ class Setting:
         return {'center_x': self.pos_rx(x, offset[0]), 'center_y': self.pos_ry(y, offset[1])}
 
     #蒙特卡洛模拟的次数，根据设备性能尽可能的增加，不小于难度的数值
-    montecarlo = Store.load('montecarlo', 100)
+    montecarlo = Store.load('montecarlo', 1)
 
     #击败boss后剩余血量不超过该值加100
     remain_potion = 100
@@ -282,7 +282,7 @@ class MazeSetting:
     #蒙特卡洛模拟的次数，该值越大，越接近最优解，同时增加运行时间
     @classproperty
     def montecarlo(self):
-        return 1000 #max(Setting.montecarlo, Setting.difficult['montecarlo'])
+        return max(Setting.montecarlo, Setting.difficult['montecarlo'])
 
     #使用近似最优解通关后至少剩余的额外的血量，可以用该参数调节难度
     @classproperty

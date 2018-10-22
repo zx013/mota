@@ -183,7 +183,6 @@
     opacity: 1
     monster: ('', '')
     maze: self.parent.maze
-    info: self.maze.get_monster(self.monster) if self.maze else {}
     canvas:
         Color:
             rgba: (0, 0.78, 0.55, 1)
@@ -207,7 +206,7 @@
     MenuLabel:
         idx: root.idx - 1
         idy: root.idy + 10.25
-        text: ' '.join(str(root.info.get('name', '未知')))
+        text: ' '.join(str((root.maze.get_monster(root.monster) if root.maze else {}).get('name', '未知')))
         fsize: root.fsize + 0.5
         disabled: True
         color: (0.82, 0.41, 0.12, 1)
@@ -221,7 +220,7 @@
     MenuLabel:
         idx: root.idx - 4.75
         idy: root.idy + 8.75
-        text: str(root.info.get('health', -1))
+        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('health', -1))
         fsize: root.fsize
         disabled: True
         color: (0.5, 1, 0.5, 1)
@@ -235,7 +234,7 @@
     MenuLabel:
         idx: root.idx + 4.25
         idy: root.idy + 8.75
-        text: str(root.info.get('attack', -1))
+        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('attack', -1))
         fsize: root.fsize
         disabled: True
         color: (1, 0.5, 0.5, 1)
@@ -249,7 +248,7 @@
     MenuLabel:
         idx: root.idx + 12.25
         idy: root.idy + 8.75
-        text: str(root.info.get('defence', -1))
+        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('defence', -1))
         fsize: root.fsize
         disabled: True
         color: (0.5, 0.5, 1, 1)
@@ -277,8 +276,8 @@
     MenuLabel:
         idx: root.idx + 4.25
         idy: root.idy + 6.75
-        text: '魔法' if root.info.get('ismagic', False) else '无'
-        fsize: root.fsize
+        text: '魔法' if (root.maze.get_monster(root.monster) if root.maze else {}).get('ismagic', False) else '无'
+        fsize: root.fsize - 0.2
         disabled: True
         color: (1, 1, 0.5, 1)
     MenuLabel:
@@ -291,7 +290,7 @@
     MenuLabel:
         idx: root.idx - 4.75
         idy: root.idy + 4.75
-        text: str(root.info.get('gold', -1))
+        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('gold', -1))
         fsize: root.fsize
         disabled: True
         color: (1, 0.84, 0, 1)
@@ -305,7 +304,7 @@
     MenuLabel:
         idx: root.idx + 4.25
         idy: root.idy + 4.75
-        text: str(root.info.get('experience', -1))
+        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('experience', -1))
         fsize: root.fsize
         disabled: True
         color: (0.53, 0.81, 0.92, 1)
@@ -360,7 +359,9 @@
         text: '返 回'
         fsize: 2
         on_release:
+            self.color = self.default_color
             root.root.current = 'mota'
+
 
 
 <MenuManager>:
@@ -482,6 +483,7 @@
             on_release:
                 root.current = 'monster-manual'
                 monster_manual.monster_list = tuple(set(functools.reduce(lambda x, y: x + y, [[pos[1] for pos in row if pos[0] == MazeBase.Type.Active.monster] for row in mota.maze.maze[mota.maze.herostate.floor]])))
+                monster_manual.page = 0
 
     Screen:
         name: 'setting-base'

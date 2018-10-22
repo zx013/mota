@@ -89,3 +89,11 @@ static = 1, 4
 [holy]
 name = holy.png
 static = 3, 4
+
+[gold]
+name = other-01.png
+static = 1, 4
+
+[experience]
+name = other-02.png
+static = 3, 3

@@ -102,7 +102,13 @@ class HeroState:
                     label.color = (0.5, 1, 0.5, 1) #浅绿
                 else:
                     label.color = (0, 1, 0, 1) #绿色
-            label.text = text
+            #左右对齐使长度固定
+            if label.halign == 'left':
+                label.text = text + (16 - len(text)) * ' '
+            elif label.halign == 'right':
+                label.text = (16 - len(text)) * ' ' + text
+            else:
+                label.text = text
         elif name == 'wall':
             color = self.get_color(value)
             for key, label in self.__bind.items():

@@ -135,8 +135,14 @@ class TreeNode:
             self.Gold += monster['gold']
             self.Experience += monster['experience']
 
+
+
         montecarlo = 0
         montecarlo += self.Damage
+        if self.Damage == 0:
+            montecarlo -= 500
+        elif self.Damage < 100:
+            montecarlo -= 200
         for gem in MazeBase.Value.Gem.total:
             if self.AttackGem[gem]:
                 montecarlo -= 400

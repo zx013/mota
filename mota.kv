@@ -60,7 +60,7 @@
             name: 'weapen-attack-01'
             size: (Setting.pos_small * Setting.multiple, Setting.pos_small * Setting.multiple)
         StateLabel:
-            idx: - (Setting.row_show - 3) / 2
+            idx: - (Setting.row_show - 5.75) / 2
             idy: (Setting.col_show - 1) / 2
             offset: (0, 2)
             fsize: 24
@@ -72,7 +72,7 @@
             name: 'weapen-defence-01'
             size: (Setting.pos_small * Setting.multiple, Setting.pos_small * Setting.multiple)
         StateLabel:
-            idx: (Setting.row_show - 3) / 2
+            idx: (Setting.row_show - 5.75) / 2
             idy: (Setting.col_show - 1) / 2
             offset: (0, 2)
             fsize: 24
@@ -124,6 +124,32 @@
             offset: (-1, 1)
             fsize: 20
             init: root.herostate.key.bind(MazeBase.Value.Color.green, self)
+
+    FloatLayout:
+        StateImage:
+            idx: -5 / 2
+            idy: - (Setting.col_show - 1) / 2
+            name: 'gold'
+            size: (Setting.pos_small * Setting.multiple, Setting.pos_small * Setting.multiple)
+        StateLabel:
+            idx: -8.25 / 2
+            idy: - (Setting.col_show - 1) / 2
+            offset: (0, 2)
+            fsize: 20
+            halign: 'right'
+            init: root.herostate.bind('gold', self)
+        StateImage:
+            idx: 5 / 2
+            idy: - (Setting.col_show - 1) / 2
+            name: 'experience'
+            size: (Setting.pos_small * Setting.multiple, Setting.pos_small * Setting.multiple)
+        StateLabel:
+            idx: 8.25 / 2
+            idy: - (Setting.col_show - 1) / 2
+            offset: (0, 2)
+            fsize: 20
+            halign: 'left'
+            init: root.herostate.bind('experience', self)
 
 
 <MotaImage>:
