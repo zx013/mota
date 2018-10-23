@@ -76,6 +76,7 @@ class Mota(FocusBehavior, FloatLayout):
 
     def __init__(self, **kwargs):
         super(Mota, self).__init__(**kwargs)
+        self.operate = True
         #Music.background(init=True)
 
         key = Setting.difficult['key']
@@ -108,6 +109,8 @@ class Mota(FocusBehavior, FloatLayout):
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
+        if not self.operate:
+            return False
         key_map = {'w': 'up', 'a': 'left', 's': 'down', 'd': 'right'}
         key = keycode[1]
         if Setting.keyboard_wasd:
@@ -131,6 +134,8 @@ class Mota(FocusBehavior, FloatLayout):
         return True
 
     def on_touch_down(self, touch):
+        if not self.operate:
+            return False
         x, y = touch.pos
         if not self.collide_point(x, y):
             return False
@@ -148,6 +153,8 @@ class Mota(FocusBehavior, FloatLayout):
         pos_value = self.maze.get_value(pos)
         herobase = self.maze.herobase
         herostate = self.maze.herostate
+
+        self.dialog.dialog_begin(self.hero.pos, pos, pos_type, pos_value)
 
         if pos_type == MazeBase.Type.Static.wall:
             return False
@@ -194,7 +201,6 @@ class Mota(FocusBehavior, FloatLayout):
                 self.maze.kill_boss(pos)
         elif pos_type == MazeBase.Type.Active.rpc:
             print('meet npc:', pos_type, pos_value)
-            self.dialog.dialog(self.hero.pos, pos)
             return False
 
         self.maze.set_type(pos, MazeBase.Type.Static.ground)
