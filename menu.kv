@@ -315,6 +315,8 @@
     monster_list: ()
     page: 0
     number: 3
+    page_prev: page_prev
+    page_next: page_next
     MenuMonster:
         index: 0
         monster: root.monster_list[root.page * root.number] if root.page * root.number < len(root.monster_list) else ('', '')
@@ -362,6 +364,104 @@
             self.color = self.default_color
             root.root.current = 'mota'
 
+
+<MenuDialog>:
+    idx: 3
+    idy: 3
+    name: 'hero-blue-down'
+    text: '这是一条信息。这是一条信息一二三，这是一条信息哈哈哈。而是一条信息的。下是一条信息一二三，额是一条信息哈哈哈。'
+    page: 0
+    pages: [['', '', '']]
+    page_prev: page_prev
+    page_next: page_next
+    canvas:
+        Color:
+            rgba: (1, 1, 0, 1)
+        Line:
+            width: 1.5 * Setting.multiple
+            rounded_rectangle: (Setting.pos_x(root.idx - 4) - Setting.pos_realx / 2 - 1.5 * Setting.multiple, Setting.pos_y(root.idy + 1.5) - Setting.pos_realx / 2 - 1.5 * Setting.multiple, Setting.pos_realx + 3 * Setting.multiple, Setting.pos_realx + 3 * Setting.multiple, 5 * Setting.multiple)
+        Color:
+            rgba: (0.96, 0.96, 0.96, 1)
+        Line:
+            width: 1.5 * Setting.multiple
+            rounded_rectangle: (Setting.pos_x(root.idx) - 5 / Setting.row_show * Setting.row_size / 2 - 1.5 * Setting.multiple, Setting.pos_y(root.idy) - 3 / Setting.row_show * Setting.row_size / 2 - 1.5 * Setting.multiple, 5 / Setting.row_show * Setting.row_size + 3 * Setting.multiple, 3 / Setting.row_show * Setting.row_size + 3 * Setting.multiple, Setting.size * Setting.multiple)
+    MenuImage:
+        idx: root.idx - 4
+        idy: root.idy + 1.5
+        name: 'ground'
+        size: (Setting.pos_realx + 2, Setting.pos_realx + 2)
+    MenuImage:
+        idx: root.idx - 4
+        idy: root.idy + 1.5
+        name: root.name
+    MenuLabel:
+        idx: root.idx + 1.5
+        idy: root.idy + 2.5
+        text: '英 雄'
+        fsize: 2
+        disabled: True
+    MenuLabel:
+        idx: root.idx + 1.85
+        idy: root.idy + 0.75
+        text: root.pages[root.page][0]
+        fsize: 1.5
+        disabled: True
+    MenuLabel:
+        idx: root.idx + 0.1
+        idy: root.idy - 0.75
+        text: root.pages[root.page][1]
+        fsize: 1.5
+        disabled: True
+    MenuLabel:
+        idx: root.idx + 0.1
+        idy: root.idy - 2.25
+        text: root.pages[root.page][2]
+        fsize: 1.5
+        disabled: True
+    MenuLabel:
+        id: page_prev
+        idx: root.idx - 4.5
+        idy: root.idy - 3.25
+        text: '←'
+        fsize: 1.5
+        disabled: root.page <= 0
+        disabled_color: (0.7, 0.7, 0.7, 1)
+        on_release:
+            root.page -= root.page > 0
+            self.state = 'normal'
+            self.color = self.disabled_color if self.disabled else self.default_color
+            page_next.color = self.default_color
+    MenuLabel:
+        idx: root.idx
+        idy: root.idy - 3.25
+        text: '○'
+        fsize: 1.2
+        disabled: True
+        disabled_color: (0.7, 0.7, 0.7, 1)
+        on_release:
+            root.split()
+    MenuLabel:
+        id: page_next
+        idx: root.idx + 4.5
+        idy: root.idy - 3.25
+        text: '→'
+        fsize: 1.5
+        disabled: root.page >= len(root.pages) - 1
+        disabled_color: (0.7, 0.7, 0.7, 1)
+        on_release:
+            root.page += root.page < len(root.pages) - 1
+            self.state = 'normal'
+            self.color = self.disabled_color if self.disabled else self.default_color
+            page_prev.color = self.default_color
+    MenuLabel:
+        idx: root.idx + 5.25
+        idy: root.idy + 2.75
+        text: '×'
+        fsize: 1.2
+        #disabled: True
+        on_release:
+            root.split()
+            root.idx -= 1
 
 
 <MenuManager>:
@@ -473,17 +573,16 @@
         name: 'mota'
         Mota:
             id: mota
+        MenuDialog:
         MenuLabel:
-            idx: -12
+            idx: -14
             idy: -14.5
             text: '怪物'
-            fsize: 3
+            fsize: 2
             color: (1, 1, 1, 1)
             #切换到怪物手册时更新怪物列表，可能需要排序
             on_release:
                 root.current = 'monster-manual'
-                monster_manual.monster_list = tuple(set(functools.reduce(lambda x, y: x + y, [[pos[1] for pos in row if pos[0] == MazeBase.Type.Active.monster] for row in mota.maze.maze[mota.maze.herostate.floor]])))
-                monster_manual.page = 0
 
     Screen:
         name: 'setting-base'
@@ -722,8 +821,16 @@
 
     Screen:
         name: 'monster-manual'
+        on_pre_enter:
+            monster_manual.monster_list = tuple(set(functools.reduce(lambda x, y: x + y, [[pos[1] for pos in row if pos[0] == MazeBase.Type.Active.monster] for row in mota.maze.maze[mota.maze.herostate.floor]])))
+            monster_manual.page = 0
+            page_prev = monster_manual.page_prev
+            page_next = monster_manual.page_next
+            page_prev.color = page_prev.disabled_color if page_prev.disabled else page_prev.default_color
+            page_next.color = page_next.disabled_color if page_next.disabled else page_next.default_color
         MenuMonsterManual:
             id: monster_manual
             maze: mota.maze
             monster_list: ()
             root: root
+        

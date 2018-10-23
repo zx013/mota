@@ -84,7 +84,7 @@ class Setting:
     size = 11 #Store.load('size', 11)
 
     #放缩倍数
-    multiple = 1.0
+    multiple = 1.5
 
     #每个点的大小（像素）
     pos_size = 32

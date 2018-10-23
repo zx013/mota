@@ -193,6 +193,7 @@ class Mota(FocusBehavior, FloatLayout):
             if pos_value[0] == 'boss':
                 self.maze.kill_boss(pos)
         elif pos_type == MazeBase.Type.Active.rpc:
+            print('meet npc:', pos_type, pos_value)
             return False
 
         self.maze.set_type(pos, MazeBase.Type.Static.ground)
