@@ -366,14 +366,16 @@
 
 
 <MenuDialog>:
-    idx: 3
-    idy: 3
+    idx: 0
+    idy: 0
     name: 'hero-blue-down'
-    text: '这是一条信息。这是一条信息一二三，这是一条信息哈哈哈。而是一条信息的。下是一条信息一二三，额是一条信息哈哈哈。'
+    text: ''
     page: 0
     pages: [['', '', '']]
+    end: False
     page_prev: page_prev
     page_next: page_next
+    page_exit: page_exit
     canvas:
         Color:
             rgba: (1, 1, 0, 1)
@@ -454,14 +456,14 @@
             self.color = self.disabled_color if self.disabled else self.default_color
             page_prev.color = self.default_color
     MenuLabel:
+        id: page_exit
         idx: root.idx + 5.25
         idy: root.idy + 2.75
         text: '×'
         fsize: 1.2
         #disabled: True
         on_release:
-            root.split()
-            root.idx -= 1
+            root.update((0, 1, 1), '试一试就知道了，你说对不对呀。试一试就知道了，你说对不对呀。')
 
 
 <MenuManager>:
@@ -573,7 +575,9 @@
         name: 'mota'
         Mota:
             id: mota
+            dialog: dialog
         MenuDialog:
+            id: dialog
         MenuLabel:
             idx: -14
             idy: -14.5
