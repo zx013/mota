@@ -154,7 +154,9 @@ class Mota(FocusBehavior, FloatLayout):
         herobase = self.maze.herobase
         herostate = self.maze.herostate
 
-        self.dialog.dialog_begin(self.hero.pos, pos, pos_type, pos_value)
+        scene = self.maze.story.check(pos) #有剧情则开启对话
+        if scene:
+            self.dialog.dialog_begin(self.hero.pos, pos, scene)
 
         if pos_type == MazeBase.Type.Static.wall:
             return False
@@ -199,7 +201,7 @@ class Mota(FocusBehavior, FloatLayout):
             Music.play('blood') #获取剑后使用剑的声音和动画
             if pos_value[0] == 'boss':
                 self.maze.kill_boss(pos)
-        elif pos_type == MazeBase.Type.Active.rpc:
+        elif pos_type == MazeBase.Type.Active.npc:
             print('meet npc:', pos_type, pos_value)
             return False
 
@@ -283,14 +285,14 @@ class Mota(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Active.monster:
             pos_key = '-'.join(pos_value)
             pos_style = 'dynamic'
-        elif pos_type == MazeBase.Type.Active.rpc:
-            if pos_value == MazeBase.Value.Rpc.wisdom:
+        elif pos_type == MazeBase.Type.Active.npc:
+            if pos_value == MazeBase.Value.Npc.wisdom:
                 pos_key = 'npc-wisdom'
-            elif pos_value == MazeBase.Value.Rpc.trader:
+            elif pos_value == MazeBase.Value.Npc.trader:
                 pos_key = 'npc-trader'
-            elif pos_value == MazeBase.Value.Rpc.thief:
+            elif pos_value == MazeBase.Value.Npc.thief:
                 pos_key = 'npc-thief'
-            elif pos_value == MazeBase.Value.Rpc.fairy:
+            elif pos_value == MazeBase.Value.Npc.fairy:
                 pos_key = 'npc-fairy'
             pos_style = 'dynamic'
 

@@ -307,7 +307,7 @@ class MazeBase:
 
         class Active:
             monster = 21
-            rpc = 22
+            npc = 22
 
         class Item:
             key = 31
@@ -370,7 +370,7 @@ class MazeBase:
 
             total = (red, blue, yellow, green)
 
-        class Rpc:
+        class Npc:
             wisdom = 1
             trader = 2
             thief = 3

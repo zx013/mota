@@ -10,6 +10,7 @@ from setting import MazeBase, MazeSetting
 from cache import Config
 from hero import HeroBase, HeroState
 from tools import Tools, LoopException
+from story import Story
 
 
 class TreeNode:
@@ -237,6 +238,8 @@ class Maze:
         self.monster = {}
         self.herobase = HeroBase()
         self.herostate = HeroState(self.herobase)
+        self.story = Story(self)
+        self.story.load()
         MonsterInfo.load()
 
     def init(self, floor):
@@ -1670,20 +1673,20 @@ class Maze:
             self.set_value(pos, MazeBase.Value.Wall.dynamic)
 
         pos = (floor, 1, 1)
-        self.set_type(pos, MazeBase.Type.Active.rpc)
-        self.set_value(pos, MazeBase.Value.Rpc.wisdom)
+        self.set_type(pos, MazeBase.Type.Active.npc)
+        self.set_value(pos, MazeBase.Value.Npc.wisdom)
 
         pos = (floor, 1, MazeSetting.cols)
-        self.set_type(pos, MazeBase.Type.Active.rpc)
-        self.set_value(pos, MazeBase.Value.Rpc.trader)
+        self.set_type(pos, MazeBase.Type.Active.npc)
+        self.set_value(pos, MazeBase.Value.Npc.trader)
 
         pos = (floor, MazeSetting.rows, 1)
-        self.set_type(pos, MazeBase.Type.Active.rpc)
-        self.set_value(pos, MazeBase.Value.Rpc.thief)
+        self.set_type(pos, MazeBase.Type.Active.npc)
+        self.set_value(pos, MazeBase.Value.Npc.thief)
 
         pos = (floor, MazeSetting.rows, MazeSetting.cols)
-        self.set_type(pos, MazeBase.Type.Active.rpc)
-        self.set_value(pos, MazeBase.Value.Rpc.fairy)
+        self.set_type(pos, MazeBase.Type.Active.npc)
+        self.set_value(pos, MazeBase.Value.Npc.fairy)
 
     def set_boss(self):
         pass
@@ -1878,7 +1881,7 @@ class Maze:
         around = set()
         for pos in pos_list:
             beside = self.get_beside_except(pos, MazeBase.Type.Static.wall)
-            stair = self.get_beside(pos, MazeBase.Type.Static.stair) | self.get_beside(pos, MazeBase.Type.Active.rpc)
+            stair = self.get_beside(pos, MazeBase.Type.Static.stair) | self.get_beside(pos, MazeBase.Type.Active.npc)
             beside -= stair
             if end_pos in stair:
                 beside.add(end_pos)

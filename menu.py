@@ -26,15 +26,34 @@ class MenuMonsterManual(FloatLayout): pass
 
 #三行分别为7, 10, 10个中文字符
 class MenuDialog(FloatLayout):
-    scene = []
+    dialog = []
     person = {}
 
-    def dialog_begin(self, pos1, pos2, pos_type, pos_value):
-        if pos_type == MazeBase.Type.Active.rpc:
-            self.mota.operate = False
-            self.scene = [(2, '试一试就知道了，你说对不对呀。试一试就知道了，你说对不对呀。'), (1, '好的。')]
-            self.person = {1: pos1, 2: pos2}
-            self.update()
+    def on_touch_down(self, touch):
+        if self.mota.operate:
+            return False
+        super(MenuDialog, self).on_touch_down(touch)
+        if self.page_prev.collide_point(*touch.pos):
+            return False
+        if self.page_next.collide_point(*touch.pos):
+            return False
+        if self.page_enter.collide_point(*touch.pos):
+            return False
+        if self.page_exit.collide_point(*touch.pos):
+            return False
+
+        if self.page < len(self.pages) - 1:
+            self.page += 1
+            self.show()
+        elif not self.update():
+            self.dialog_end()
+        return True
+
+    def dialog_begin(self, pos1, pos2, scene):
+        self.mota.operate = False
+        self.dialog = list(scene.dialog)
+        self.person = {1: pos1, 2: pos2}
+        self.update()
 
     def dialog_end(self):
         self.mota.operate = True
@@ -43,9 +62,9 @@ class MenuDialog(FloatLayout):
         self.opacity = 0
 
     def update(self):
-        if len(self.scene) == 0:
+        if len(self.dialog) == 0:
             return False
-        posd, text = self.scene.pop(0)
+        posd, text = self.dialog.pop(0)
         z, x, y = self.person[posd]
         self.idx = 1.5 * (y - Setting.size / 2) - 0.75
         self.idy = -1.0 * (x - Setting.size / 2) + 0.75
