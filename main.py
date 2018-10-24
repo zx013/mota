@@ -2,6 +2,14 @@
 """
 @author: zx013
 """
+
+'''
+楼层跳跃
+存档功能（地图存档，剧情存档）
+修改info信息中的name字段，增加name名称
+怪物手册和对话显示正确的名字
+对话的两个框的间距要拉大
+'''
 #打包apk使用
 build_apk = False
 if build_apk:
