@@ -1,18 +1,18 @@
 [empty]
-name = empty.png
+file = empty.png
 static = 1, 1
 
 [ground]
-name = ground.png
+file = ground.png
 static = 1, 1
 
 [wall-01]
-name = wall-action-01.png
+file = wall-action-01.png
 static = 1, 1
 action = 2-4, 1
 
 [wall-02]
-name = wall-action-01.png
+file = wall-action-01.png
 static = 1, 2
 action = 2-4, 2
 color = 1, 1, 1, 1
@@ -24,62 +24,66 @@ color-defence = 0.5, 0.5, 1, 1
 color-key = 1, 1, 0.5, 1
 
 [wall-03]
-name = wall-action-01.png
+file = wall-action-01.png
 static = 1, 3
 action = 2-4, 3
 
 [wall-dynamic-01]
-name = wall-01.png
+file = wall-01.png
 dynamic = 1, 1-4
 
 [wall-dynamic-02]
-name = wall-01.png
+file = wall-01.png
 dynamic = 3, 1-4
 
 [door-yellow]
-name = door.png
+file = door.png
 static = 1, 1
 action = 2-4, 1
 
 [door-blue]
-name = door.png
+file = door.png
 static = 1, 2
 action = 2-4, 2
 
 [door-red]
-name = door.png
+file = door.png
 static = 1, 3
 action = 2-4, 3
 
 [door-green]
-name = door.png
+file = door.png
 static = 1, 4
 action = 2-4, 4
 
 [shop-blue]
-name = other.png
+file = other.png
 dynamic = 3, 1-4
 
 [stair-down]
-name = stair.png
+file = stair.png
 static = 1, 1
 
 [stair-up]
-name = stair.png
+file = stair.png
 static = 1, 2
 
 [npc-wisdom]
-name = npc.png
+name = 智者
+file = npc.png
 dynamic = 1, 1-4
 
 [npc-trader]
-name = npc.png
+name = 商人
+file = npc.png
 dynamic = 2, 1-4
 
 [npc-thief]
-name = npc.png
+name = 窃贼
+file = npc.png
 dynamic = 3, 1-4
 
 [npc-fairy]
-name = npc.png
+name = 精灵
+file = npc.png
 dynamic = 4, 1-4

@@ -84,7 +84,10 @@ class Setting:
     size = 11 #Store.load('size', 11)
 
     #放缩倍数
-    multiple = 1.5
+    multiple = 1.0
+
+    #每走多少步保存一次
+    step = 10
 
     #每个点的大小（像素）
     pos_size = 32
@@ -201,6 +204,7 @@ class Setting:
 try:
     PythonActivity = autoclass('org.renpy.android.PythonActivity')
     CurrentActivity = cast('android.app.Activity', PythonActivity.mActivity)
+    #CurrentActivity.removeLoadingScreen()
     display = CurrentActivity.getWindowManager().getDefaultDisplay()
     width = display.getWidth()
     height = display.getHeight()

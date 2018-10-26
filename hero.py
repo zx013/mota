@@ -204,6 +204,7 @@ class Hero:
     old_pos = (1, 0, 0)
     pos = (1, 0, 0)
     move_list = []
+    floor_max = 0
 
     opacity = Opacity() #不透明度
     stair = None #是否触发上下楼的动作
@@ -281,10 +282,13 @@ class Hero:
                 update_pos = set(stair[MazeBase.Value.Stair.up]).pop()
             elif self.floor == floor - 1: #上楼
                 update_pos = set(stair[MazeBase.Value.Stair.down]).pop()
+                if self.floor_max < floor:
+                    self.floor_max = floor
 
         if update_pos:
             self.pos = update_pos
             self.maze.herostate.floor = self.floor
+
 
     @property
     def floor_up(self):

@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 import os
 import random
-from kivy.config import ConfigParser
+#kivy封装的ConfigParser读取时没有转换编码
+#from kivy.config import ConfigParser
+from configparser import ConfigParser
 from kivy.uix.image import Image
 
 from setting import Setting
@@ -31,7 +33,7 @@ class ConfigBase:
     #读取info配置
     def read_info(self, path):
         config = ConfigParser()
-        config.read(os.path.join(path, 'info'))
+        config.read(os.path.join(path, 'info'), encoding='utf-8')
 
         info = dict(config._sections)
         for key in info:
@@ -70,10 +72,10 @@ class ConfigBase:
             info = self.read_info(path)
             info['hero-click'] = {}
             for key, val in info.items():
-                if 'name' not in val:
-                    val['name'] = ''
+                if 'file' not in val:
+                    val['file'] = ''
                 if 'path' not in val:
-                    val['path'] = os.path.join(path, val['name'])
+                    val['path'] = os.path.join(path, val['file'])
                 if 'dt' not in val:
                     if 'hero' in key or 'door' in key:
                         val['dt'] = 0.1

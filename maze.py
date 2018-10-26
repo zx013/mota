@@ -8,7 +8,7 @@ from threading import Thread
 
 from setting import MazeBase, MazeSetting
 from cache import Config
-from hero import HeroBase, HeroState
+from hero import Hero, HeroBase, HeroState
 from tools import Tools, LoopException
 from story import Story
 
@@ -179,6 +179,8 @@ class MonsterInfo:
             if key2 not in data[key1]:
                 data[key1][key2] = {}
 
+            if 'name' in config:
+                data[key1][key2]['name'] = config['name']
             for name in MonsterInfo.base:
                 if name not in data[key1][key2]:
                     data[key1][key2][name] = MonsterInfo.base[name]
@@ -1360,6 +1362,8 @@ class Maze:
             if monster[0] not in self.monster:
                 self.monster[monster[0]] = {}
             self.monster[monster[0]][monster[1]] = {'health': monster_health, 'attack': attack, 'defence': defence, 'ismagic': monster_ismagic, 'gold': int(gold), 'experience': int(experience)}
+            if 'name' in MonsterInfo.data[monster[0]][monster[1]]:
+                self.monster[monster[0]][monster[1]]['name'] = MonsterInfo.data[monster[0]][monster[1]]['name']
             gold += 0.8 * random.random()
             experience += 0.2 * random.random()
 
@@ -1688,6 +1692,9 @@ class Maze:
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, MazeBase.Value.Npc.fairy)
 
+        #需要等开始楼层初始化完成
+        self.hero = Hero(self)
+
     def set_boss(self):
         pass
 
@@ -1839,10 +1846,13 @@ class Maze:
         sys.stdout.flush()
 
 
-    def save(self, num):
+    def save(self, num=0):
         record_dict = {
             'maze': self.maze, #迷宫构成
+            'maze_map': self.maze_map,
+            'maze_info': self.maze_info,
             'monster': self.monster, #怪物属性
+            'hero': self.hero.__dict__,
             'herobase': self.herobase.__dict__, #等级状态
             'herostate': self.herostate.__dict__ #实时状态
         }
@@ -1855,18 +1865,22 @@ class Maze:
             fp.write(record)
 
 
-    def load(self, num):
+    def load(self, num=0):
         try:
             with open(MazeSetting.save_file(num), 'rb') as fp:
                 record = fp.read()
 
             record_dict = pickle.loads(record)
             self.maze = record_dict['maze']
+            self.maze_map = record_dict['maze_map']
+            self.maze_info = record_dict['maze_info']
             self.monster = record_dict['monster']
+            for k, v in record_dict['hero'].items():
+                setattr(self.hero, k, v)
             for k, v in record_dict['herobase'].items():
-                setattr(self, k, v)
+                setattr(self.herobase, k, v)
             for k, v in record_dict['herostate'].items():
-                setattr(self, k, v)
+                setattr(self.herostate, k, v)
         except Exception as ex:
             print('load error: ', ex)
 

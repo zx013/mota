@@ -10,7 +10,8 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager
 from kivy.lang import Builder
 
-from setting import Setting, MazeBase
+from setting import Setting
+from cache import Config
 
 with open('menu.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
@@ -29,7 +30,7 @@ class MenuDialog(FloatLayout):
     dialog = []
     person = {}
 
-    def on_touch_down(self, touch):
+    def on_touch_up(self, touch):
         if self.mota.operate:
             return False
         super(MenuDialog, self).on_touch_down(touch)
@@ -52,7 +53,7 @@ class MenuDialog(FloatLayout):
     def dialog_begin(self, pos1, pos2, scene):
         self.mota.operate = False
         self.dialog = list(scene.dialog)
-        self.person = {1: pos1, 2: pos2}
+        self.person = {1: (pos1[0], pos1[1] - 3 * (pos2[1] - pos1[1]), pos1[2] - 3 * (pos2[2] - pos1[2])), 2: pos2}
         self.update()
 
     def dialog_end(self):
@@ -64,8 +65,17 @@ class MenuDialog(FloatLayout):
     def update(self):
         if len(self.dialog) == 0:
             return False
+
         posd, text = self.dialog.pop(0)
-        z, x, y = self.person[posd]
+        pos = self.person[posd]
+        if posd == 1:
+            self.role_label.text = '英 雄'
+            self.role_image.name = self.mota.hero.name #texture = Texture.next(self.name)
+        else:
+            key = self.mota.get_key(pos)[0]
+            self.role_label.text = ' '.join(Config.config[key].get('name', '未知'))
+            self.role_image.name = key
+        z, x, y = pos
         self.idx = 1.5 * (y - Setting.size / 2) - 0.75
         self.idy = -1.0 * (x - Setting.size / 2) + 0.75
         self.opacity = 1

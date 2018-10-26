@@ -37,19 +37,18 @@ Created on Wed Sep 19 22:16:01 2018
 from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.behaviors import FocusBehavior
 from kivy.clock import Clock
 from kivy.lang import Builder
 
-with open('mota.kv', 'r', encoding='utf-8') as fp:
-    Builder.load_string(fp.read())
-
 from setting import Setting, MazeBase
 from cache import Config, Texture, Music
 from maze import Maze
-from hero import Opacity, Hero
+from hero import Opacity
 from state import State
+
+with open('mota.kv', 'r', encoding='utf-8') as fp:
+    Builder.load_string(fp.read())
 
 
 class MotaImage(Image): pass
@@ -72,6 +71,7 @@ class Mota(FocusBehavior, FloatLayout):
     def __init__(self, **kwargs):
         super(Mota, self).__init__(**kwargs)
         self.operate = True
+        self.step = 0
         #Music.background(init=True)
 
         key = Setting.difficult['key']
@@ -100,7 +100,7 @@ class Mota(FocusBehavior, FloatLayout):
                 self.middle.add(i, j)
                 self.back.add(i, j, Texture.next('ground'))
 
-        self.hero = Hero(self.maze)
+        self.hero = self.maze.hero
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
@@ -128,7 +128,7 @@ class Mota(FocusBehavior, FloatLayout):
             self.maze.herostate.health += 1000
         return True
 
-    def on_touch_down(self, touch):
+    def on_touch_up(self, touch):
         if not self.operate:
             return False
         x, y = touch.pos
@@ -213,6 +213,8 @@ class Mota(FocusBehavior, FloatLayout):
         Config.reset(self.hero.name)
         Texture.reset(self.hero.name)
         self.show_hero()
+
+        self.save(pos)
 
 
     def get_key(self, pos, pos_style='static'):
@@ -410,3 +412,18 @@ class Mota(FocusBehavior, FloatLayout):
                     self.maze.set_type(pos, MazeBase.Type.Static.ground)
                     self.maze.set_value(pos, 0)
                     self.hero.action.remove(pos)
+
+
+    def save(self, pos):
+        if self.step % Setting.step == 0:
+            if self.maze.get_type(pos) != MazeBase.Type.Static.stair:
+                self.maze.save()
+            else:
+                self.step -= 1
+        self.step += 1
+
+    def load(self):
+        self.maze.load()
+        _, x, y = self.maze.maze_info[0]['init']
+        image = self.front.image[x][y]
+        image.texture = Texture.next('empty')

@@ -1,11 +1,11 @@
 [sadan]
-name = sadan.png
+file = sadan.png
 size = 487, 289
 
 [menu-start]
-name = start.png
+file = start.png
 size = 64, 64
 
 [monster-manual]
-name = manual.png
+file = manual.png
 size = 64, 64

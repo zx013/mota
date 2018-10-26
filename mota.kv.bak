@@ -4,6 +4,52 @@
 #:import Texture cache.Texture
 
 
+<MenuLabel>:
+    #简化后的参数
+    idx: 0
+    idy: 0
+    text: ''
+    fsize: 4
+
+    #调节配置中的size时不影响菜单
+    ssize: (Setting.size + 2) * Setting.multiple
+    pos_temp: {'center_x': Setting.pos_rx(self.idx), 'center_y': Setting.pos_ry(self.idy)}
+
+    #根据地图大小动态变化的大小和位置，需要单独使用self.text，否则会为空
+    length: max([0.5 * len(s.encode('gbk')) for s in self.text.split('\n')]) if self.text else 0
+    line: len(self.text.split('\n')) if self.text else 1
+    pos_hint: self.pos_temp
+    size: (self.length * self.font_size, self.line * self.font_size)
+    size_hint: (None, None)
+
+    #字体
+    font_size: 0.8 * self.fsize * self.ssize
+    font_name: Setting.font_path
+
+    #是否被选中，初始化状态
+    selected: False
+    state: 'down' if self.selected else 'normal'
+
+    #选中后的颜色配置
+    disabled_color: (1, 1, 1, 1)
+    select_color: (1, 1, 0, 1)
+    default_color: (1, 1, 1, 1)
+    color: self.select_color if self.state == 'down' else self.default_color
+
+
+<MenuImage>:
+    idx: 0
+    idy: 0
+    name: ''
+
+    pos_hint: Setting.pos_hint(self.idx, self.idy)
+    size: (Setting.pos_realx, Setting.pos_realx)
+    size_hint: (None, None)
+    texture: Texture.next(self.name)
+    allow_stretch: True
+
+
+
 <StateLabel>:
     idx: 0
     idy: 0
@@ -150,7 +196,40 @@
             offset: (0, 2)
             fsize: 20
             halign: 'left'
-            init: root.herostate.bind('experience', self)                
+            init: root.herostate.bind('experience', self)
+
+    FloatLayout:
+        MenuLabel:
+            idx: -4.5
+            idy: -3.25
+            text: '↑'
+            fsize: 1.5
+            disabled: False
+            disabled_color: (0.5, 0.5, 0.5, 1)
+            on_touch_up:
+                self.state = 'normal'
+            on_release:
+                
+        MenuLabel:
+            idx: 0
+            idy: -3.25
+            text: '○'
+            fsize: 1.2
+            disabled: False
+            disabled_color: (0.5, 0.5, 0.5, 1)
+            on_touch_up:
+                self.state = 'normal'
+        MenuLabel:
+            idx: 4.5
+            idy: -3.25
+            text: '↓'
+            fsize: 1.5
+            disabled: False
+            disabled_color: (0.5, 0.5, 0.5, 1)
+            on_touch_up:
+                self.state = 'normal'
+            on_release:
+                
 
 
 <MotaImage>:

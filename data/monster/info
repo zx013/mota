@@ -1,125 +1,145 @@
 [slime-green]
-name = 001.png
+name = 绿色史莱姆
+file = 001.png
 dynamic = 1, 1-4
 level = 0
 health = 60
 
 [slime-red]
-name = 001.png
+name = 红色史莱姆
+file = 001.png
 dynamic = 2, 1-4
 level = 5
 health = 80
 
 [slime-black]
-name = 001.png
+name = 黑色史莱姆
+file = 001.png
 dynamic = 3, 1-4
 level = 10
 health = 100
 
 [slime-king]
-name = 001.png
+name = 史莱姆王
+file = 001.png
 dynamic = 4, 1-4
 level = 30
 health = 120
 
 
 [bat-small]
-name = 002.png
+name = 小蝙蝠
+file = 002.png
 dynamic = 1, 1-4
 level = 5
 health = 80
 
 [bat-big]
-name = 002.png
+name = 大蝙蝠
+file = 002.png
 dynamic = 2, 1-4
 level = 15
 health = 100
 
 [bat-red]
-name = 002.png
+name = 红蝙蝠
+file = 002.png
 dynamic = 3, 1-4
 level = 35
 health = 120
 
 [bat-purple]
-name = 011.png
+name = 紫蝙蝠
+file = 011.png
 dynamic = 3, 1-4
 level = 65
 health = 140
 
 
 [skeleton-white]
-name = 003.png
+name = 骷髅
+file = 003.png
 dynamic = 1, 1-4
 level = 10
 health = 60
 
 [skeleton-fighter]
-name = 003.png
+name = 骷髅战士
+file = 003.png
 dynamic = 2, 1-4
 level = 15
 health = 70
 
 [skeleton-yellow]
-name = 003.png
+name = 骷髅卫兵
+file = 003.png
 dynamic = 3, 1-4
 level = 30
 health = 80
 
 [skeleton-warrior]
-name = 003.png
+name = 冥卫兵
+file = 003.png
 dynamic = 4, 1-4
 level = 50
 health = 90
 
 [skeleton-purple]
-name = 011.png
+name = 紫骷髅
+file = 011.png
 dynamic = 2, 1-4
 level = 70
 health = 100
 
 
 [knight-yellow]
-name = 007.png
+name = 低阶骑士
+file = 007.png
 dynamic = 2, 1-4
 level = 25
 health = 100
 
 [knight-red]
-name = 007.png
+name = 高阶骑士
+file = 007.png
 dynamic = 3, 1-4
 level = 40
 health = 110
 
 [knight-blue]
-name = 010.png
+name = 皇家骑士
+file = 010.png
 dynamic = 4, 1-4
 level = 55
 health = 120
 
 [knight-black]
-name = 007.png
+name = 暗黑骑士
+file = 007.png
 dynamic = 4, 1-4
 level = 85
 health = 130
 
 
 [mage-blue]
-name = 005.png
+name = 初级法师
+file = 005.png
 dynamic = 1, 1-4
 level = 10
 health = 80
 ismagic = 1
 
 [mage-yellow]
-name = 009.png
+name = 中级法师
+file = 009.png
 dynamic = 1, 1-4
 level = 20
 health = 100
 ismagic = 1
 
 [mage-red]
-name = 005.png
+name = 高级法师
+file = 005.png
 dynamic = 2, 1-4
 level = 40
 health = 120
@@ -127,52 +147,60 @@ ismagic = 1
 
 
 [orcish-brown]
-name = 004.png
+name = 兽人
+file = 004.png
 dynamic = 1, 1-4
 level = 15
 health = 120
 
 [orcish-fighter]
-name = 004.png
+name = 兽人战士
+file = 004.png
 dynamic = 2, 1-4
 level = 45
 health = 130
 
 [orcish-green]
-name = 009.png
+name = 猛毒兽人
+file = 009.png
 dynamic = 4, 1-4
 level = 65
 health = 140
 
 
 [guard-yellow]
-name = 006.png
+name = 初级守卫
+file = 006.png
 dynamic = 1, 1-4
 level = 20
 health = 110
 
 [guard-blue]
-name = 006.png
+name = 中级守卫
+file = 006.png
 dynamic = 2, 1-4
 level = 40
 health = 120
 
 [guard-red]
-name = 006.png
+name = 高级守卫
+file = 006.png
 dynamic = 3, 1-4
 level = 60
 health = 130
 
 
 [wizard-brown]
-name = 005.png
+name = 低级巫师
+file = 005.png
 dynamic = 3, 1-4
 level = 30
 health = 120
 ismagic = 1
 
 [wizard-red]
-name = 005.png
+name = 高级巫师
+file = 005.png
 dynamic = 4, 1-4
 level = 60
 health = 140
@@ -180,96 +208,111 @@ ismagic = 1
 
 
 [quicksilver-white]
-name = 004.png
+name = 史莱姆人
+file = 004.png
 dynamic = 4, 1-4
 level = 20
 health = 80
 
 [quicksilver-gray]
-name = 009.png
+name = 水银人
+file = 009.png
 dynamic = 3, 1-4
 level = 80
 health = 90
 
 
 [rock-brown]
-name = 004.png
+name = 石头怪
+file = 004.png
 dynamic = 3, 1-4
 level = 15
 health = 40
 
 [rock-gray]
-name = 011.png
+name = 岩石怪
+file = 011.png
 dynamic = 4, 1-4
 level = 75
 health = 60
 
 
 [swordman-brown]
-name = 006.png
+name = 双手剑士
+file = 006.png
 dynamic = 4, 1-4
 level = 25
 health = 100
 
 [swordman-red]
-name = 009.png
+name = 精英剑士
+file = 009.png
 dynamic = 2, 1-4
 level = 90
 health = 120
 
 
 [elite-vampire]
-name = 002.png
+name = 吸血鬼
+file = 002.png
 dynamic = 4, 1-4
 level = 85
 health = 160
 
 [elite-darkmage]
-name = 008.png
+name = 黑暗法师
+file = 008.png
 dynamic = 3, 1-4
 level = 95
 health = 80
 ismagic = 1
 
 [elite-silverslime]
-name = 008.png
+name = 白银史莱姆
+file = 008.png
 dynamic = 4, 1-4
 level = 80
 health = 100
 
 [elite-glodslime]
-name = 011.png
+name = 黄金史莱姆
+file = 011.png
 dynamic = 1, 1-4
 level = 90
 health = 120
 
 
 [boss-blue]
-name = 008.png
+name = 蓝衣魔王
+file = 008.png
 dynamic = 2, 1-4
 level = 100
 health = 160
 
 [boss-green]
-name = 010.png
+name = 绿衣魔王
+file = 010.png
 dynamic = 3, 1-4
 level = 100
 health = 170
 
 [boss-yellow]
-name = 010.png
+name = 黄衣魔王
+file = 010.png
 dynamic = 2, 1-4
 level = 100
 health = 180
 
 [boss-red]
-name = 008.png
+name = 红衣魔王
+file = 008.png
 dynamic = 1, 1-4
 level = 100
 health = 190
 
 [boss-black]
-name = 010.png
+name = 黑衣魔王
+file = 010.png
 dynamic = 1, 1-4
 level = 100
 health = 200

@@ -207,7 +207,7 @@
         idx: root.idx - 1
         idy: root.idy + 10.25
         text: ' '.join(str((root.maze.get_monster(root.monster) if root.maze else {}).get('name', '未知')))
-        fsize: root.fsize + 0.5
+        fsize: root.fsize + 0.3
         disabled: True
         color: (0.82, 0.41, 0.12, 1)
     MenuLabel:
@@ -337,6 +337,8 @@
         fsize: 2.5
         disabled: root.page <= 0
         disabled_color: (0.5, 0.5, 0.5, 1)
+        on_touch_up:
+            self.state = 'normal'
         on_release:
             root.page -= root.page > 0
             self.state = 'normal'
@@ -350,6 +352,8 @@
         fsize: 2.5
         disabled: (root.page + 1) * root.number >= len(root.monster_list)
         disabled_color: (0.5, 0.5, 0.5, 1)
+        on_touch_up:
+            self.state = 'normal'
         on_release:
             root.page += (root.page + 1) * root.number < len(root.monster_list)
             self.state = 'normal'
@@ -360,6 +364,8 @@
         idy: -14.75
         text: '返 回'
         fsize: 2
+        on_touch_up:
+            self.state = 'normal'
         on_release:
             self.color = self.default_color
             root.root.current = 'mota'
@@ -373,6 +379,8 @@
     page: 0
     pages: [['', '', '']]
     end: False
+    role_label: role_label
+    role_image: role_image
     page_prev: page_prev
     page_next: page_next
     page_enter: page_enter
@@ -394,10 +402,12 @@
         name: 'ground'
         size: (Setting.pos_realx + 2, Setting.pos_realx + 2)
     MenuImage:
+        id: role_image
         idx: root.idx - 4
         idy: root.idy + 1.5
         name: root.name
     MenuLabel:
+        id: role_label
         idx: root.idx + 1.5
         idy: root.idy + 2.5
         text: '英 雄'
@@ -429,6 +439,8 @@
         fsize: 1.5
         disabled: root.page <= 0
         disabled_color: (0.7, 0.7, 0.7, 1)
+        on_touch_up:
+            self.state = 'normal'
         on_release:
             root.page -= root.page > 0
             self.state = 'normal'
@@ -441,6 +453,8 @@
         fsize: 1.2
         disabled: root.page < len(root.pages) - 1
         disabled_color: (0.7, 0.7, 0.7, 1)
+        on_touch_up:
+            self.state = 'normal'
         on_release:
             root.dialog_end() if not root.update() else None
     MenuLabel:
@@ -451,6 +465,8 @@
         fsize: 1.5
         disabled: root.page >= len(root.pages) - 1
         disabled_color: (0.7, 0.7, 0.7, 1)
+        on_touch_up:
+            self.state = 'normal'
         on_release:
             root.page += root.page < len(root.pages) - 1
             self.state = 'normal'
@@ -461,7 +477,8 @@
         idy: root.idy + 2.75
         text: '×'
         fsize: 1.2
-        #disabled: True
+        on_touch_up:
+            self.state = 'normal'
         on_release:
             root.dialog_end()
 
@@ -558,9 +575,11 @@
             idy: 0
             text: '继 续'
             fsize: 4
-            disabled: True
             on_touch_up:
                 self.state = 'normal'
+            on_release:
+                root.current = 'mota'
+                mota.load()
         MenuLabel:
             idx: 0
             idy: -4.5
@@ -582,6 +601,40 @@
             idx: 128
             idy: 128
             opacity: 0
+            FloatLayout:
+        MenuLabel:
+            idx: -14.75
+            idy: -7
+            text: '↑'
+            fsize: 3
+            disabled: False #mota.hero.floor + 1 > mota.hero.floor_max
+            disabled_color: (0.75, 0.75, 0.75, 1)
+            on_touch_up:
+                self.state = 'normal'
+            on_release:
+                mota.floorlabel.text = str(mota.hero.floor_up)
+                mota.hero.stair = MazeBase.Value.Stair.up
+        MenuLabel:
+            idx: -14.75
+            idy: -10
+            text: '○'
+            fsize: 2.4
+            disabled: False
+            disabled_color: (0.75, 0.75, 0.75, 1)
+            on_touch_up:
+                self.state = 'normal'
+        MenuLabel:
+            idx: -14.75
+            idy: -13
+            text: '↓'
+            fsize: 3
+            disabled: False #mota.hero.floor - 1 < mota.maze.herostate.floor
+            disabled_color: (0.75, 0.75, 0.75, 1)
+            on_touch_up:
+                self.state = 'normal'
+            on_release:
+                mota.floorlabel.text = str(mota.hero.floor_down)
+                mota.hero.stair = MazeBase.Value.Stair.down
         MenuLabel:
             idx: -14
             idy: -14.5
