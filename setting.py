@@ -3,10 +3,7 @@
 @author: zx013
 """
 import os
-import platform
-from kivy.config import Config
 from kivy.storage.dictstore import DictStore
-from jnius import autoclass, cast
 
 
 class classproperty(property):
@@ -76,6 +73,12 @@ class Setting:
     }
     difficult_type = Store.load('difficult_type', 'normal')
     difficult = difficult_config[difficult_type]
+
+    #状态栏高度
+    status_size = 0.05
+
+    #旋转角度，0, 90, 180, 270
+    rotation = 0
 
     #每个单元多少层
     base = Store.load('base', 10)
@@ -198,31 +201,6 @@ class Setting:
 
     #音效音量
     sound_effect_volume = Store.load('sound_effect_volume', 20)
-
-
-#if platform.system().lower() == 'android':
-try:
-    PythonActivity = autoclass('org.renpy.android.PythonActivity')
-    CurrentActivity = cast('android.app.Activity', PythonActivity.mActivity)
-    #CurrentActivity.removeLoadingScreen()
-    display = CurrentActivity.getWindowManager().getDefaultDisplay()
-    width = display.getWidth()
-    height = display.getHeight()
-    Setting.multiple = width / (Setting.row_show * Setting.pos_size)
-except:
-    pass
-
-#默认字体没有生效，很奇怪
-Config.set('graphics', 'height', int(Setting.row_show * Setting.pos_real))
-Config.set('graphics', 'width', int(Setting.col_show * Setting.pos_real))
-Config.set('graphics', 'default_font', Setting.font_path)
-Config.set('graphics', 'resizable', 0)
-#android下这个直接就会卡住，必须注释掉才可以。。。
-'''
-if platform.system().lower() in ('windows', 'linux'):
-    Config.set('kivy', 'window_icon', Setting.icon_path)
-
-'''
 
 
 #注意，出现random的属性，每次获取时值将不同

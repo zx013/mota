@@ -895,3 +895,23 @@
             monster_list: ()
             root: root
 
+
+<MenuStatus>:
+    size: (Setting.row_size, Setting.status_size * Setting.col_size)
+    size_hint: (None, None)
+    Screen:
+        name: 'start'
+        MenuLabel:
+            idx: 0
+            idy: 0
+            text: '联系及反馈: zxlib@foxmail.com'
+            fsize: 1.8
+            disabled: True
+
+<MenuLayout>:
+    MenuManager:
+        pos: (0, Setting.status_size * Setting.col_size)
+    MenuStatus:
+        pos: (0, 0)
+    
+

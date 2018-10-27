@@ -17,6 +17,8 @@ with open('menu.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
 
 class MenuManager(ScreenManager): pass
+class MenuStatus(ScreenManager): pass
+class MenuLayout(FloatLayout): pass
 
 class MenuLabel(ToggleButtonBehavior, Label): pass
 class MenuImage(Image): pass
