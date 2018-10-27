@@ -74,8 +74,14 @@ class Setting:
     difficult_type = Store.load('difficult_type', 'normal')
     difficult = difficult_config[difficult_type]
 
+    #状态栏初始显示
+    status_text = '欢迎来到无尽的魔塔，联系及反馈: zxlib@foxmail.com'
+
     #状态栏高度
     status_size = 0.05
+
+    #状态栏移动速度
+    status_speed = 50
 
     #旋转角度，0, 90, 180, 270
     rotation = 0

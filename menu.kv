@@ -901,17 +901,18 @@
     size_hint: (None, None)
     Screen:
         name: 'start'
-        MenuLabel:
-            idx: 0
-            idy: 0
-            text: '联系及反馈: zxlib@foxmail.com'
+        MenuAnimationLabel:
+            #pos: (Setting.row_size, 0)
+            pos_hint: {}
+            #text: Setting.status_text
             fsize: 1.8
             disabled: True
+
 
 <MenuLayout>:
     MenuManager:
         pos: (0, Setting.status_size * Setting.col_size)
     MenuStatus:
         pos: (0, 0)
-    
+
 

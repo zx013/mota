@@ -8,6 +8,7 @@ from kivy.uix.image import Image
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.screenmanager import ScreenManager
+from kivy.animation import Animation
 from kivy.lang import Builder
 
 from setting import Setting
@@ -16,9 +17,6 @@ from cache import Config
 with open('menu.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
 
-class MenuManager(ScreenManager): pass
-class MenuStatus(ScreenManager): pass
-class MenuLayout(FloatLayout): pass
 
 class MenuLabel(ToggleButtonBehavior, Label): pass
 class MenuImage(Image): pass
@@ -26,6 +24,26 @@ class MenuParameter(FloatLayout): pass
 class MenuSetting(FloatLayout): pass
 class MenuMonster(FloatLayout): pass
 class MenuMonsterManual(FloatLayout): pass
+
+class MenuManager(ScreenManager): pass
+class MenuStatus(ScreenManager):
+    def __init__(self, **kwargs):
+        super(MenuStatus, self).__init__(**kwargs)
+
+class MenuAnimationLabel(MenuLabel):
+    def __init__(self, **kwargs):
+        super(MenuAnimationLabel, self).__init__(**kwargs)
+        self.pos = (Setting.row_size, 0)
+        self.text = Setting.status_text
+        offset = Setting.row_size + 8 * (max([0.5 * len(s.encode('gbk')) for s in self.text.split('\n')]) if self.text else 0)
+        anim = Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=offset, duration=0)
+        anim.repeat = True
+        anim.start(self)
+
+class MenuLayout(FloatLayout):
+    def __init__(self, **kwargs):
+        super(MenuLayout, self).__init__(**kwargs)
+
 
 #三行分别为7, 10, 10个中文字符
 class MenuDialog(FloatLayout):

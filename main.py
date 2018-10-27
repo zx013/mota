@@ -50,6 +50,9 @@ Window.rotation = Setting.rotation
 if platform in ('win', 'linux'):
     Window.set_title(Setting.title)
     Window.set_icon(Setting.icon_path)
+    Setting.status_speed = 20
+else:
+    Setting.status_speed = 100
 #Window.fullscreen = True
 
 
