@@ -83,8 +83,17 @@ class Setting:
     #状态栏移动速度
     status_speed = 50
 
+    #长按判定间隔
+    touch_step = 0.01
+
+    #到达时间后判定为长按
+    touch_time = 0.5
+
     #旋转角度，0, 90, 180, 270
     rotation = 0
+
+    #地图显示的偏移
+    offset = 0
 
     #每个单元多少层
     base = Store.load('base', 10)

@@ -47,6 +47,8 @@ from maze import Maze
 from hero import Opacity
 from state import State
 
+from functools import partial
+
 with open('mota.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
 
@@ -128,16 +130,67 @@ class Mota(FocusBehavior, FloatLayout):
             self.maze.herostate.health += 1000
         return True
 
-    def on_touch_up(self, touch):
-        if not self.operate:
+    #实现长按操作，极少情况会出现长按和点击同时触发的情况
+    def on_touch_hold(self, touch):
+        if touch.maze_pos is None:
             return False
+        if self.hero.pos == touch.maze_pos:
+            key = self.hero.name_show
+        else:
+            key = self.get_key(touch.maze_pos)[0]
+        name = Config.config[key].get('name', '未知')
+        help = Config.config[key].get('help', '未知')
+
+        pos_type = self.maze.get_type(touch.maze_pos)
+        pos_value = self.maze.get_value(touch.maze_pos)
+        if pos_type == MazeBase.Type.Active.monster:
+            monster = self.maze.monster[pos_value[0]][pos_value[1]]
+            damage = self.maze.get_damage(self.maze.herostate.attack, self.maze.herostate.defence, pos_value)
+            self.statusbar.update('{}:    生命: {}  攻击: {}  防御: {}  伤害: {}'.format(name, monster['health'], monster['attack'], monster['defence'], damage))
+        else:
+            self.statusbar.update(':  '.join((name, help)))
+        return True
+
+    def touch_hold(self, touch, dt):
+        touch.hold_dt += dt
+        if touch.hold_dt > Setting.touch_time:
+            touch.is_hold = True
+            self.on_touch_hold(touch)
+            Clock.unschedule(touch.hold)
+
+    def on_touch_down(self, touch):
         x, y = touch.pos
         if not self.collide_point(x, y):
+            touch.maze_pos = None
+        else:
+            show_x = self.row - int(y / (Setting.pos_size * Setting.multiple)) - 1
+            show_y = int(x / (Setting.pos_size * Setting.multiple))
+            touch.maze_pos = (self.hero.floor, show_x, show_y)
+
+        touch.is_hold = False
+        touch.hold_dt = 0
+        touch.hold = Clock.schedule_interval(partial(self.touch_hold, touch), Setting.touch_step)
+
+    def on_touch_up(self, touch):
+        if hasattr(touch, 'hold'):
+            if touch.is_hold:
+                return False
+            Clock.unschedule(touch.hold)
+        else:
+            x, y = touch.pos
+            if not self.collide_point(x, y):
+                touch.maze_pos = None
+            else:
+                show_x = self.row - int(y / (Setting.pos_size * Setting.multiple)) - 1
+                show_y = int(x / (Setting.pos_size * Setting.multiple))
+                touch.maze_pos = (self.hero.floor, show_x, show_y)
+
+        if not self.operate:
             return False
-        show_x = self.row - int(y / (Setting.pos_size * Setting.multiple)) - 1
-        show_y = int(x / (Setting.pos_size * Setting.multiple))
-        pos = (self.hero.floor, show_x, show_y)
-        self.hero.move_list = self.maze.find_path(self.hero.pos, pos)
+
+        if touch.maze_pos is None:
+            return False
+        self.hero.move_list = self.maze.find_path(self.hero.pos, touch.maze_pos)
         return True
 
 
@@ -151,7 +204,7 @@ class Mota(FocusBehavior, FloatLayout):
 
         scene = self.maze.story.check(pos) #有剧情则开启对话
         if scene:
-            self.dialog.dialog_begin(self.hero.pos, pos, scene)
+            self.dialog.dialog_start(self.hero.pos, pos, scene)
 
         if pos_type == MazeBase.Type.Static.wall:
             return False

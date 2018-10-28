@@ -13,6 +13,9 @@ from kivy.lang import Builder
 
 from setting import Setting
 from cache import Config
+from tools import Tools
+
+from random import random
 
 with open('menu.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
@@ -26,19 +29,37 @@ class MenuMonster(FloatLayout): pass
 class MenuMonsterManual(FloatLayout): pass
 
 class MenuManager(ScreenManager): pass
-class MenuStatus(ScreenManager):
-    def __init__(self, **kwargs):
-        super(MenuStatus, self).__init__(**kwargs)
+class MenuStatus(ScreenManager): pass
 
-class MenuAnimationLabel(MenuLabel):
+class MenuWelcomeLabel(MenuLabel):
     def __init__(self, **kwargs):
-        super(MenuAnimationLabel, self).__init__(**kwargs)
+        super(MenuWelcomeLabel, self).__init__(**kwargs)
         self.pos = (Setting.row_size, 0)
         self.text = Setting.status_text
-        offset = Setting.row_size + 8 * (max([0.5 * len(s.encode('gbk')) for s in self.text.split('\n')]) if self.text else 0)
-        anim = Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=offset, duration=0)
+
+        offset = Setting.row_size + Tools.text_length(self.text) * self.font_size
+        anim = Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=0, duration=0)
         anim.repeat = True
         anim.start(self)
+
+class MenuStatusLabel(MenuLabel):
+    def __init__(self, **kwargs):
+        super(MenuStatusLabel, self).__init__(**kwargs)
+        self.anim = None
+
+    def update(self, text):
+        self.pos = (0, 0)
+        self.text = text
+        self.color = (0.5 + random() / 2, 0.5 + random() / 2, 0.5 + random() / 2, 1)
+        print(self.pos, self.width)
+        offset = Tools.text_length(self.text) * self.font_size - Setting.col_size
+        if offset < 0:
+            offset = 0
+        if self.anim:
+            self.anim.cancel(self)
+        self.anim = Animation(x=0) + Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=-offset) + Animation(x=0, duration=0)
+        self.anim.repeat = True
+        self.anim.start(self)
 
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
@@ -70,7 +91,7 @@ class MenuDialog(FloatLayout):
             self.dialog_end()
         return True
 
-    def dialog_begin(self, pos1, pos2, scene):
+    def dialog_start(self, pos1, pos2, scene):
         self.mota.operate = False
         self.dialog = list(scene.dialog)
         self.person = {1: (pos1[0], pos1[1] - 3 * (pos2[1] - pos1[1]), pos1[2] - 3 * (pos2[2] - pos1[2])), 2: pos2}
@@ -89,8 +110,8 @@ class MenuDialog(FloatLayout):
         posd, text = self.dialog.pop(0)
         pos = self.person[posd]
         if posd == 1:
-            self.role_label.text = '英 雄'
-            self.role_image.name = self.mota.hero.name #texture = Texture.next(self.name)
+            self.role_label.text = '勇 者'
+            self.role_image.name = self.mota.hero.name_show #texture = Texture.next(self.name)
         else:
             key = self.mota.get_key(pos)[0]
             self.role_label.text = ' '.join(Config.config[key].get('name', '未知'))

@@ -3,15 +3,21 @@ file = empty.png
 static = 1, 1
 
 [ground]
+name = 地面
+help = 勇者行走的地面
 file = ground.png
 static = 1, 1
 
 [wall-01]
+name = 墙壁
+help = 花岗岩砌成的墙壁，似乎坚不可摧
 file = wall-action-01.png
 static = 1, 1
 action = 2-4, 1
 
 [wall-02]
+name = 墙壁
+help = 泥土堆积的墙壁，风一吹就倒了
 file = wall-action-01.png
 static = 1, 2
 action = 2-4, 2
@@ -24,34 +30,48 @@ color-defence = 0.5, 0.5, 1, 1
 color-key = 1, 1, 0.5, 1
 
 [wall-03]
+name = 墙壁
+help = 岩石做成的墙壁，看上去挺坚固的
 file = wall-action-01.png
 static = 1, 3
 action = 2-4, 3
 
 [wall-dynamic-01]
+name = 岩浆
+help = 充满了滚烫的岩浆，最好得离远点
 file = wall-01.png
 dynamic = 1, 1-4
 
 [wall-dynamic-02]
+name = 虚空
+help = 虚空里不知有什么东西，千万不能掉进去
 file = wall-01.png
 dynamic = 3, 1-4
 
 [door-yellow]
+name = 黄门
+help = 黄色的门，需要用黄色的钥匙打开它
 file = door.png
 static = 1, 1
 action = 2-4, 1
 
 [door-blue]
+name = 蓝门
+help = 蓝色的门，需要用蓝色的钥匙打开它，看上去比黄门更少
 file = door.png
 static = 1, 2
 action = 2-4, 2
 
 [door-red]
+name = 红门
+help = 红色的门，需要用红色的钥匙打开它，很少看见这种门
 file = door.png
 static = 1, 3
 action = 2-4, 3
 
 [door-green]
+name = 绿门
+help = 绿色的门，需要用绿色的钥匙打开它，这种门几乎都不知道在哪
 file = door.png
 static = 1, 4
 action = 2-4, 4
@@ -61,29 +81,37 @@ file = other.png
 dynamic = 3, 1-4
 
 [stair-down]
+name = 楼梯
+help = 用来下楼的楼梯，可以到达下面一层，不过有时会被锁住
 file = stair.png
 static = 1, 1
 
 [stair-up]
+name = 楼梯
+help = 用来上楼的楼梯，可以到达上面一层，不过有时会被锁住
 file = stair.png
 static = 1, 2
 
 [npc-wisdom]
 name = 智者
+help = 智慧老人，你在这里可以用经验提升你的能力
 file = npc.png
 dynamic = 1, 1-4
 
 [npc-trader]
 name = 商人
+help = 黑心的奸商，只要金钱足够，你可以买到几乎任何东西
 file = npc.png
 dynamic = 2, 1-4
 
 [npc-thief]
-name = 窃贼
+name = 小偷
+help = 一个窃贼，他手中有许多不同的钥匙
 file = npc.png
 dynamic = 3, 1-4
 
 [npc-fairy]
 name = 精灵
+help = 一个被囚禁的仙子，只要满足她的要求，她可以给你足够的回报
 file = npc.png
 dynamic = 4, 1-4

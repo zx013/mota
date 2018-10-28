@@ -1,92 +1,138 @@
 [key-yellow]
+name = 黄钥匙
+help = 用来开启黄色的门
 file = key.png
 static = 1, 1
 
 [key-blue]
+name = 蓝钥匙
+help = 用来开启蓝色的门
 file = key.png
 static = 1, 2
 
 [key-red]
+name = 红钥匙
+help = 用来开启红色的门
 file = key.png
 static = 1, 3
 
 [key-green]
+name = 绿钥匙
+help = 用来开启绿色的门
 file = key.png
 static = 1, 4
 
 [gem-attack-small]
+name = 小红宝石
+help = 提高少量攻击力
 file = gem.png
 static = 1, 1
 
 [gem-defence-small]
+name = 小蓝宝石
+help = 提高少量防御力
 file = gem.png
 static = 1, 2
 
 [gem-attack-big]
+name = 大红宝石
+help = 提高攻击力
 file = gem.png
 static = 2, 1
 
 [gem-defence-big]
+name = 大蓝宝石
+help = 提高防御力
 file = gem.png
 static = 2, 2
 
 [weapen-attack-01]
+name = 铁剑
+help = 一把生锈的铁剑
 file = weapen.png
 static = 1, 1
 
 [weapen-attack-02]
+name = 银剑
+help = 可以用来辟邪
 file = weapen.png
 static = 1, 2
 
 [weapen-attack-03]
+name = 魔石剑
+help = 据说是用魔塔中的神秘石块制成
 file = weapen.png
 static = 1, 3
 
 [weapen-attack-04]
+name = 繁星剑
+help = 一把从星空中坠落的神秘之剑
 file = weapen.png
 static = 1, 4
 
 [weapen-attack-05]
+name = 神圣剑
+help = 神圣剑总是出现在魔塔的最深处
 file = weapen.png
 static = 2, 1
 
 [weapen-defence-01]
+name = 铁盾
+help = 铁盾上有几个生锈的窟窿
 file = weapen.png
 static = 3, 1
 
 [weapen-defence-02]
+name = 银盾
+help = 银盾闪闪发亮，照亮了整个魔塔
 file = weapen.png
 static = 3, 2
 
 [weapen-defence-03]
+name = 魔石甲
+help = 魔石甲曾经是魔王的装甲
 file = weapen.png
 static = 3, 3
 
 [weapen-defence-04]
+name = 繁星盾
+help = 上面刻着上一个勇者的名字
 file = weapen.png
 static = 3, 4
 
 [weapen-defence-05]
+name = 神圣盾
+help = 据说能抵挡住神圣剑的攻击
 file = weapen.png
 static = 4, 1
 
 [potion-red]
+name = 红血瓶
+help = 恢复微量生命
 file = potion.png
 static = 1, 1
 
 [potion-blue]
+name = 蓝血瓶
+help = 恢复少量生命
 file = potion.png
 static = 1, 2
 
 [potion-green]
+name = 绿血瓶
+help = 恢复适量生命
 file = potion.png
 static = 1, 3
 
 [potion-yellow]
+name = 黄血瓶
+help = 恢复大量生命
 file = potion.png
 static = 1, 4
 
 [holy]
+name = 圣水
+help = 上一个勇者喝剩的水瓶，能够恢复生命
 file = holy.png
 static = 3, 4
 

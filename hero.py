@@ -230,6 +230,10 @@ class Hero:
         return 'hero-{}-{}'.format(self.color, self.key)
 
     @property
+    def name_show(self):
+        return 'hero-{}-down'.format(self.color)
+
+    @property
     def wall(self):
         return 'wall-{:0>2}'.format(self.__wall)
 

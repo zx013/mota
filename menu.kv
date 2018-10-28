@@ -4,6 +4,7 @@
 #:import Store setting.Store
 #:import Setting setting.Setting
 #:import Mota mota.Mota
+#:import Tools tools.Tools
 #:import functools functools
 
 
@@ -19,7 +20,7 @@
     pos_temp: {'center_x': Setting.pos_rx(self.idx), 'center_y': Setting.pos_ry(self.idy)}
 
     #根据地图大小动态变化的大小和位置，需要单独使用self.text，否则会为空
-    length: max([0.5 * len(s.encode('gbk')) for s in self.text.split('\n')]) if self.text else 0
+    length: Tools.text_length(self.text)
     line: len(self.text.split('\n')) if self.text else 1
     pos_hint: self.pos_temp
     size: (self.length * self.font_size, self.line * self.font_size)
@@ -410,7 +411,7 @@
         id: role_label
         idx: root.idx + 1.5
         idy: root.idy + 2.5
-        text: '英 雄'
+        text: '勇 者'
         fsize: 2
         disabled: True
     MenuLabel:
@@ -592,9 +593,12 @@
 
     Screen:
         name: 'mota'
+        on_pre_enter:
+            root.parent.status.current = 'status'
         Mota:
             id: mota
             dialog: dialog
+            statusbar: root.parent.status.statusbar if root.parent.status else None
         MenuDialog:
             id: dialog
             mota: mota
@@ -897,22 +901,37 @@
 
 
 <MenuStatus>:
+    transition: FadeTransition()
     size: (Setting.row_size, Setting.status_size * Setting.col_size)
     size_hint: (None, None)
+    statusbar: statusbar
     Screen:
-        name: 'start'
-        MenuAnimationLabel:
+        name: 'welcome'
+        MenuWelcomeLabel:
             #pos: (Setting.row_size, 0)
             pos_hint: {}
-            #text: Setting.status_text
+            text: Setting.status_text
+            fsize: 1.8
+            disabled: True
+    Screen:
+        name: 'status'
+        MenuStatusLabel:
+            id: statusbar
+            pos: (0, 0)
+            pos_hint: {}
+            text: '长按显示详细信息'
             fsize: 1.8
             disabled: True
 
 
 <MenuLayout>:
+    manager: manager
+    status: status
     MenuManager:
-        pos: (0, Setting.status_size * Setting.col_size)
+        id: manager
+        pos: (Setting.offset, Setting.status_size * Setting.col_size)
     MenuStatus:
-        pos: (0, 0)
+        id: status
+        pos: (Setting.offset, 0)
 
 

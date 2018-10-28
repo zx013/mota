@@ -22,6 +22,8 @@ from kivy.app import App
 from setting import Setting #必须先加载setting，这样multiple就可以最先初始化
 from kivy.config import Config
 
+
+Setting.offset = int(0.5 * Setting.row_size)
 if platform == 'android':
     from jnius import autoclass, cast
     PythonActivity = autoclass('org.renpy.android.PythonActivity')
@@ -32,9 +34,10 @@ if platform == 'android':
     width = display.getWidth()
     Setting.multiple = width / (Setting.row_show * Setting.pos_size) / (1 + Setting.status_size)
     Setting.rotation = 270
-
-height = int((1 + Setting.status_size) * Setting.row_show * Setting.pos_real)
-width = int(Setting.col_show * Setting.pos_real)
+    Setting.offset = (height - width * (1 + Setting.status_size)) / 2
+else:
+    height = int((1 + Setting.status_size) * Setting.row_show * Setting.pos_real)
+    width = int(Setting.col_show * Setting.pos_real) + Setting.offset * 2
 
 if Setting.rotation in (90, 270):
     height, width = width, height
@@ -52,7 +55,7 @@ if platform in ('win', 'linux'):
     Window.set_icon(Setting.icon_path)
     Setting.status_speed = 20
 else:
-    Setting.status_speed = 100
+    Setting.status_speed = 50
 #Window.fullscreen = True
 
 

@@ -1,4 +1,6 @@
 [hero-blue-down]
+name = 勇者
+help = 闯入魔塔的勇者，穿着蓝色的盔甲
 file = blue.png
 static = 1, 1
 action = 1, 2-4
@@ -20,6 +22,8 @@ action = 4, 2-4
 
 
 [hero-black-down]
+name = 勇者
+help = 闯入魔塔的勇者，穿着黑色的盔甲
 file = black.png
 static = 1, 1
 action = 1, 2-4
@@ -41,6 +45,8 @@ action = 4, 2-4
 
 
 [hero-red-down]
+name = 勇者
+help = 闯入魔塔的勇者，穿着红色的盔甲
 file = red.png
 static = 1, 1
 action = 1, 2-4
@@ -62,6 +68,8 @@ action = 4, 2-4
 
 
 [hero-yellow-down]
+name = 勇者
+help = 闯入魔塔的勇者，穿着黄色的盔甲
 file = yellow.png
 static = 1, 1
 action = 1, 2-4
