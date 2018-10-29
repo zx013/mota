@@ -242,6 +242,7 @@ class Maze:
         self.herostate = HeroState(self.herobase)
         self.story = Story(self)
         self.story.load()
+        self.wall = MazeBase.Value.Wall.earth
         MonsterInfo.load()
 
     def init(self, floor):
@@ -257,7 +258,7 @@ class Maze:
             for j in range(MazeSetting.cols + 2):
                 if i in (0, MazeSetting.rows + 1) or j in (0, MazeSetting.cols + 1):
                     self.maze[floor][i][j][0] = MazeBase.Type.Static.wall
-                    self.maze[floor][i][j][1] = MazeBase.Value.Wall.static
+                    self.maze[floor][i][j][1] = self.wall
                 else:
                     self.maze[floor][i][j][0] = MazeBase.Type.Static.ground
                     self.maze_map[floor][MazeBase.Type.Static.ground].add((floor, i, j))
@@ -296,6 +297,14 @@ class Maze:
     def set_value(self, pos, value):
         z, x, y = pos
         self.maze[z][x][y][1] = value
+
+    def get_data(self, pos):
+        z, x, y = pos
+        return self.maze[z][x][y]
+
+    def set_data(self, pos, type, value):
+        self.set_type(pos, type)
+        self.set_value(pos, value)
 
     def get_beside(self, pos, type):
         return {(z, x, y) for z, x, y in Pos.beside(pos) if self.maze[z][x][y][0] == type}
@@ -524,7 +533,7 @@ class Maze:
                 crack = self.get_rect_crack(pos, width, height)
                 for pos in crack:
                     self.set_type(pos, MazeBase.Type.Static.wall)
-                    self.set_value(pos, MazeBase.Value.Wall.static)
+                    self.set_value(pos, self.wall)
                 self.maze_info[floor]['special'] |= area
 
 
@@ -538,7 +547,7 @@ class Maze:
                 if self.is_wall(wall):
                     for pos in wall:
                         self.set_type(pos, MazeBase.Type.Static.wall)
-                        self.set_value(pos, MazeBase.Value.Wall.static)
+                        self.set_value(pos, self.wall)
                     break
                 else:
                     pure -= set(wall)
@@ -1666,7 +1675,7 @@ class Maze:
             pos_list += [(floor, i, middle - 1), (floor, i, middle + 1)]
         for pos in pos_list:
             self.set_type(pos, MazeBase.Type.Static.wall)
-            self.set_value(pos, MazeBase.Value.Wall.static)
+            self.set_value(pos, self.wall)
 
         pos_list = []
         for i in range(0, middle - 2):
@@ -1674,7 +1683,7 @@ class Maze:
             pos_list += [(floor, MazeSetting.rows - i - 3, middle - i - 1), (floor, MazeSetting.rows - i - 3, middle + i + 1)]
         for pos in pos_list:
             self.set_type(pos, MazeBase.Type.Static.wall)
-            self.set_value(pos, MazeBase.Value.Wall.dynamic)
+            self.set_value(pos, MazeBase.Value.Wall.magma)
 
         pos = (floor, 1, 1)
         self.set_type(pos, MazeBase.Type.Active.npc)

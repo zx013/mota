@@ -28,8 +28,10 @@ class MenuSetting(FloatLayout): pass
 class MenuMonster(FloatLayout): pass
 class MenuMonsterManual(FloatLayout): pass
 
+class MenuHero(ScreenManager): pass
 class MenuManager(ScreenManager): pass
 class MenuStatus(ScreenManager): pass
+class MenuStory(ScreenManager): pass
 
 class MenuWelcomeLabel(MenuLabel):
     def __init__(self, **kwargs):
@@ -113,7 +115,7 @@ class MenuDialog(FloatLayout):
             self.role_label.text = '勇 者'
             self.role_image.name = self.mota.hero.name_show #texture = Texture.next(self.name)
         else:
-            key = self.mota.get_key(pos)[0]
+            key = self.mota.get_key(pos)
             self.role_label.text = ' '.join(Config.config[key].get('name', '未知'))
             self.role_image.name = key
         z, x, y = pos

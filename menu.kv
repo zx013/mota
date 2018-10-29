@@ -594,7 +594,9 @@
     Screen:
         name: 'mota'
         on_pre_enter:
+            root.parent.hero.current = 'hero'
             root.parent.status.current = 'status'
+            root.parent.story.current = 'story'
         Mota:
             id: mota
             dialog: dialog
@@ -924,14 +926,48 @@
             disabled: True
 
 
+<MenuHero>:
+    transition: FadeTransition()
+    size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
+    size_hint: (None, None)
+    Screen:
+        name: 'welcome'
+        MenuLabel:
+            text: '测试1'
+            disabled: True
+    Screen:
+        name: 'hero'
+
+
+<MenuStory>:
+    transition: FadeTransition()
+    size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
+    size_hint: (None, None)
+    Screen:
+        name: 'welcome'
+        MenuLabel:
+            text: '测试2'
+            disabled: True
+    Screen:
+        name: 'story'
+
+
 <MenuLayout>:
+    hero: hero
     manager: manager
     status: status
+    story: story
+    MenuHero:
+        id: hero
+        pos: (0, 0)
     MenuManager:
         id: manager
         pos: (Setting.offset, Setting.status_size * Setting.col_size)
     MenuStatus:
         id: status
         pos: (Setting.offset, 0)
+    MenuStory:
+        id: story
+        pos: (Setting.offset + Setting.row_size, 0)
 
 

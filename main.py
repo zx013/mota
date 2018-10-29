@@ -32,8 +32,9 @@ if platform == 'android':
     display = CurrentActivity.getWindowManager().getDefaultDisplay()
     height = display.getHeight()
     width = display.getWidth()
+    height, width = width, height #手机默认横屏
     Setting.multiple = width / (Setting.row_show * Setting.pos_size) / (1 + Setting.status_size)
-    Setting.rotation = 270
+    #Setting.rotation = 270
     Setting.offset = (height - width * (1 + Setting.status_size)) / 2
 else:
     height = int((1 + Setting.status_size) * Setting.row_show * Setting.pos_real)

@@ -137,7 +137,7 @@ class Mota(FocusBehavior, FloatLayout):
         if self.hero.pos == touch.maze_pos:
             key = self.hero.name_show
         else:
-            key = self.get_key(touch.maze_pos)[0]
+            key = self.get_key(touch.maze_pos)
         name = Config.config[key].get('name', '未知')
         help = Config.config[key].get('help', '未知')
 
@@ -270,7 +270,7 @@ class Mota(FocusBehavior, FloatLayout):
         self.save(pos)
 
 
-    def get_key(self, pos, pos_style='static'):
+    def get_key(self, pos):
         pos_type = self.maze.get_type(pos)
         pos_value = self.maze.get_value(pos)
 
@@ -279,11 +279,7 @@ class Mota(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Static.ground:
             pos_key = 'ground'
         elif pos_type == MazeBase.Type.Static.wall:
-            if pos_value == MazeBase.Value.Wall.static:
-                pos_key = self.hero.wall
-            elif pos_value == MazeBase.Value.Wall.dynamic:
-                pos_key = self.hero.wall_dynamic
-                pos_style = 'dynamic'
+            pos_key = 'wall-{:0>2}'.format(pos_value)
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
                 pos_key = 'stair-down'
@@ -334,7 +330,6 @@ class Mota(FocusBehavior, FloatLayout):
             pos_key = 'holy'
         elif pos_type == MazeBase.Type.Active.monster:
             pos_key = '-'.join(pos_value)
-            pos_style = 'dynamic'
         elif pos_type == MazeBase.Type.Active.npc:
             if pos_value == MazeBase.Value.Npc.wisdom:
                 pos_key = 'npc-wisdom'
@@ -344,9 +339,8 @@ class Mota(FocusBehavior, FloatLayout):
                 pos_key = 'npc-thief'
             elif pos_value == MazeBase.Value.Npc.fairy:
                 pos_key = 'npc-fairy'
-            pos_style = 'dynamic'
 
-        return pos_key, pos_style
+        return pos_key
 
     #人物移动
     def show_hero(self):
@@ -358,9 +352,9 @@ class Mota(FocusBehavior, FloatLayout):
         image = self.front.image[x][y]
         image.texture = Texture.next(self.hero.name, 'action', False)
 
-        pos_key, pos_style = self.get_key(self.hero.pos)
+        pos_key = self.get_key(self.hero.pos)
         image = self.middle.image[x][y]
-        image.texture = Texture.next(pos_key, pos_style)
+        image.texture = Texture.next(pos_key, 'dynamic')
 
     #点击移动
     def show_move(self, dt):
@@ -439,10 +433,8 @@ class Mota(FocusBehavior, FloatLayout):
         for i in range(self.row):
             for j in range(self.col):
                 pos = (floor, i, j)
-                if pos in self.hero.action:
-                    pos_key, pos_style = self.get_key(pos, 'action')
-                else:
-                    pos_key, pos_style = self.get_key(pos)
+                pos_key = self.get_key(pos)
+                pos_style = 'action' if pos in self.hero.action else 'dynamic'
 
                 if pos_key not in show:
                     show[pos_key] = Config.active(pos_key, dt)

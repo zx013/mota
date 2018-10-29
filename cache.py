@@ -181,6 +181,8 @@ class TextureBase:
         info = self.texture[key]
 
         textures_name = '{}_textures'.format(style)
+        if textures_name not in info and style != 'static':
+            return self.next(key, base=base)
         textures = info[textures_name]
         if style == 'static':
             return textures

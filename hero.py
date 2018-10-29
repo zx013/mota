@@ -5,7 +5,7 @@
 from setting import MazeBase, MazeSetting
 from cache import Config, Music
 
-from random import randint
+from random import randint, choice
 
 #每一个level的基础数值
 class HeroBase:
@@ -210,20 +210,13 @@ class Hero:
     stair = None #是否触发上下楼的动作
     action = set() #执行动画的点
 
-    __wall = 2
-    __wall_max = 3
-    __wall_dynamic = 1
-    __wall_dynamic_max = 1 #暂时没有使用
     __weapon = 1
     __weapon_max = 5
 
     def __init__(self, maze, **kwargs):
         self.maze = maze
         self.pos = maze.maze_info[0]['init']
-        self.__wall = 2
-        self.__wall_dynamic = 1
         self.__weapon = 1
-        self.maze.herostate.wall = self.wall
 
     @property
     def name(self):
@@ -232,14 +225,6 @@ class Hero:
     @property
     def name_show(self):
         return 'hero-{}-down'.format(self.color)
-
-    @property
-    def wall(self):
-        return 'wall-{:0>2}'.format(self.__wall)
-
-    @property
-    def wall_dynamic(self):
-        return 'wall-dynamic-{:0>2}'.format(self.__wall_dynamic)
 
     @property
     def weapon_attack(self):
@@ -274,9 +259,8 @@ class Hero:
                 Music.background(change=True)
                 self.maze.update()
                 if self.maze.is_boss_floor(floor - 1):
-                    self.__wall = randint(1, self.__wall_max)
+                    self.maze.wall = choice(MazeBase.Value.Wall.static)
                     self.__weapon = randint(1, self.__weapon_max)
-                    self.maze.herostate.wall = self.wall
 
         update_pos = None
         self.old_pos = self.pos
