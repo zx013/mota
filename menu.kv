@@ -571,6 +571,7 @@
                 self.state = 'normal'
             on_release:
                 root.current = 'mota'
+                mota.start()
         MenuLabel:
             idx: 0
             idy: 0
@@ -937,6 +938,9 @@
             disabled: True
     Screen:
         name: 'hero'
+        MenuLabel:
+            text: '英雄状态'
+            disabled: True
 
 
 <MenuStory>:
@@ -950,6 +954,9 @@
             disabled: True
     Screen:
         name: 'story'
+        MenuLabel:
+            text: '任务列表'
+            disabled: True
 
 
 <MenuLayout>:

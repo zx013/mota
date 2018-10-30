@@ -241,6 +241,7 @@ class Hero:
 
     @floor.setter
     def floor(self, floor):
+        print(self.maze)
         if self.floor == floor - 1:
             if self.maze.is_initial_floor(floor - 1) or self.maze.is_boss_floor(floor - 1):
                 Music.background(change=True)

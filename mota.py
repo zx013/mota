@@ -76,14 +76,7 @@ class Mota(FocusBehavior, FloatLayout):
         self.step = 0
         #Music.background(init=True)
 
-        key = Setting.difficult['key']
         self.maze = Maze()
-        self.maze.herostate.key[MazeBase.Value.Color.yellow] += key.get('yellow', 0)
-        self.maze.herostate.key[MazeBase.Value.Color.blue] += key.get('blue', 0)
-        self.maze.herostate.key[MazeBase.Value.Color.red] += key.get('red', 0)
-        self.maze.herostate.key[MazeBase.Value.Color.green] += key.get('green', 0)
-        self.maze.set_init()
-        #self.maze.update()
 
         self.state = State(self.maze.herostate) #状态显示
         self.floorlabel = FloorLabel()
@@ -102,7 +95,7 @@ class Mota(FocusBehavior, FloatLayout):
                 self.middle.add(i, j)
                 self.back.add(i, j, Texture.next('ground'))
 
-        self.hero = self.maze.hero
+        self.isstart = False
         Clock.schedule_interval(self.show, Config.step)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
@@ -428,8 +421,10 @@ class Mota(FocusBehavior, FloatLayout):
                     self.state.set_holy(i, j, pos_value)
 
     def show(self, dt):
-        #Music.background()
+        if not self.isstart:
+            return None
 
+        #Music.background()
         self.focus = True
 
         self.show_move(dt)
@@ -477,6 +472,11 @@ class Mota(FocusBehavior, FloatLayout):
                     self.hero.action.remove(pos)
 
 
+    def start(self):
+        self.maze.start()
+        self.hero = self.maze.hero
+        self.isstart = True
+
     def save(self, pos):
         if self.step % Setting.step == 0:
             if self.maze.get_type(pos) != MazeBase.Type.Static.stair:
@@ -490,3 +490,5 @@ class Mota(FocusBehavior, FloatLayout):
         _, x, y = self.maze.maze_info[0]['init']
         image = self.front.image[x][y]
         image.texture = Texture.next('empty')
+        self.hero = self.maze.hero
+        self.isstart = True

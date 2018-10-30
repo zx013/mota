@@ -6,7 +6,7 @@ from functools import reduce
 #from multiprocessing import Process as Thread
 from threading import Thread
 
-from setting import MazeBase, MazeSetting
+from setting import Setting, MazeBase, MazeSetting
 from cache import Config
 from hero import Hero, HeroBase, HeroState
 from tools import Tools, LoopException
@@ -273,6 +273,13 @@ class Maze:
         if self.is_boss_floor(floor):
             self.monster = {}
 
+        if self.is_initial_floor(floor):
+            middle = int((MazeSetting.cols + 1) / 2)
+            pos = (floor, MazeSetting.rows, middle)
+            self.set_type(pos, MazeBase.Type.Static.init)
+            self.set_value(pos, 0)
+            self.maze_info[floor]['init'] = pos
+
     def outside(self, pos):
         _, x, y = pos
         if x < 1 or x > MazeSetting.rows:
@@ -294,11 +301,12 @@ class Maze:
         z, x, y = pos
         if self.outside(pos):
             return
-        type = self.maze[z][x][y][0]
-        self.maze_map[z].setdefault(type, set())
-        self.maze_map[z].setdefault(value, set())
-        self.maze_map[z][type].remove(pos)
-        self.maze_map[z][value].add(pos)
+        if z in self.maze_map:
+            type = self.maze[z][x][y][0]
+            self.maze_map[z].setdefault(type, set())
+            self.maze_map[z].setdefault(value, set())
+            self.maze_map[z][type].remove(pos)
+            self.maze_map[z][value].add(pos)
         self.maze[z][x][y][0] = value
 
     def set_value(self, pos, value):
@@ -1714,9 +1722,6 @@ class Maze:
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, MazeBase.Value.Npc.fairy)
 
-        #需要等开始楼层初始化完成
-        self.hero = Hero(self)
-
     def set_boss(self):
         pass
 
@@ -1889,16 +1894,26 @@ class Maze:
         sys.stdout.flush()
 
 
+    def start(self):
+        key = Setting.difficult['key']
+        self.herostate.key[MazeBase.Value.Color.yellow] += key.get('yellow', 0)
+        self.herostate.key[MazeBase.Value.Color.blue] += key.get('blue', 0)
+        self.herostate.key[MazeBase.Value.Color.red] += key.get('red', 0)
+        self.herostate.key[MazeBase.Value.Color.green] += key.get('green', 0)
+        self.set_init()
+        #需要等开始楼层初始化完成
+        self.hero = Hero(self)
+
     def save(self, num=0):
         record_dict = {
             'maze': self.maze, #迷宫构成
-            'maze_map': self.maze_map,
-            'maze_info': self.maze_info,
             'monster': self.monster, #怪物属性
-            'hero': self.hero.__dict__,
-            'herobase': self.herobase.__dict__, #等级状态
-            'herostate': self.herostate.__dict__ #实时状态
+            'hero': dict(self.hero.__dict__),
+            'herobase': dict(self.herobase.__dict__), #等级状态
+            'herostate': dict(self.herostate.__dict__) #实时状态
         }
+        del record_dict['hero']['maze']
+        del record_dict['hero']['move_list']
 
         if not os.path.exists(MazeSetting.save_dir):
             os.mkdir(MazeSetting.save_dir)
@@ -1907,17 +1922,18 @@ class Maze:
         with open(MazeSetting.save_file(num), 'wb') as fp:
             fp.write(record)
 
-
     def load(self, num=0):
         try:
+            self.init(0)
+            self.hero = Hero(self)
+
             with open(MazeSetting.save_file(num), 'rb') as fp:
                 record = fp.read()
 
             record_dict = pickle.loads(record)
             self.maze = record_dict['maze']
-            self.maze_map = record_dict['maze_map']
-            self.maze_info = record_dict['maze_info']
             self.monster = record_dict['monster']
+
             for k, v in record_dict['hero'].items():
                 setattr(self.hero, k, v)
             for k, v in record_dict['herobase'].items():
