@@ -10,7 +10,7 @@ from setting import Setting, MazeBase, MazeSetting
 from cache import Config
 from hero import Hero, HeroBase, HeroState
 from tools import Tools, LoopException
-from story import Story
+from story import Scene, Story
 
 
 class TreeNode:
@@ -244,7 +244,6 @@ class Maze:
         self.herobase = HeroBase()
         self.herostate = HeroState(self.herobase)
         self.story = Story(self)
-        self.story.load()
         self.wall = MazeBase.Value.Wall.earth
         self.sword = MazeBase.Type.Sword.iron
         self.shield = MazeBase.Type.Shield.iron
@@ -1709,18 +1708,33 @@ class Maze:
         pos = (floor, 1, 1)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, MazeBase.Value.Npc.wisdom)
+        self.story.add_scene(pos, dialog=[(1, '你好！'), (2, '欢迎进入无尽的魔塔。')], repeat=True)
+        scene1 = self.story.add_scene(pos, dialog=[(1, '智慧老人，我应该怎么办？'), (2, '去找仙子问问。')])
 
         pos = (floor, 1, MazeSetting.cols)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, MazeBase.Value.Npc.trader)
+        self.story.add_scene(pos, dialog=[(1, '你为什么在这里？'), (2, '你可以在我这里购买东西。')], repeat=True)
+        scene2 = self.story.add_scene(pos, dialog=[(1, '请问有什么可以买的？'), (2, '那边有个小偷。')])
+        scene5 = self.story.add_scene(pos, dialog=[(1, '为什么又是你？'), (2, '没有钱你就得死。')])
 
         pos = (floor, MazeSetting.rows, 1)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, MazeBase.Value.Npc.thief)
+        self.story.add_scene(pos, dialog=[(1, '我为什么在这里？'), (2, '又多了一个送死的勇者。')], repeat=True)
+        scene3 = self.story.add_scene(pos, dialog=[(1, '这里是怎么了？'), (2, '问智慧老人吧。')])
 
         pos = (floor, MazeSetting.rows, MazeSetting.cols)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, MazeBase.Value.Npc.fairy)
+        self.story.add_scene(pos, dialog=[(1, '又见到你了，小精灵。'), (2, '神圣十字架在魔塔的深处，给我神圣十字架，我可以增强你的能力。')], repeat=True)
+        scene4 = self.story.add_scene(pos, dialog=[(1, '我该如何出去？'), (2, '那个商人知道答案。')])
+
+        scene3.add_forward(scene2)
+        scene1.add_forward(scene3)
+        scene4.add_forward(scene1)
+        scene5.add_forward(scene4)
+
 
     def set_boss(self):
         pass
@@ -1812,11 +1826,11 @@ class Maze:
                     self.create_stair(floor)
                     self.create_tree(floor)
                     self.adjust(floor)
-    
+
                 #等楼梯设置好再进行
                 for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
                     self.process(floor)
-    
+
                 self.set_item()
                 self.set_boss()
                 self.herostate.update('完成放置。。。', 5)

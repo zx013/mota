@@ -152,6 +152,9 @@ class Mota(FocusBehavior, FloatLayout):
             Clock.unschedule(touch.hold)
 
     def on_touch_down(self, touch):
+        if not self.operate:
+            return False
+
         x, y = touch.pos
         if not self.collide_point(x, y):
             touch.maze_pos = None
@@ -165,6 +168,9 @@ class Mota(FocusBehavior, FloatLayout):
         touch.hold = Clock.schedule_interval(partial(self.touch_hold, touch), Setting.touch_step)
 
     def on_touch_up(self, touch):
+        if not self.operate:
+            return False
+
         if hasattr(touch, 'hold'):
             if touch.is_hold:
                 return False
@@ -177,9 +183,6 @@ class Mota(FocusBehavior, FloatLayout):
                 show_x = self.row - int(y / (Setting.pos_size * Setting.multiple)) - 1
                 show_y = int(x / (Setting.pos_size * Setting.multiple))
                 touch.maze_pos = (self.hero.floor, show_x, show_y)
-
-        if not self.operate:
-            return False
 
         if touch.maze_pos is None:
             return False

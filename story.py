@@ -10,13 +10,15 @@ class Scene:
     #触发条件，npc, monster
     condition = []
 
-    def __init__(self, trigger=(0, 0, 0), person={}, dialog=[], condition=[], repeat=False, forward=[]):
+    def __init__(self, trigger=(0, 0, 0), person={}, dialog=[], condition=[], repeat=False):
         self.disable = False
         self.trigger = trigger
         self.person = {} #人物，1表示英雄，2表示对方，其他数字表示其他人物
         self.dialog = dialog #对话
         self.condition = condition
         self.repeat = repeat #是否重复触发，前置中不能设置该参数
+
+    def add_forward(self, forward):
         if not isinstance(forward, tuple) and not isinstance(forward, list):
             forward = [forward]
         self.forward = forward
@@ -38,11 +40,18 @@ class Story:
     def __init__(self, maze):
         self.maze = maze
         self.scene = {}
+        self.task = {} #任务指引
 
-    def add_scene(self, scene):
-        if scene.trigger not in self.scene:
-            self.scene[scene.trigger] = []
-        self.scene[scene.trigger].append(scene)
+    def add_scene(self, pos=(0, 0, 0), **kwargs):
+        scene = Scene(trigger=pos, **kwargs)
+        if not scene.repeat:
+            if pos not in self.task:
+                self.task[pos] = []
+            self.task[pos].append(scene)
+        if pos not in self.scene:
+            self.scene[pos] = []
+        self.scene[pos].append(scene)
+        return scene
 
     def check(self, pos):
         if pos not in self.scene:
@@ -51,6 +60,7 @@ class Story:
         #pos_type = self.maze.get_type(pos)
         #pos_value = self.maze.get_value(pos)
 
+        scene_enable = []
         for scene in self.scene[pos]:
             if scene.disable:
                 continue
@@ -58,6 +68,11 @@ class Story:
                 continue
             if sum([not condition for condition in scene.condition]):
                 continue
+            scene_enable.append(scene)
+
+        sorted(scene_enable, key=lambda scene: 1 - scene.repeat)
+        if scene_enable:
+            scene = scene_enable.pop()
             scene.run()
             return scene
         return None
@@ -66,11 +81,4 @@ class Story:
         pass
 
     def load(self):
-        scene = Scene(trigger=(0, 1, 1), dialog=[(1, '你好！'), (2, '欢迎进入无尽的魔塔。')], repeat=True)
-        self.add_scene(scene)
-        scene = Scene(trigger=(0, 1, MazeSetting.cols), dialog=[(1, '你为什么在这里？'), (2, '你可以在我这里购买东西。')], repeat=True)
-        self.add_scene(scene)
-        scene = Scene(trigger=(0, MazeSetting.rows, 1), dialog=[(1, '我为什么在这里？'), (2, '又多了一个送死的勇者。')], repeat=True)
-        self.add_scene(scene)
-        scene = Scene(trigger=(0, MazeSetting.rows, MazeSetting.cols), dialog=[(1, '又见到你了，小精灵。'), (2, '神圣十字架在魔塔的深处，给我神圣十字架，我可以增强你的能力。')], repeat=True)
-        self.add_scene(scene)
+        pass
