@@ -210,13 +210,9 @@ class Hero:
     stair = None #是否触发上下楼的动作
     action = set() #执行动画的点
 
-    __weapon = 1
-    __weapon_max = 5
-
     def __init__(self, maze, **kwargs):
         self.maze = maze
         self.pos = maze.maze_info[0]['init']
-        self.__weapon = 1
 
     @property
     def name(self):
@@ -225,15 +221,6 @@ class Hero:
     @property
     def name_show(self):
         return 'hero-{}-down'.format(self.color)
-
-    @property
-    def weapon_attack(self):
-        return 'weapen-attack-{:0>2}'.format(self.__weapon)
-
-    @property
-    def weapon_defence(self):
-        return 'weapen-defence-{:0>2}'.format(self.__weapon)
-
 
     def isfloor(self, floor):
         if self.maze.is_boss_floor(floor - 1): #往上时楼层还不存在
@@ -257,10 +244,7 @@ class Hero:
         if self.floor == floor - 1:
             if self.maze.is_initial_floor(floor - 1) or self.maze.is_boss_floor(floor - 1):
                 Music.background(change=True)
-                self.maze.update()
-                if self.maze.is_boss_floor(floor - 1):
-                    self.maze.wall = choice(MazeBase.Value.Wall.static)
-                    self.__weapon = randint(1, self.__weapon_max)
+                self.maze.update(self.maze.is_boss_floor(floor - 1))
 
         update_pos = None
         self.old_pos = self.pos

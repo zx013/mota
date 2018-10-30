@@ -308,15 +308,33 @@ class Mota(FocusBehavior, FloatLayout):
                 pos_key = 'gem-attack-small'
             elif pos_value == MazeBase.Value.Gem.big:
                 pos_key = 'gem-attack-big'
-            elif pos_value == MazeBase.Value.Gem.large:
-                pos_key = self.hero.weapon_attack
         elif pos_type == MazeBase.Type.Item.defence:
             if pos_value == MazeBase.Value.Gem.small:
                 pos_key = 'gem-defence-small'
             elif pos_value == MazeBase.Value.Gem.big:
                 pos_key = 'gem-defence-big'
-            elif pos_value == MazeBase.Value.Gem.large:
-                pos_key = self.hero.weapon_defence
+        elif pos_type in MazeBase.Type.Sword.total:
+            if pos_type == MazeBase.Type.Sword.iron:
+                pos_key = 'sword-iron'
+            elif pos_type == MazeBase.Type.Sword.silver:
+                pos_key = 'sword-silver'
+            elif pos_type == MazeBase.Type.Sword.stone:
+                pos_key = 'sword-stone'
+            elif pos_type == MazeBase.Type.Sword.gem:
+                pos_key = 'sword-gem'
+            elif pos_type == MazeBase.Type.Sword.sacred:
+                pos_key = 'sword-sacred'
+        elif pos_type in MazeBase.Type.Shield.total:
+            if pos_type == MazeBase.Type.Shield.iron:
+                pos_key = 'shield-iron'
+            elif pos_type == MazeBase.Type.Shield.silver:
+                pos_key = 'shield-silver'
+            elif pos_type == MazeBase.Type.Shield.stone:
+                pos_key = 'shield-stone'
+            elif pos_type == MazeBase.Type.Shield.gem:
+                pos_key = 'shield-gem'
+            elif pos_type == MazeBase.Type.Shield.sacred:
+                pos_key = 'shield-sacred'
         elif pos_type == MazeBase.Type.Item.potion:
             if pos_value == MazeBase.Value.Potion.red:
                 pos_key = 'potion-red'

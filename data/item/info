@@ -46,64 +46,64 @@ help = 提高防御力
 file = gem.png
 static = 2, 2
 
-[weapen-attack-01]
+[sword-iron]
 name = 铁剑
 help = 一把生锈的铁剑
-file = weapen.png
+file = weapon.png
 static = 1, 1
 
-[weapen-attack-02]
+[sword-silver]
 name = 银剑
 help = 可以用来辟邪
-file = weapen.png
+file = weapon.png
 static = 1, 2
 
-[weapen-attack-03]
+[sword-stone]
 name = 魔石剑
 help = 据说是用魔塔中的神秘石块制成
-file = weapen.png
+file = weapon.png
 static = 1, 3
 
-[weapen-attack-04]
+[sword-gem]
 name = 繁星剑
 help = 一把从星空中坠落的神秘之剑
-file = weapen.png
+file = weapon.png
 static = 1, 4
 
-[weapen-attack-05]
+[sword-sacred]
 name = 神圣剑
 help = 神圣剑总是出现在魔塔的最深处
-file = weapen.png
+file = weapon.png
 static = 2, 1
 
-[weapen-defence-01]
+[shield-iron]
 name = 铁盾
 help = 铁盾上有几个生锈的窟窿
-file = weapen.png
+file = weapon.png
 static = 3, 1
 
-[weapen-defence-02]
+[shield-silver]
 name = 银盾
 help = 银盾闪闪发亮，照亮了整个魔塔
-file = weapen.png
+file = weapon.png
 static = 3, 2
 
-[weapen-defence-03]
+[shield-stone]
 name = 魔石甲
 help = 魔石甲曾经是魔王的装甲
-file = weapen.png
+file = weapon.png
 static = 3, 3
 
-[weapen-defence-04]
+[shield-gem]
 name = 繁星盾
-help = 上面刻着上一个勇者的名字
-file = weapen.png
+help = 上面刻着一个失踪勇者的名字
+file = weapon.png
 static = 3, 4
 
-[weapen-defence-05]
+[shield-sacred]
 name = 神圣盾
 help = 据说能抵挡住神圣剑的攻击
-file = weapen.png
+file = weapon.png
 static = 4, 1
 
 [potion-red]

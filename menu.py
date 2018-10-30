@@ -53,7 +53,6 @@ class MenuStatusLabel(MenuLabel):
         self.pos = (0, 0)
         self.text = text
         self.color = (0.5 + random() / 2, 0.5 + random() / 2, 0.5 + random() / 2, 1)
-        print(self.pos, self.width)
         offset = Tools.text_length(self.text) * self.font_size - Setting.col_size
         if offset < 0:
             offset = 0

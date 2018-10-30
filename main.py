@@ -6,6 +6,7 @@
 '''
 楼层跳跃
 存档功能（地图存档，剧情存档）
+地图编辑器
 '''
 from kivy.utils import platform
 

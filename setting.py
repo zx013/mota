@@ -96,7 +96,7 @@ class Setting:
     offset = 0
 
     #每个单元多少层
-    base = 2 #Store.load('base', 10)
+    base = 10 #Store.load('base', 10)
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
     size = 11 #Store.load('size', 11)
@@ -313,10 +313,25 @@ class MazeBase:
             attack = 33
             defence = 34
 
-            sword = 35
-            shield = 36
-
             holy = 37
+
+        class Sword:
+            iron = 41
+            silver = 42
+            stone = 43
+            gem = 44
+            sacred = 45
+
+            total = (iron, silver, stone, gem, sacred)
+
+        class Shield:
+            iron = 51
+            silver = 52
+            stone = 53
+            gem = 54
+            sacred = 55
+
+            total = (iron, silver, stone, gem, sacred)
 
         unknown = 99
 
@@ -334,7 +349,7 @@ class MazeBase:
             stone = 3
             magma = 4
             star = 5
-            
+
             static = (rock, earth, stone)
             dynamic = (magma, star)
             total = (rock, earth, stone, magma, star)
@@ -368,23 +383,12 @@ class MazeBase:
 
             total = (small, big, large)
 
-        class Sword:
-            iron = 1
-            silver = 2
-            stone = 3
-            gem = 4
-            sacred = 5
-
-            total = (iron, silver, stone, gem, sacred)
-
-        class Shield:
-            iron = 1
-            silver = 2
-            stone = 3
-            gem = 4
-            sacred = 5
-
-            total = (iron, silver, stone, gem, sacred)
+        class Weapon:
+            iron = 8
+            silver = 10
+            stone = 12
+            gem = 14
+            sacred = 16
 
         #起始时对应攻防平均属性的1%，设置太低会导致空间不够的情况，按初始默认的配置，总需求在30000左右
         class Potion:

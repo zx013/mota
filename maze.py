@@ -51,6 +51,9 @@ class TreeNode:
             MazeBase.Value.Gem.large: 0
         }
 
+        self.Sword = 0
+        self.Shield = 0
+
         self.Potion = {
             MazeBase.Value.Potion.red: 0,
             MazeBase.Value.Potion.blue: 0,
@@ -243,6 +246,10 @@ class Maze:
         self.story = Story(self)
         self.story.load()
         self.wall = MazeBase.Value.Wall.earth
+        self.sword = MazeBase.Type.Sword.iron
+        self.shield = MazeBase.Type.Shield.iron
+        MazeBase.Value.Gem.large = MazeBase.Value.Weapon.iron
+        MazeBase.Value.Gem.total = (MazeBase.Value.Gem.small, MazeBase.Value.Gem.big, MazeBase.Value.Gem.large)
         MonsterInfo.load()
 
     def init(self, floor):
@@ -1128,7 +1135,7 @@ class Maze:
                 else:
                     #剑盾需要放置在难以拿到的区域，同时要设置剑盾类型（显示类型）
                     #剑盾每种最多放置一个
-                    if large_attack and large_defence:
+                    if large_attack or large_defence:
                         gem = MazeBase.Value.Gem.big
                     else:
                         gem = Tools.dict_choice(gem_choice_special)
@@ -1629,11 +1636,17 @@ class Maze:
             for gem in MazeBase.Value.Gem.total[::-1]:
                 for _ in range(node.AttackGem[gem]):
                     pos = pos_area.pop(0)
-                    self.set_type(pos, MazeBase.Type.Item.attack)
+                    if gem == MazeBase.Value.Gem.large:
+                        self.set_type(pos, self.sword)
+                    else:
+                        self.set_type(pos, MazeBase.Type.Item.attack)
                     self.set_value(pos, gem)
                 for _ in range(node.DefenceGem[gem]):
                     pos = pos_area.pop(0)
-                    self.set_type(pos, MazeBase.Type.Item.defence)
+                    if gem == MazeBase.Value.Gem.large:
+                        self.set_type(pos, self.shield)
+                    else:
+                        self.set_type(pos, MazeBase.Type.Item.defence)
                     self.set_value(pos, gem)
 
             for color in MazeBase.Value.Color.total[::-1]:
@@ -1776,7 +1789,7 @@ class Maze:
                 info2['defence'] += self.herobase.attack
 
 
-    def update(self):
+    def update(self, isup=False):
         self.herostate.update('开始加载。。。', reset=True)
         self.herobase.update() #进入下一个level
         #set_items该值才会被刷新
@@ -1784,30 +1797,30 @@ class Maze:
         self.herobase.defence += self.herobase.base * self.herobase.boss_defence
 
         for _ in range(3):
-            #try:
-            self.herostate.update('绘制迷宫。。。', reset=True)
-            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
-                self.init(floor)
-                self.create_special(floor)
-                self.create_wall(floor)
-                self.crack_wall(floor)
-                self.create_stair(floor)
-                self.create_tree(floor)
-                self.adjust(floor)
-
-            #等楼梯设置好再进行
-            for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
-                self.process(floor)
-
-            self.set_item()
-            self.set_boss()
-            self.herostate.update('完成放置。。。', 5)
-            '''
+            try:
+                self.herostate.update('绘制迷宫。。。', reset=True)
+                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                    self.init(floor)
+                    self.create_special(floor)
+                    self.create_wall(floor)
+                    self.crack_wall(floor)
+                    self.create_stair(floor)
+                    self.create_tree(floor)
+                    self.adjust(floor)
+    
+                #等楼梯设置好再进行
+                for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
+                    self.process(floor)
+    
+                self.set_item()
+                self.set_boss()
+                self.herostate.update('完成放置。。。', 5)
             except LoopException:
                 #生成异常时重新生成
                 print('loop reset')
                 self.herostate.update('生成失败。。。')
                 continue
+            '''
             except Exception as ex:
                 print('reset :', ex)
                 self.herostate.update('生成失败。。。')
@@ -1816,6 +1829,27 @@ class Maze:
             break
 
         self.update_monster()
+
+        if isup:
+            self.wall = random.choice(MazeBase.Value.Wall.static)
+            self.sword = random.choice(MazeBase.Type.Sword.total)
+            if self.sword == MazeBase.Type.Sword.iron:
+                self.shield = MazeBase.Type.Shield.iron
+                MazeBase.Value.Gem.large = MazeBase.Value.Weapon.iron
+            elif self.sword == MazeBase.Type.Sword.silver:
+                self.shield = MazeBase.Type.Shield.silver
+                MazeBase.Value.Gem.large = MazeBase.Value.Weapon.silver
+            elif self.sword == MazeBase.Type.Sword.stone:
+                self.shield = MazeBase.Type.Shield.stone
+                MazeBase.Value.Gem.large = MazeBase.Value.Weapon.stone
+            elif self.sword == MazeBase.Type.Sword.gem:
+                self.shield = MazeBase.Type.Shield.gem
+                MazeBase.Value.Gem.large = MazeBase.Value.Weapon.gem
+            elif self.sword == MazeBase.Type.Sword.sacred:
+                self.shield = MazeBase.Type.Shield.sacred
+                MazeBase.Value.Gem.large = MazeBase.Value.Weapon.sacred
+
+            MazeBase.Value.Gem.total = (MazeBase.Value.Gem.small, MazeBase.Value.Gem.big, MazeBase.Value.Gem.large)
 
 
     def show(self, floor=None):
