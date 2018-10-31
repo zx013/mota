@@ -309,27 +309,27 @@ class Mota(FocusBehavior, FloatLayout):
                 pos_key = 'gem-defence-small'
             elif pos_value == MazeBase.Value.Gem.big:
                 pos_key = 'gem-defence-big'
-        elif pos_type in MazeBase.Type.Sword.total:
-            if pos_type == MazeBase.Type.Sword.iron:
+        elif pos_type == MazeBase.Type.Item.sword:
+            if pos_value == MazeBase.Value.Weapon.iron:
                 pos_key = 'sword-iron'
-            elif pos_type == MazeBase.Type.Sword.silver:
+            elif pos_value == MazeBase.Value.Weapon.silver:
                 pos_key = 'sword-silver'
-            elif pos_type == MazeBase.Type.Sword.stone:
+            elif pos_value == MazeBase.Value.Weapon.stone:
                 pos_key = 'sword-stone'
-            elif pos_type == MazeBase.Type.Sword.gem:
+            elif pos_value == MazeBase.Value.Weapon.gem:
                 pos_key = 'sword-gem'
-            elif pos_type == MazeBase.Type.Sword.sacred:
+            elif pos_value == MazeBase.Value.Weapon.sacred:
                 pos_key = 'sword-sacred'
-        elif pos_type in MazeBase.Type.Shield.total:
-            if pos_type == MazeBase.Type.Shield.iron:
+        elif pos_type == MazeBase.Type.Item.shield:
+            if pos_value == MazeBase.Value.Weapon.iron:
                 pos_key = 'shield-iron'
-            elif pos_type == MazeBase.Type.Shield.silver:
+            elif pos_value == MazeBase.Value.Weapon.silver:
                 pos_key = 'shield-silver'
-            elif pos_type == MazeBase.Type.Shield.stone:
+            elif pos_value == MazeBase.Value.Weapon.stone:
                 pos_key = 'shield-stone'
-            elif pos_type == MazeBase.Type.Shield.gem:
+            elif pos_value == MazeBase.Value.Weapon.gem:
                 pos_key = 'shield-gem'
-            elif pos_type == MazeBase.Type.Shield.sacred:
+            elif pos_value == MazeBase.Value.Weapon.sacred:
                 pos_key = 'shield-sacred'
         elif pos_type == MazeBase.Type.Item.potion:
             if pos_value == MazeBase.Value.Potion.red:

@@ -5,8 +5,6 @@
 from setting import MazeBase, MazeSetting
 from cache import Config, Music
 
-from random import randint, choice
-
 #每一个level的基础数值
 class HeroBase:
     def __init__(self):
@@ -241,7 +239,6 @@ class Hero:
 
     @floor.setter
     def floor(self, floor):
-        print(self.maze)
         if self.floor == floor - 1:
             if self.maze.is_initial_floor(floor - 1) or self.maze.is_boss_floor(floor - 1):
                 Music.background(change=True)
