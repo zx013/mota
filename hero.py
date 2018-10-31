@@ -43,11 +43,28 @@ class HeroBase:
 #key的绑定
 class HeroStateDict(dict):
     __bind = {}
+    statis_increase = {} #增加量
+    statis_decrease = {} #减少量
+
+    def count(self, color, value):
+        if color not in self.statis_increase:
+            self.statis_increase[color] = 0
+        if color not in self.statis_decrease:
+            self.statis_decrease[color] = 0
+
+        if color in self.__dict__:
+            diff = value - self[color]
+            if diff > 0:
+                self.statis_increase[color] += diff
+            else:
+                self.statis_decrease[color] -= diff
+        print(self.statis_increase, self.statis_decrease)
 
     def __getitem__(self, color):
         return self.__dict__[color]
 
     def __setitem__(self, color, value):
+        self.count(color, value)
         self.__dict__[color] = value
         if color in self.__bind:
             self.__bind[color].text = str(value)
@@ -67,6 +84,9 @@ class HeroStateDict(dict):
 #实时状态，bind将状态绑定到label上，可以实时显示
 class HeroState:
     __bind = {}
+    disable = ['schedule', 'progress', 'floor']
+    statis_increase = {} #增加量
+    statis_decrease = {} #减少量
 
     def __init__(self, herobase):
         self.schedule = ''
@@ -82,7 +102,24 @@ class HeroState:
         for color in MazeBase.Value.Color.total:
             self.key[color] = herobase.key[color]
 
+    def count(self, name, value):
+        if name in self.disable or not isinstance(value, int):
+            return None
+        if name not in self.statis_increase:
+            self.statis_increase[name] = 0
+        if name not in self.statis_decrease:
+            self.statis_decrease[name] = 0
+
+        if name in self.__dict__:
+            diff = value - self.__dict__[name]
+            if diff > 0:
+                self.statis_increase[name] += diff
+            else:
+                self.statis_decrease[name] -= diff
+        print(self.statis_increase, self.statis_decrease)
+
     def __setattr__(self, name, value):
+        self.count(name, value)
         self.__dict__[name] = value
         if name in self.__bind:
             label = self.__bind[name]

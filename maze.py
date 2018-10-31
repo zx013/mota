@@ -10,7 +10,7 @@ from setting import Setting, MazeBase, MazeSetting
 from cache import Config
 from hero import Hero, HeroBase, HeroState
 from tools import Tools, LoopException
-from story import Scene, Story
+from story import Story
 
 
 class TreeNode:
@@ -156,6 +156,31 @@ class TreeNode:
         return True
 
 
+class ItemInfo:
+    path = 'item'
+    data = {}
+    @staticmethod
+    def load():
+        data = ItemInfo.data
+        for key, config in Config.config.items():
+            if 'hero' in key:
+                continue
+            if not config['path'].startswith(os.path.join('data', ItemInfo.path)):
+                continue
+            key_list = key.split('-', 1)
+            if len(key_list) != 2:
+                continue
+            key1, key2 = key_list
+            if key1 != 'other':
+                continue
+            if key2 not in data:
+                data[key2] = {}
+
+            #需要再添加对属性的改变
+            if 'name' in config:
+                data[key2]['name'] = config['name']
+
+
 class MonsterInfo:
     path = 'monster'
     data_fluctuate = 10
@@ -189,6 +214,29 @@ class MonsterInfo:
                     data[key1][key2][name] = MonsterInfo.base[name]
                 if name in config and config[name].isdigit():
                     data[key1][key2][name] = int(config[name])
+
+
+class NpcInfo:
+    data = {}
+
+    @staticmethod
+    def load():
+        data = NpcInfo.data
+        for key, config in Config.config.items():
+            if 'hero' in key:
+                continue
+            key_list = key.split('-')
+            if len(key_list) != 2:
+                continue
+
+            key1, key2 = key_list
+            if key1 != 'npc':
+                continue
+            if key2 not in data:
+                data[key2] = {}
+
+            if 'name' in config:
+                data[key2]['name'] = config['name']
 
 
 class Pos:
@@ -241,16 +289,17 @@ class Maze:
         self.maze_map = {} #每一层不同点的分类集合
         self.maze_info = {} #每一层的信息，node, stair等
         self.monster = {}
+        self.npc = {}
         self.herobase = HeroBase()
         self.herostate = HeroState(self.herobase)
         self.story = Story(self)
         self.wall = MazeBase.Value.Wall.earth
         self.weapon = MazeBase.Value.Weapon.iron
-        #self.sword = MazeBase.Type.Sword.iron
-        #self.shield = MazeBase.Type.Shield.iron
         MazeBase.Value.Gem.large = self.weapon
         MazeBase.Value.Gem.total = (MazeBase.Value.Gem.small, MazeBase.Value.Gem.big, MazeBase.Value.Gem.large)
+        ItemInfo.load()
         MonsterInfo.load()
+        NpcInfo.load()
 
     def init(self, floor):
         for key in list(self.maze.keys()):
@@ -1392,6 +1441,13 @@ class Maze:
             experience += 0.2 * random.random()
 
 
+    def apply_npc(self, node_list):
+        for key, data in NpcInfo.data.items():
+            self.npc[key] = {'health': 100, 'attack': 10, 'defence': 10, 'ismagic': 0, 'gold': 20, 'experience': 5, 'item': [(MazeBase.Type.Item.key, MazeBase.Value.Color.yellow)]}
+            for k, v in data.items():
+                self.npc[key][k] = v
+
+
     #蒙特卡洛模拟获取尽可能的最优解
     #后期可以用深度学习求解，蒙特卡洛效率太低
     def __montecarlo(self):
@@ -1708,26 +1764,26 @@ class Maze:
 
         pos = (floor, 1, 1)
         self.set_type(pos, MazeBase.Type.Active.npc)
-        self.set_value(pos, MazeBase.Value.Npc.wisdom)
+        self.set_value(pos, 'wisdom')
         self.story.add_scene(pos, dialog=[(1, '你好！'), (2, '欢迎进入无尽的魔塔。')], repeat=True)
         scene1 = self.story.add_scene(pos, name='寻找智者', dialog=[(1, '智慧老人，我应该怎么办？'), (2, '去找仙子问问。')])
 
         pos = (floor, 1, MazeSetting.cols)
         self.set_type(pos, MazeBase.Type.Active.npc)
-        self.set_value(pos, MazeBase.Value.Npc.trader)
+        self.set_value(pos, 'trader')
         self.story.add_scene(pos, dialog=[(1, '你为什么在这里？'), (2, '你可以在我这里购买东西。')], repeat=True)
         scene2 = self.story.add_scene(pos, name='寻找商人', dialog=[(1, '请问有什么可以买的？'), (2, '那边有个小偷。')])
         scene5 = self.story.add_scene(pos, name='再见商人', dialog=[(1, '为什么又是你？'), (2, '没有钱你就得死。')])
 
         pos = (floor, MazeSetting.rows, 1)
         self.set_type(pos, MazeBase.Type.Active.npc)
-        self.set_value(pos, MazeBase.Value.Npc.thief)
+        self.set_value(pos, 'thief')
         self.story.add_scene(pos, dialog=[(1, '我为什么在这里？'), (2, '又多了一个送死的勇者。')], repeat=True)
         scene3 = self.story.add_scene(pos, name='寻找小偷', dialog=[(1, '这里是怎么了？'), (2, '问智慧老人吧。')])
 
         pos = (floor, MazeSetting.rows, MazeSetting.cols)
         self.set_type(pos, MazeBase.Type.Active.npc)
-        self.set_value(pos, MazeBase.Value.Npc.fairy)
+        self.set_value(pos, 'fairy')
         self.story.add_scene(pos, dialog=[(1, '又见到你了，小精灵。'), (2, '神圣十字架在魔塔的深处，给我神圣十字架，我可以增强你的能力。')], repeat=True)
         scene4 = self.story.add_scene(pos, name='寻找精灵', dialog=[(1, '我该如何出去？'), (2, '那个商人知道答案。')])
 
@@ -1777,6 +1833,8 @@ class Maze:
 
         self.herostate.update('设置怪物。。。', 3)
         self.apply_monster(node_list)
+
+        self.apply_npc(node_list)
 
         self.herostate.update('设置精英。。。', 3)
         self.apply_elite(node_list)

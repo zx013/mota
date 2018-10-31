@@ -115,3 +115,9 @@ name = 精灵
 help = 一个被囚禁的仙子，只要满足她的要求，她可以给你足够的回报
 file = npc.png
 dynamic = 4, 1-4
+
+[npc-princess]
+name = 公主
+help = 被魔王囚禁的公主，她会给你指引
+file = other.png
+dynamic = 4, 1-4

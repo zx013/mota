@@ -143,3 +143,18 @@ static = 1, 4
 [experience]
 file = other-02.png
 static = 3, 3
+
+[other-manual]
+name = 怪物手册
+file = other-01.png
+static = 1, 1
+
+[other-cross]
+name = 十字架
+file = other-01.png
+static = 3, 2
+
+[other-pickaxe]
+name = 破墙镐
+file = other-02.png
+static = 1, 1

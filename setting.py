@@ -318,6 +318,8 @@ class MazeBase:
 
             holy = 37
 
+            other = 38
+
         unknown = 99
 
     class Value:
@@ -385,12 +387,6 @@ class MazeBase:
             green = 1200
 
             total = (red, blue, yellow, green)
-
-        class Npc:
-            wisdom = 1
-            trader = 2
-            thief = 3
-            fairy = 4
 
     class NodeType:
         none = 0

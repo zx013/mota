@@ -342,17 +342,12 @@ class Mota(FocusBehavior, FloatLayout):
                 pos_key = 'potion-green'
         elif pos_type == MazeBase.Type.Item.holy:
             pos_key = 'holy'
+        elif pos_type == MazeBase.Type.Item.other:
+            pos_key = 'other-{}'.format(pos_value)
         elif pos_type == MazeBase.Type.Active.monster:
             pos_key = '-'.join(pos_value)
         elif pos_type == MazeBase.Type.Active.npc:
-            if pos_value == MazeBase.Value.Npc.wisdom:
-                pos_key = 'npc-wisdom'
-            elif pos_value == MazeBase.Value.Npc.trader:
-                pos_key = 'npc-trader'
-            elif pos_value == MazeBase.Value.Npc.thief:
-                pos_key = 'npc-thief'
-            elif pos_value == MazeBase.Value.Npc.fairy:
-                pos_key = 'npc-fairy'
+            pos_key = 'npc-{}'.format(pos_value)
 
         return pos_key
 
