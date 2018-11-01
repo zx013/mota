@@ -171,7 +171,7 @@ class ItemInfo:
             if len(key_list) != 2:
                 continue
             key1, key2 = key_list
-            if key1 != 'other':
+            if key1 != 'item':
                 continue
             if key2 not in data:
                 data[key2] = {}

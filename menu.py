@@ -13,7 +13,6 @@ from kivy.lang import Builder
 
 from setting import Setting
 from cache import Config
-from tools import Tools
 
 from random import random
 
@@ -39,7 +38,7 @@ class MenuWelcomeLabel(MenuLabel):
         self.pos = (Setting.row_size, 0)
         self.text = Setting.status_text
 
-        offset = Setting.row_size + Tools.text_length(self.text) * self.font_size
+        offset = Setting.row_size + self.texture_size[0]
         anim = Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=0, duration=0)
         anim.repeat = True
         anim.start(self)
@@ -53,7 +52,8 @@ class MenuStatusLabel(MenuLabel):
         self.pos = (0, 0)
         self.text = text
         self.color = (0.5 + random() / 2, 0.5 + random() / 2, 0.5 + random() / 2, 1)
-        offset = Tools.text_length(self.text) * self.font_size - Setting.col_size
+        self.texture_update()
+        offset = self.texture_size[0] - Setting.col_size + Setting.pos_real
         if offset < 0:
             offset = 0
         if self.anim:

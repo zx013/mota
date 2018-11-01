@@ -16,18 +16,16 @@
     fsize: 4
 
     #调节配置中的size时不影响菜单
-    ssize: (Setting.size + 2) * Setting.multiple
+    ssize: 0.8 * (Setting.size + 2) * Setting.multiple
     pos_temp: {'center_x': Setting.pos_rx(self.idx), 'center_y': Setting.pos_ry(self.idy)}
 
     #根据地图大小动态变化的大小和位置，需要单独使用self.text，否则会为空
-    length: Tools.text_length(self.text)
-    line: len(self.text.split('\n')) if self.text else 1
     pos_hint: self.pos_temp
-    size: (self.length * self.font_size, self.line * self.font_size)
+    size: self.texture_size
     size_hint: (None, None)
 
     #字体
-    font_size: 0.8 * self.fsize * self.ssize
+    font_size: self.fsize * self.ssize
     font_name: Setting.font_path
 
     #是否被选中，初始化状态
@@ -914,7 +912,7 @@
             #pos: (Setting.row_size, 0)
             pos_hint: {}
             text: Setting.status_text
-            fsize: 1.8
+            fsize: 1.6
             disabled: True
     Screen:
         name: 'status'
@@ -923,7 +921,7 @@
             pos: (0, 0)
             pos_hint: {}
             text: '长按显示详细信息'
-            fsize: 1.8
+            fsize: 1.6
             disabled: True
 
 
@@ -933,6 +931,9 @@
     size_hint: (None, None)
     Screen:
         name: 'welcome'
+        Image:
+            pos: (0, 0)
+            texture: Texture.next('frame-darkblue')
         MenuLabel:
             text: '测试1'
             disabled: True
@@ -947,6 +948,7 @@
     transition: FadeTransition()
     size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
     size_hint: (None, None)
+    statusbar: self.parent.status.statusbar if root.parent.status else None
     Screen:
         name: 'welcome'
         MenuLabel:

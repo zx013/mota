@@ -67,12 +67,3 @@ class Tools:
             if number > 0:
                 yield previous, element
             previous = element
-
-    #计算字符串长度
-    @staticmethod
-    def text_length(text):
-        dp = {':': 0.25, ' ': 0.25, '1': 0.25}
-        if text:
-            return max([sum([0.2 if s in [':', ' ', '1'] else (0.5 * len(s.encode('gbk'))) for s in line]) for line in text.split('\n')])
-        else:
-            return 0

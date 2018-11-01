@@ -43,10 +43,13 @@ class HeroBase:
 #key的绑定
 class HeroStateDict(dict):
     __bind = {}
+    statis = {}
     statis_increase = {} #增加量
     statis_decrease = {} #减少量
 
     def count(self, color, value):
+        if color not in self.statis:
+            self.statis[color] = 0
         if color not in self.statis_increase:
             self.statis_increase[color] = 0
         if color not in self.statis_decrease:
@@ -58,7 +61,7 @@ class HeroStateDict(dict):
                 self.statis_increase[color] += diff
             else:
                 self.statis_decrease[color] -= diff
-        print(self.statis_increase, self.statis_decrease)
+            self.statis[color] = value
 
     def __getitem__(self, color):
         return self.__dict__[color]
@@ -85,8 +88,10 @@ class HeroStateDict(dict):
 class HeroState:
     __bind = {}
     disable = ['schedule', 'progress', 'floor']
+    statis = {}
     statis_increase = {} #增加量
     statis_decrease = {} #减少量
+    statis_record = {} #到过的地点统计
 
     def __init__(self, herobase):
         self.schedule = ''
@@ -105,6 +110,8 @@ class HeroState:
     def count(self, name, value):
         if name in self.disable or not isinstance(value, int):
             return None
+        if name not in self.statis:
+            self.statis[name] = 0
         if name not in self.statis_increase:
             self.statis_increase[name] = 0
         if name not in self.statis_decrease:
@@ -116,7 +123,13 @@ class HeroState:
                 self.statis_increase[name] += diff
             else:
                 self.statis_decrease[name] -= diff
-        print(self.statis_increase, self.statis_decrease)
+            self.statis[name] = value
+
+    def record(self, pos_type, pos_value):
+        key = (pos_type, pos_value)
+        if key not in self.statis_record:
+            self.statis_record[key] = 0
+        self.statis_record[key] += 1
 
     def __setattr__(self, name, value):
         self.count(name, value)

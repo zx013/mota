@@ -9,3 +9,19 @@ size = 64, 64
 [monster-manual]
 file = manual.png
 size = 64, 64
+
+[frame-yellow]
+file = frame-yellow.png
+size = 128, 128
+
+[frame-blue]
+file = frame-blue.png
+size = 128, 128
+
+[frame-darkblue]
+file = frame-darkblue.png
+size = 128, 128
+
+[frame-purplered]
+file = frame-purplered.png
+size = 128, 128

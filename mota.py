@@ -249,6 +249,7 @@ class Mota(FocusBehavior, FloatLayout):
             print('meet npc:', pos_type, pos_value)
             return False
 
+        herostate.record(pos_type, pos_value)
         self.maze.set_type(pos, MazeBase.Type.Static.ground)
         self.maze.set_value(pos, 0)
         return True
@@ -343,7 +344,7 @@ class Mota(FocusBehavior, FloatLayout):
         elif pos_type == MazeBase.Type.Item.holy:
             pos_key = 'holy'
         elif pos_type == MazeBase.Type.Item.other:
-            pos_key = 'other-{}'.format(pos_value)
+            pos_key = 'item-{}'.format(pos_value)
         elif pos_type == MazeBase.Type.Active.monster:
             pos_key = '-'.join(pos_value)
         elif pos_type == MazeBase.Type.Active.npc:

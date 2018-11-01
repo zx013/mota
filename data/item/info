@@ -144,17 +144,17 @@ static = 1, 4
 file = other-02.png
 static = 3, 3
 
-[other-manual]
+[item-manual]
 name = 怪物手册
 file = other-01.png
 static = 1, 1
 
-[other-cross]
+[item-cross]
 name = 十字架
 file = other-01.png
 static = 3, 2
 
-[other-pickaxe]
+[item-pickaxe]
 name = 破墙镐
 file = other-02.png
 static = 1, 1

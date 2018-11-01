@@ -38,7 +38,8 @@ class ConfigBase:
         info = dict(config._sections)
         for key in info:
             info[key] = dict(info[key])
-            info[key]['size'] = (TextureBase.size, TextureBase.size)
+            if 'size' not in info[key]:
+                info[key]['size'] = (TextureBase.size, TextureBase.size)
             for k, v in info[key].items():
                 if ',' not in v:
                     continue
@@ -110,11 +111,6 @@ class TextureBase:
         self.texture = {}
         self.load()
 
-    #将行列换成真实坐标
-    def real_pos(self, size, pos):
-        weight, height = size
-        row, col = pos
-        return col * self.size, height - (row + 1) * self.size
 
     #获取texture中的部分
     def cut_texture(self, texture, pos, size):
@@ -133,7 +129,8 @@ class TextureBase:
 
         textures = []
         for pos in pos_list:
-            row, col = self.real_pos(texture.size, pos)
+            row, col = pos
+            row, col = col * x, texture.size[1] - (row + 1) * y #将行列换成真实坐标
             textures.append(texture.get_region(row, col, x, y))
         return textures
 
