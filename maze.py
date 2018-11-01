@@ -290,6 +290,8 @@ class Maze:
         self.maze_info = {} #每一层的信息，node, stair等
         self.monster = {}
         self.npc = {}
+
+        self.hero = Hero(self)
         self.herobase = HeroBase()
         self.herostate = HeroState(self.herobase)
         self.story = Story(self)
@@ -297,6 +299,7 @@ class Maze:
         self.weapon = MazeBase.Value.Weapon.iron
         MazeBase.Value.Gem.large = self.weapon
         MazeBase.Value.Gem.total = (MazeBase.Value.Gem.small, MazeBase.Value.Gem.big, MazeBase.Value.Gem.large)
+
         ItemInfo.load()
         MonsterInfo.load()
         NpcInfo.load()
@@ -1740,6 +1743,7 @@ class Maze:
         self.set_type(pos, MazeBase.Type.Static.init)
         self.set_value(pos, 0)
         self.maze_info[floor]['init'] = pos
+        self.hero.pos = pos
 
         pos = (floor, 1, middle)
         self.set_type(pos, MazeBase.Type.Static.stair)
@@ -1960,8 +1964,6 @@ class Maze:
         self.herostate.key[MazeBase.Value.Color.red] += key.get('red', 0)
         self.herostate.key[MazeBase.Value.Color.green] += key.get('green', 0)
         self.set_init()
-        #需要等开始楼层初始化完成
-        self.hero = Hero(self)
 
     def save(self, num=0):
         record_dict = {
@@ -2055,6 +2057,9 @@ class Maze:
 
         return way
 
+global gmaze
+if 'gmaze' not in dir():
+    gmaze = Maze()
 
 if __name__ == '__main__':
     maze = Maze()

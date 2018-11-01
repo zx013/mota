@@ -27,7 +27,11 @@ class MenuSetting(FloatLayout): pass
 class MenuMonster(FloatLayout): pass
 class MenuMonsterManual(FloatLayout): pass
 
-class MenuHero(ScreenManager): pass
+class MenuHero(ScreenManager):
+    def __init__(self, **kwargs):
+        super(MenuHero, self).__init__(**kwargs)
+
+
 class MenuManager(ScreenManager): pass
 class MenuStatus(ScreenManager): pass
 class MenuStory(ScreenManager): pass
@@ -62,9 +66,15 @@ class MenuStatusLabel(MenuLabel):
         self.anim.repeat = True
         self.anim.start(self)
 
+global gstatus
+if 'gstatus' not in dir():
+    gstatus = MenuStatus(pos=(Setting.offset, 0))
+
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
         super(MenuLayout, self).__init__(**kwargs)
+        self.add_widget(gstatus)
+        self.status = gstatus
 
 
 #三行分别为7, 10, 10个中文字符

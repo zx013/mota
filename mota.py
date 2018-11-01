@@ -43,7 +43,7 @@ from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config, Texture, Music
-from maze import Maze
+from maze import gmaze
 from hero import Opacity
 from state import State
 
@@ -76,9 +76,7 @@ class Mota(FocusBehavior, FloatLayout):
         self.step = 0
         #Music.background(init=True)
 
-        self.maze = Maze()
-
-        self.state = State(self.maze.herostate) #状态显示
+        self.state = State(gmaze.herostate) #状态显示
         self.floorlabel = FloorLabel()
         self.front = MotaLayer()
         self.middle = MotaLayer()
@@ -120,7 +118,7 @@ class Mota(FocusBehavior, FloatLayout):
             self.hero.stair = MazeBase.Value.Stair.down
             Music.play('floor')
         elif key == 'p': #测试作弊
-            self.maze.herostate.health += 1000
+            gmaze.herostate.health += 1000
         return True
 
     #实现长按操作，极少情况会出现长按和点击同时触发的情况
@@ -134,11 +132,11 @@ class Mota(FocusBehavior, FloatLayout):
         name = Config.config[key].get('name', '未知')
         help = Config.config[key].get('help', '未知')
 
-        pos_type = self.maze.get_type(touch.maze_pos)
-        pos_value = self.maze.get_value(touch.maze_pos)
+        pos_type = gmaze.get_type(touch.maze_pos)
+        pos_value = gmaze.get_value(touch.maze_pos)
         if pos_type == MazeBase.Type.Active.monster:
-            monster = self.maze.monster[pos_value[0]][pos_value[1]]
-            damage = self.maze.get_damage(self.maze.herostate.attack, self.maze.herostate.defence, pos_value)
+            monster = gmaze.monster[pos_value[0]][pos_value[1]]
+            damage = gmaze.get_damage(gmaze.herostate.attack, gmaze.herostate.defence, pos_value)
             self.statusbar.update('{}:    生命: {}  攻击: {}  防御: {}  伤害: {}'.format(name, monster['health'], monster['attack'], monster['defence'], damage))
         else:
             self.statusbar.update(':  '.join((name, help)))
@@ -186,19 +184,19 @@ class Mota(FocusBehavior, FloatLayout):
 
         if touch.maze_pos is None:
             return False
-        self.hero.move_list = self.maze.find_path(self.hero.pos, touch.maze_pos)
+        self.hero.move_list = gmaze.find_path(self.hero.pos, touch.maze_pos)
         return True
 
 
     def ismove(self, pos):
         if pos in self.hero.action:
             return False
-        pos_type = self.maze.get_type(pos)
-        pos_value = self.maze.get_value(pos)
-        herobase = self.maze.herobase
-        herostate = self.maze.herostate
+        pos_type = gmaze.get_type(pos)
+        pos_value = gmaze.get_value(pos)
+        herobase = gmaze.herobase
+        herostate = gmaze.herostate
 
-        scene = self.maze.story.check(pos) #有剧情则开启对话
+        scene = gmaze.story.check(pos) #有剧情则开启对话
         if scene:
             self.dialog.dialog_start(self.hero.pos, pos, scene)
 
@@ -235,8 +233,8 @@ class Mota(FocusBehavior, FloatLayout):
             herostate.health += herobase.base * pos_value
             Music.play('getitem')
         elif pos_type == MazeBase.Type.Active.monster:
-            monster = self.maze.get_monster(pos_value)
-            damage = self.maze.get_damage(herostate.attack, herostate.defence, pos_value)
+            monster = gmaze.get_monster(pos_value)
+            damage = gmaze.get_damage(herostate.attack, herostate.defence, pos_value)
             if herostate.health <= damage:
                 return False
             herostate.health -= damage
@@ -244,14 +242,14 @@ class Mota(FocusBehavior, FloatLayout):
             herostate.experience += monster['experience']
             Music.play('blood') #获取剑后使用剑的声音和动画
             if pos_value[0] == 'boss':
-                self.maze.kill_boss(pos)
+                gmaze.kill_boss(pos)
         elif pos_type == MazeBase.Type.Active.npc:
             print('meet npc:', pos_type, pos_value)
             return False
 
         herostate.record(pos_type, pos_value)
-        self.maze.set_type(pos, MazeBase.Type.Static.ground)
-        self.maze.set_value(pos, 0)
+        gmaze.set_type(pos, MazeBase.Type.Static.ground)
+        gmaze.set_value(pos, 0)
         return True
 
     def move(self, key):
@@ -268,8 +266,8 @@ class Mota(FocusBehavior, FloatLayout):
 
 
     def get_key(self, pos):
-        pos_type = self.maze.get_type(pos)
-        pos_value = self.maze.get_value(pos)
+        pos_type = gmaze.get_type(pos)
+        pos_value = gmaze.get_value(pos)
 
         if pos_type == MazeBase.Type.Static.init:
             pos_key = 'ground'
@@ -390,19 +388,19 @@ class Mota(FocusBehavior, FloatLayout):
 
     def show_monster(self):
         floor = self.hero.floor
-        health = self.maze.herostate.health
-        attack = self.maze.herostate.attack
-        defence = self.maze.herostate.defence
+        health = gmaze.herostate.health
+        attack = gmaze.herostate.attack
+        defence = gmaze.herostate.defence
         for i in range(self.row):
             for j in range(self.col):
                 pos = (floor, i, j)
-                pos_type = self.maze.get_type(pos)
-                pos_value = self.maze.get_value(pos)
+                pos_type = gmaze.get_type(pos)
+                pos_value = gmaze.get_value(pos)
 
 
                 if pos_type == MazeBase.Type.Active.monster:
-                    damage = self.maze.get_damage(attack, defence, pos_value)
-                    info = self.maze.get_monster(pos_value)
+                    damage = gmaze.get_damage(attack, defence, pos_value)
+                    info = gmaze.get_monster(pos_value)
                 else:
                     damage = -1
                     info = {'health': '', 'attack': '', 'defence': ''}
@@ -466,28 +464,28 @@ class Mota(FocusBehavior, FloatLayout):
                     pos_image.texture = texture
                 else:
                     pos_image.texture = Texture.next('empty')
-                    self.maze.set_type(pos, MazeBase.Type.Static.ground)
-                    self.maze.set_value(pos, 0)
+                    gmaze.set_type(pos, MazeBase.Type.Static.ground)
+                    gmaze.set_value(pos, 0)
                     self.hero.action.remove(pos)
 
 
     def start(self):
-        self.maze.start()
-        self.hero = self.maze.hero
+        gmaze.start()
+        self.hero = gmaze.hero
         self.isstart = True
 
     def save(self, pos):
         if self.step % Setting.step == 0:
-            if self.maze.get_type(pos) != MazeBase.Type.Static.stair:
-                self.maze.save()
+            if gmaze.get_type(pos) != MazeBase.Type.Static.stair:
+                gmaze.save()
             else:
                 self.step -= 1
         self.step += 1
 
     def load(self):
-        self.maze.load()
-        _, x, y = self.maze.maze_info[0]['init']
+        gmaze.load()
+        _, x, y = gmaze.maze_info[0]['init']
         image = self.front.image[x][y]
         image.texture = Texture.next('empty')
-        self.hero = self.maze.hero
+        self.hero = gmaze.hero
         self.isstart = True

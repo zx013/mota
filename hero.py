@@ -260,7 +260,6 @@ class Hero:
 
     def __init__(self, maze, **kwargs):
         self.maze = maze
-        self.pos = maze.maze_info[0]['init']
 
     @property
     def name(self):

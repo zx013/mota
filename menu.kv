@@ -6,6 +6,7 @@
 #:import Mota mota.Mota
 #:import Tools tools.Tools
 #:import functools functools
+#:import gmaze maze.gmaze
 
 
 <MenuLabel>:
@@ -181,7 +182,6 @@
     fsize: 1.9
     opacity: 1
     monster: ('', '')
-    maze: self.parent.maze
     canvas:
         Color:
             rgba: (0, 0.78, 0.55, 1)
@@ -205,7 +205,7 @@
     MenuLabel:
         idx: root.idx - 1
         idy: root.idy + 10.25
-        text: ' '.join(str((root.maze.get_monster(root.monster) if root.maze else {}).get('name', '未知')))
+        text: ' '.join(str(gmaze.get_monster(root.monster).get('name', '未知')))
         fsize: root.fsize + 0.3
         disabled: True
         color: (0.82, 0.41, 0.12, 1)
@@ -219,7 +219,7 @@
     MenuLabel:
         idx: root.idx - 4.75
         idy: root.idy + 8.75
-        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('health', -1))
+        text: str(gmaze.get_monster(root.monster).get('health', -1))
         fsize: root.fsize
         disabled: True
         color: (0.5, 1, 0.5, 1)
@@ -233,7 +233,7 @@
     MenuLabel:
         idx: root.idx + 4.25
         idy: root.idy + 8.75
-        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('attack', -1))
+        text: str(gmaze.get_monster(root.monster).get('attack', -1))
         fsize: root.fsize
         disabled: True
         color: (1, 0.5, 0.5, 1)
@@ -247,7 +247,7 @@
     MenuLabel:
         idx: root.idx + 12.25
         idy: root.idy + 8.75
-        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('defence', -1))
+        text: str(gmaze.get_monster(root.monster).get('defence', -1))
         fsize: root.fsize
         disabled: True
         color: (0.5, 0.5, 1, 1)
@@ -261,7 +261,7 @@
     MenuLabel:
         idx: root.idx - 4.75
         idy: root.idy + 6.75
-        text: str(root.maze.get_damage(root.maze.herostate.attack, root.maze.herostate.defence, root.monster) if root.maze else -1)
+        text: str(gmaze.get_damage(gmaze.herostate.attack, gmaze.herostate.defence, root.monster))
         fsize: root.fsize
         disabled: True
         color: (1, 0.5, 1, 1)
@@ -275,7 +275,7 @@
     MenuLabel:
         idx: root.idx + 4.25
         idy: root.idy + 6.75
-        text: '魔法' if (root.maze.get_monster(root.monster) if root.maze else {}).get('ismagic', False) else '无'
+        text: '魔法' if gmaze.get_monster(root.monster).get('ismagic', False) else '无'
         fsize: root.fsize - 0.2
         disabled: True
         color: (1, 1, 0.5, 1)
@@ -289,7 +289,7 @@
     MenuLabel:
         idx: root.idx - 4.75
         idy: root.idy + 4.75
-        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('gold', -1))
+        text: str(gmaze.get_monster(root.monster).get('gold', -1))
         fsize: root.fsize
         disabled: True
         color: (1, 0.84, 0, 1)
@@ -303,14 +303,13 @@
     MenuLabel:
         idx: root.idx + 4.25
         idy: root.idy + 4.75
-        text: str((root.maze.get_monster(root.monster) if root.maze else {}).get('experience', -1))
+        text: str(gmaze.get_monster(root.monster).get('experience', -1))
         fsize: root.fsize
         disabled: True
         color: (0.53, 0.81, 0.92, 1)
 
 
 <MenuMonsterManual>:
-    maze: None
     monster_list: ()
     page: 0
     number: 3
@@ -483,6 +482,7 @@
 
 
 <MenuManager>:
+    mota: mota
     transition: FadeTransition()
     size: (Setting.row_size, Setting.col_size)
     size_hint: (None, None)
@@ -633,7 +633,7 @@
             idy: -13
             text: '↓'
             fsize: 3
-            disabled: False #mota.hero.floor - 1 < mota.maze.herostate.floor
+            disabled: False #mota.hero.floor - 1 < gmaze.herostate.floor
             disabled_color: (0.75, 0.75, 0.75, 1)
             on_touch_up:
                 self.state = 'normal'
@@ -888,7 +888,7 @@
     Screen:
         name: 'monster-manual'
         on_pre_enter:
-            monster_manual.monster_list = tuple(set(functools.reduce(lambda x, y: x + y, [[pos[1] for pos in row if pos[0] == MazeBase.Type.Active.monster] for row in mota.maze.maze[mota.maze.herostate.floor]])))
+            monster_manual.monster_list = tuple(set(functools.reduce(lambda x, y: x + y, [[pos[1] for pos in row if pos[0] == MazeBase.Type.Active.monster] for row in gmaze.maze[gmaze.herostate.floor]])))
             monster_manual.page = 0
             page_prev = monster_manual.page_prev
             page_next = monster_manual.page_next
@@ -896,7 +896,6 @@
             page_next.color = page_next.disabled_color if page_next.disabled else page_next.default_color
         MenuMonsterManual:
             id: monster_manual
-            maze: mota.maze
             monster_list: ()
             root: root
 
@@ -929,19 +928,30 @@
     transition: FadeTransition()
     size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
     size_hint: (None, None)
+    herostate: gmaze.herostate
+            
+    offset: Setting.multiple * 10
     Screen:
         name: 'welcome'
-        Image:
-            pos: (0, 0)
-            texture: Texture.next('frame-darkblue')
+        canvas:
+            Line:
+                width: root.offset / 3 if root.offset else 1
+                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
         MenuLabel:
             text: '测试1'
             disabled: True
     Screen:
         name: 'hero'
-        MenuLabel:
-            text: '英雄状态'
-            disabled: True
+        canvas:
+            Line:
+                width: root.offset / 3 if root.offset else 1
+                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
+
+        BoxLayout:
+            MenuLabel:
+                text: '英雄状态'
+                disabled: True
+                init: root.herostate.bind('health', self) if root.herostate else None
 
 
 <MenuStory>:
@@ -949,13 +959,23 @@
     size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
     size_hint: (None, None)
     statusbar: self.parent.status.statusbar if root.parent.status else None
+
+    offset: Setting.multiple * 10
     Screen:
         name: 'welcome'
+        canvas:
+            Line:
+                width: root.offset / 3 if root.offset else 1
+                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
         MenuLabel:
             text: '测试2'
             disabled: True
     Screen:
         name: 'story'
+        canvas:
+            Line:
+                width: root.offset / 3 if root.offset else 1
+                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
         MenuLabel:
             text: '任务列表'
             disabled: True
@@ -964,7 +984,7 @@
 <MenuLayout>:
     hero: hero
     manager: manager
-    status: status
+    status: None
     story: story
     MenuHero:
         id: hero
@@ -972,9 +992,9 @@
     MenuManager:
         id: manager
         pos: (Setting.offset, Setting.status_size * Setting.col_size)
-    MenuStatus:
-        id: status
-        pos: (Setting.offset, 0)
+    #MenuStatus:
+    #    id: status
+    #    pos: (Setting.offset, 0)
     MenuStory:
         id: story
         pos: (Setting.offset + Setting.row_size, 0)
