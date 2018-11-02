@@ -137,9 +137,9 @@ class Mota(FocusBehavior, FloatLayout):
         if pos_type == MazeBase.Type.Active.monster:
             monster = gmaze.monster[pos_value[0]][pos_value[1]]
             damage = gmaze.get_damage(gmaze.herostate.attack, gmaze.herostate.defence, pos_value)
-            self.statusbar.update('{}:    生命: {}  攻击: {}  防御: {}  伤害: {}'.format(name, monster['health'], monster['attack'], monster['defence'], damage))
+            self.statusbar.text = '{}:    生命: {}  攻击: {}  防御: {}  伤害: {}'.format(name, monster['health'], monster['attack'], monster['defence'], damage)
         else:
-            self.statusbar.update(':  '.join((name, help)))
+            self.statusbar.text = ':  '.join((name, help))
         return True
 
     def touch_hold(self, touch, dt):

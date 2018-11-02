@@ -7,7 +7,6 @@ from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.screenmanager import ScreenManager
 from kivy.animation import Animation
 from kivy.lang import Builder
 
@@ -21,20 +20,6 @@ with open('menu.kv', 'r', encoding='utf-8') as fp:
 
 
 class MenuLabel(ToggleButtonBehavior, Label): pass
-class MenuImage(Image): pass
-class MenuParameter(FloatLayout): pass
-class MenuSetting(FloatLayout): pass
-class MenuMonster(FloatLayout): pass
-class MenuMonsterManual(FloatLayout): pass
-
-class MenuHero(ScreenManager):
-    def __init__(self, **kwargs):
-        super(MenuHero, self).__init__(**kwargs)
-
-
-class MenuManager(ScreenManager): pass
-class MenuStatus(ScreenManager): pass
-class MenuStory(ScreenManager): pass
 
 class MenuWelcomeLabel(MenuLabel):
     def __init__(self, **kwargs):
@@ -54,6 +39,7 @@ class MenuStatusLabel(MenuLabel):
 
     def update(self, text):
         self.pos = (0, 0)
+        self.pos_hint = {}
         self.text = text
         self.color = (0.5 + random() / 2, 0.5 + random() / 2, 0.5 + random() / 2, 1)
         self.texture_update()
@@ -66,15 +52,9 @@ class MenuStatusLabel(MenuLabel):
         self.anim.repeat = True
         self.anim.start(self)
 
-global gstatus
-if 'gstatus' not in dir():
-    gstatus = MenuStatus(pos=(Setting.offset, 0))
-
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
         super(MenuLayout, self).__init__(**kwargs)
-        self.add_widget(gstatus)
-        self.status = gstatus
 
 
 #三行分别为7, 10, 10个中文字符

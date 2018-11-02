@@ -9,7 +9,7 @@
 #:import gmaze maze.gmaze
 
 
-<MenuLabel>:
+<MenuLabel@ToggleButtonBehavior+Label>:
     #简化后的参数
     idx: 0
     idy: 0
@@ -40,7 +40,7 @@
     color: self.select_color if self.state == 'down' else self.default_color
 
 
-<MenuImage>:
+<MenuImage@Image>:
     idx: 0
     idy: 0
     name: ''
@@ -51,7 +51,7 @@
     texture: Texture.next(self.name)
     allow_stretch: True
 
-<MenuParameter>:
+<MenuParameter@FloatLayout>:
     idx: 0
     idy: 0
     text: ''
@@ -97,7 +97,7 @@
             base.text = str(attr)
 
 
-<MenuSetting>:
+<MenuSetting@FloatLayout>:
     idx: 0
     idy: 0
     type: ''
@@ -175,7 +175,7 @@
             root.root.current = 'main'
 
 
-<MenuMonster>:
+<MenuMonster@FloatLayout>:
     index: 0
     idx: 0.5
     idy: 3 - 10 * self.index
@@ -309,7 +309,7 @@
         color: (0.53, 0.81, 0.92, 1)
 
 
-<MenuMonsterManual>:
+<MenuMonsterManual@FloatLayout>:
     monster_list: ()
     page: 0
     number: 3
@@ -481,10 +481,9 @@
             root.dialog_end()
 
 
-<MenuManager>:
+<MenuManager@ScreenManager>:
     mota: mota
     transition: FadeTransition()
-    size: (Setting.row_size, Setting.col_size)
     size_hint: (None, None)
 
     Screen:
@@ -599,7 +598,7 @@
         Mota:
             id: mota
             dialog: dialog
-            statusbar: root.parent.status.statusbar if root.parent.status else None
+            statusbar: root.parent.statusbar
         MenuDialog:
             id: dialog
             mota: mota
@@ -900,9 +899,8 @@
             root: root
 
 
-<MenuStatus>:
+<MenuStatus@ScreenManager>:
     transition: FadeTransition()
-    size: (Setting.row_size, Setting.status_size * Setting.col_size)
     size_hint: (None, None)
     statusbar: statusbar
     Screen:
@@ -917,19 +915,26 @@
         name: 'status'
         MenuStatusLabel:
             id: statusbar
-            pos: (0, 0)
-            pos_hint: {}
+            #pos: (0, 0)
+            #pos_hint: {}
             text: '长按显示详细信息'
+            on_text: self.update(self.text)
             fsize: 1.6
             disabled: True
 
 
-<MenuHero>:
+<MenuHeroLabel@MenuLabel>:
+    pos_hint: {}
+    disabled: True
+
+<MenuHeroImage@MenuImage>:
+    pos_hint: {}
+    size: (Setting.pos_real, Setting.pos_real)
+
+<MenuHero@ScreenManager>:
     transition: FadeTransition()
-    size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
     size_hint: (None, None)
-    herostate: gmaze.herostate
-            
+
     offset: Setting.multiple * 10
     Screen:
         name: 'welcome'
@@ -947,18 +952,53 @@
                 width: root.offset / 3 if root.offset else 1
                 rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
 
-        BoxLayout:
-            MenuLabel:
-                text: '英雄状态'
-                disabled: True
-                init: root.herostate.bind('health', self) if root.herostate else None
+        GridLayout:
+            pos_hint: {'center_x': 0.75, 'center_y': 0.5}
+            cols: 2
+            row_default_height: 40 * Setting.multiple
+            row_force_default: True
+            MenuHeroLabel:
+                text: '生命: '
+            MenuHeroLabel:
+                init: gmaze.herostate.bind('health', self)
+            MenuHeroLabel:
+                text: '攻击: '
+            MenuHeroLabel:
+                init: gmaze.herostate.bind('attack', self)
+            MenuHeroLabel:
+                text: '防御: '
+            MenuHeroLabel:
+                init: gmaze.herostate.bind('defence', self)
+            MenuHeroLabel:
+                text: '金钱: '
+            MenuHeroLabel:
+                init: gmaze.herostate.bind('gold', self)
+            MenuHeroLabel:
+                text: '经验: '
+            MenuHeroLabel:
+                init: gmaze.herostate.bind('experience', self)
+            MenuHeroImage:
+                name: 'key-yellow'
+            MenuHeroLabel:
+                init: gmaze.herostate.key.bind(MazeBase.Value.Color.yellow, self)
+            MenuHeroImage:
+                name: 'key-blue'
+            MenuHeroLabel:
+                init: gmaze.herostate.key.bind(MazeBase.Value.Color.blue, self)
+            MenuHeroImage:
+                name: 'key-red'
+            MenuHeroLabel:
+                init: gmaze.herostate.key.bind(MazeBase.Value.Color.red, self)
+            MenuHeroImage:
+                name: 'key-green'
+            MenuHeroLabel:
+                init: gmaze.herostate.key.bind(MazeBase.Value.Color.green, self)
 
 
-<MenuStory>:
+<MenuStory@ScreenManager>:
     transition: FadeTransition()
-    size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
     size_hint: (None, None)
-    statusbar: self.parent.status.statusbar if root.parent.status else None
+    statusbar: self.parent.statusbar
 
     offset: Setting.multiple * 10
     Screen:
@@ -984,19 +1024,22 @@
 <MenuLayout>:
     hero: hero
     manager: manager
-    status: None
+    status: status
     story: story
+    statusbar: status.statusbar
     MenuHero:
         id: hero
         pos: (0, 0)
+        size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
     MenuManager:
         id: manager
         pos: (Setting.offset, Setting.status_size * Setting.col_size)
-    #MenuStatus:
-    #    id: status
-    #    pos: (Setting.offset, 0)
+        size: (Setting.row_size, Setting.col_size)
+    MenuStatus:
+        id: status
+        pos: (Setting.offset, 0)
+        size: (Setting.row_size, Setting.status_size * Setting.col_size)
     MenuStory:
         id: story
         pos: (Setting.offset + Setting.row_size, 0)
-
-
+        size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)

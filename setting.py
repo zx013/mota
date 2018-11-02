@@ -102,7 +102,7 @@ class Setting:
     size = 11 #Store.load('size', 11)
 
     #放缩倍数
-    multiple = 1.0
+    multiple = 0.5
 
     #每走多少步保存一次
     step = 10
