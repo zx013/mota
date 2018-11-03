@@ -61,7 +61,7 @@ class MenuLayout(FloatLayout):
 class MenuDialog(FloatLayout):
     l = 1.5 * Setting.multiple #线条宽度
     w = 0.4 * Setting.row_size + 2 * l #宽度
-    h = 0.25 * Setting.row_size + 2 * l #高度
+    h = 0.25 * Setting.col_size + 2 * l #高度
 
     dialog = []
     person = {}
@@ -93,10 +93,10 @@ class MenuDialog(FloatLayout):
         self.update()
 
     def dialog_end(self):
-        self.mota.operate = True
         self.idx = 128
         self.idy = 128
         self.opacity = 0
+        self.mota.operate = True
 
     def update(self):
         if len(self.dialog) == 0:

@@ -40,7 +40,7 @@
     color: self.select_color if self.state == 'down' else self.default_color
 
 
-<MenuImage@Image>:
+<MenuImage@ToggleButtonBehavior+Image>:
     idx: 0
     idy: 0
     name: ''
@@ -489,6 +489,20 @@
 
 
 <MenuItem@FloatLayout>:
+    idx: 0
+    idy: 0
+    canvas:
+        Color:
+            rgba: (0.96, 0.96, 0.96, 1)
+        Line:
+            width: 1.5 * Setting.multiple
+            rounded_rectangle: (0.1 * Setting.row_size, 0.1 * Setting.col_size, 0.8 * Setting.row_size, 0.3 * Setting.col_size, Setting.size * Setting.multiple)
+        Color:
+            rgba: (0.96, 0.96, 0.96, 0.1)
+        RoundedRectangle:
+            pos: (0.1 * Setting.row_size, 0.1 * Setting.col_size)
+            size: (0.8 * Setting.row_size, 0.3 * Setting.col_size)
+            radius: [Setting.size * Setting.multiple]
 
 
 <MenuManager@ScreenManager>:
@@ -612,52 +626,11 @@
         MenuDialog:
             id: dialog
             mota: mota
-            idx: 128
+            idx: 128 #地图外
             idy: 128
             opacity: 0
             FloatLayout:
-        MenuLabel:
-            idx: -14.75
-            idy: -7
-            text: '↑'
-            fsize: 3
-            disabled: False #mota.hero.floor + 1 > mota.hero.floor_max
-            disabled_color: (0.75, 0.75, 0.75, 1)
-            on_touch_up:
-                self.state = 'normal'
-            on_release:
-                mota.floorlabel.text = str(mota.hero.floor_up)
-                mota.hero.stair = MazeBase.Value.Stair.up
-        MenuLabel:
-            idx: -14.75
-            idy: -10
-            text: '○'
-            fsize: 2.4
-            disabled: False
-            disabled_color: (0.75, 0.75, 0.75, 1)
-            on_touch_up:
-                self.state = 'normal'
-        MenuLabel:
-            idx: -14.75
-            idy: -13
-            text: '↓'
-            fsize: 3
-            disabled: False #mota.hero.floor - 1 < gmaze.herostate.floor
-            disabled_color: (0.75, 0.75, 0.75, 1)
-            on_touch_up:
-                self.state = 'normal'
-            on_release:
-                mota.floorlabel.text = str(mota.hero.floor_down)
-                mota.hero.stair = MazeBase.Value.Stair.down
-        MenuLabel:
-            idx: -14
-            idy: -14.5
-            text: '怪物'
-            fsize: 2
-            color: (1, 1, 1, 1)
-            #切换到怪物手册时更新怪物列表，可能需要排序
-            on_release:
-                root.current = 'monster-manual'
+        #MenuItem:
 
     Screen:
         name: 'setting-base'
@@ -964,7 +937,7 @@
                 rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
 
         GridLayout:
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            pos_hint: {'center_x': 0.75, 'center_y': 0.4}
             cols: 2
             row_default_height: 40 * Setting.multiple
             row_force_default: True
@@ -1004,6 +977,22 @@
                 name: 'key-green'
             MenuHeroLabel:
                 init: gmaze.herostate.key.bind(MazeBase.Value.Color.green, self)
+            MenuHeroImage:
+                name: 'item-pickaxe'
+            MenuHeroImage:
+                name: 'item-manual'
+                on_release:
+                    root.parent.manager.current = 'monster-manual' if root.parent.manager.current == 'mota' else 'mota'
+            MenuHeroImage:
+                name: 'item-upstair'
+                on_release:
+                    root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_up)
+                    root.parent.mota.hero.stair = MazeBase.Value.Stair.up
+            MenuHeroImage:
+                name: 'item-downstair'
+                on_release:
+                    root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_down)
+                    root.parent.mota.hero.stair = MazeBase.Value.Stair.down
 
 
 <MenuStory@ScreenManager>:
@@ -1038,6 +1027,7 @@
     manager: manager
     status: status
     story: story
+    mota: manager.mota
     statusbar: status.statusbar
     MenuHero:
         id: hero

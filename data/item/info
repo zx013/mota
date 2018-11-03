@@ -158,3 +158,13 @@ static = 3, 2
 name = 破墙镐
 file = other-02.png
 static = 1, 1
+
+[item-downstair]
+name = 下楼
+file = other-02.png
+static = 2, 2
+
+[item-upstair]
+name = 上楼
+file = other-02.png
+static = 2, 3
