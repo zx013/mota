@@ -1878,7 +1878,7 @@ class Maze:
         self.herobase.attack += self.herobase.base * self.herobase.boss_attack
         self.herobase.defence += self.herobase.base * self.herobase.boss_defence
 
-        for _ in range(3):
+        while True:
             try:
                 self.herostate.update('绘制迷宫。。。', reset=True)
                 for floor in range(self.herobase.floor_start, self.herobase.floor_end + 1):
@@ -1897,18 +1897,17 @@ class Maze:
                 self.set_item()
                 self.set_boss()
                 self.herostate.update('完成放置。。。', 5)
+                break
             except LoopException:
                 #生成异常时重新生成
                 print('loop reset')
                 self.herostate.update('生成失败。。。')
-                continue
             '''
             except Exception as ex:
                 print('reset :', ex)
                 self.herostate.update('生成失败。。。')
                 continue
             '''
-            break
 
         self.update_monster()
 

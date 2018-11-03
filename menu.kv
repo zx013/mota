@@ -18,7 +18,7 @@
 
     #调节配置中的size时不影响菜单
     ssize: 0.8 * (Setting.size + 2) * Setting.multiple
-    pos_temp: {'center_x': Setting.pos_rx(self.idx), 'center_y': Setting.pos_ry(self.idy)}
+    pos_temp: {'center_x': self.idx / 32 + 0.5, 'center_y': self.idy / 32 + 0.5}
 
     #根据地图大小动态变化的大小和位置，需要单独使用self.text，否则会为空
     pos_hint: self.pos_temp
@@ -45,11 +45,12 @@
     idy: 0
     name: ''
 
-    pos_hint: Setting.pos_hint(self.idx, self.idy)
+    pos_hint: {'center_x': self.idx / 32 + 0.5, 'center_y': self.idy / 32 + 0.5}
     size: (Setting.pos_realx, Setting.pos_realx)
     size_hint: (None, None)
     texture: Texture.next(self.name)
     allow_stretch: True
+
 
 <MenuParameter@FloatLayout>:
     idx: 0
@@ -192,7 +193,7 @@
             rgba: (0.96, 0.96, 0.96, 1)
         Line:
             width: 1.5 * Setting.multiple
-            rounded_rectangle: (Setting.pos_x(root.idx - 0.5) - (Setting.row_show - 1) / Setting.row_show * Setting.row_size / 2 - 1.5 * Setting.multiple, Setting.pos_y(root.idy + 7.5) - 3 / Setting.row_show * Setting.row_size / 2 - 1.5 * Setting.multiple, (Setting.row_show - 1) / Setting.row_show * Setting.row_size + 3 * Setting.multiple, 3 / Setting.row_show * Setting.row_size + 3 * Setting.multiple, Setting.size * Setting.multiple) if root.idy is not None else (0, 0, 0, 0, 0)
+            rounded_rectangle: (0.05 * Setting.row_size, (0.7 - 0.31 * self.index) * Setting.col_size, 0.9 * Setting.row_size, 0.25 * Setting.col_size, Setting.size * Setting.multiple)
     MenuImage:
         idx: root.idx - 12.25
         idy: root.idy + 7.5
@@ -330,7 +331,7 @@
     MenuLabel:
         id: page_prev
         idx: -12
-        idy: -14.5
+        idy: -15
         text: '上一页'
         fsize: 2.5
         disabled: root.page <= 0
@@ -345,7 +346,7 @@
     MenuLabel:
         id: page_next
         idx: 12
-        idy: -14.5
+        idy: -15
         text: '下一页'
         fsize: 2.5
         disabled: (root.page + 1) * root.number >= len(root.monster_list)
@@ -359,7 +360,7 @@
             page_prev.color = self.default_color
     MenuLabel:
         idx: 0
-        idy: -14.75
+        idy: -15
         text: '返 回'
         fsize: 2
         on_touch_up:
@@ -387,13 +388,19 @@
         Color:
             rgba: (1, 1, 0, 1)
         Line:
-            width: 1.5 * Setting.multiple
+            width: root.l
             rounded_rectangle: (Setting.pos_x(root.idx - 4) - Setting.pos_realx / 2 - 1.5 * Setting.multiple, Setting.pos_y(root.idy + 1.5) - Setting.pos_realx / 2 - 1.5 * Setting.multiple, Setting.pos_realx + 3 * Setting.multiple, Setting.pos_realx + 3 * Setting.multiple, 5 * Setting.multiple)
         Color:
             rgba: (0.96, 0.96, 0.96, 1)
         Line:
-            width: 1.5 * Setting.multiple
-            rounded_rectangle: (Setting.pos_x(root.idx) - 5 / Setting.row_show * Setting.row_size / 2 - 1.5 * Setting.multiple, Setting.pos_y(root.idy) - 3 / Setting.row_show * Setting.row_size / 2 - 1.5 * Setting.multiple, 5 / Setting.row_show * Setting.row_size + 3 * Setting.multiple, 3 / Setting.row_show * Setting.row_size + 3 * Setting.multiple, Setting.size * Setting.multiple)
+            width: root.l
+            rounded_rectangle: (Setting.pos_x(root.idx) - root.w / 2 - root.l, Setting.pos_y(root.idy) - root.h / 2 - root.l, root.w, root.h, Setting.size * Setting.multiple)
+        Color:
+            rgba: (0.96, 0.96, 0.96, 0.1)
+        RoundedRectangle:
+            pos: (Setting.pos_x(root.idx) - root.w / 2 - root.l, Setting.pos_y(root.idy) - root.h / 2 - root.l)
+            size: (root.w, root.h)
+            radius: [Setting.size * Setting.multiple]
     MenuImage:
         idx: root.idx - 4
         idy: root.idy + 1.5
@@ -479,6 +486,9 @@
             self.state = 'normal'
         on_release:
             root.dialog_end()
+
+
+<MenuItem@FloatLayout>:
 
 
 <MenuManager@ScreenManager>:
@@ -924,6 +934,7 @@
 
 
 <MenuHeroLabel@MenuLabel>:
+    fsize: 2.5
     pos_hint: {}
     disabled: True
 
@@ -953,7 +964,7 @@
                 rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
 
         GridLayout:
-            pos_hint: {'center_x': 0.75, 'center_y': 0.5}
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
             cols: 2
             row_default_height: 40 * Setting.multiple
             row_force_default: True
@@ -1016,9 +1027,10 @@
             Line:
                 width: root.offset / 3 if root.offset else 1
                 rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
-        MenuLabel:
-            text: '任务列表'
-            disabled: True
+        PageLayout:
+            MenuLabel:
+                text: '任务列表'
+                disabled: True
 
 
 <MenuLayout>:

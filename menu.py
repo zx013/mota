@@ -59,6 +59,10 @@ class MenuLayout(FloatLayout):
 
 #三行分别为7, 10, 10个中文字符
 class MenuDialog(FloatLayout):
+    l = 1.5 * Setting.multiple #线条宽度
+    w = 0.4 * Setting.row_size + 2 * l #宽度
+    h = 0.25 * Setting.row_size + 2 * l #高度
+
     dialog = []
     person = {}
 
@@ -108,8 +112,8 @@ class MenuDialog(FloatLayout):
             self.role_label.text = ' '.join(Config.config[key].get('name', '未知'))
             self.role_image.name = key
         z, x, y = pos
-        self.idx = 1.5 * (y - Setting.size / 2) - 0.75
-        self.idy = -1.0 * (x - Setting.size / 2) + 0.75
+        self.idx = (y - Setting.size / 2) - 0.75
+        self.idy = -(x - Setting.size / 2) + 0.75
         self.opacity = 1
         self.text = text
         self.page = 0

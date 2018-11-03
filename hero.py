@@ -70,14 +70,17 @@ class HeroStateDict(dict):
         self.count(color, value)
         self.__dict__[color] = value
         if color in self.__bind:
-            self.__bind[color].text = str(value)
+            for label in self.__bind[color]:
+                label.text = str(value)
 
     def set_color(self, color):
         for key, label in self.__bind.items():
             label.color = color
 
     def bind(self, color, label):
-        self.__bind[color] = label
+        if color not in self.__bind:
+            self.__bind[color] = []
+        self.__bind[color].append(label)
 
     def active(self):
         for color in self.__bind.keys():
@@ -135,23 +138,26 @@ class HeroState:
         self.count(name, value)
         self.__dict__[name] = value
         if name in self.__bind:
-            label = self.__bind[name]
             text = str(value)
             if name == 'floor':
                 text = '{} F'.format(text)
             elif name == 'health':
                 if value < 100:
-                    label.color = (1, 0, 0, 1) #红色
+                    color = (1, 0, 0, 1) #红色
                 elif value < 200:
-                    label.color = (1, 0.5, 0, 1) #橙色
+                    color = (1, 0.5, 0, 1) #橙色
                 elif value < 500:
-                    label.color = (1, 1, 0.5, 1) #浅黄
+                    color = (1, 1, 0.5, 1) #浅黄
                 elif value < 2000:
-                    label.color = (0.5, 1, 0.5, 1) #浅绿
+                    color = (0.5, 1, 0.5, 1) #浅绿
                 else:
-                    label.color = (0, 1, 0, 1) #绿色
+                    color = (0, 1, 0, 1) #绿色
             #左右对齐使长度固定
-            label.text = text
+            for label in self.__bind[name]:
+                label.text = text
+                if name == 'health':
+                    label.color = color
+    
         elif name == 'wall':
             color = self.get_color(value)
             for key, label in self.__bind.items():
@@ -193,7 +199,9 @@ class HeroState:
         self.progress = progress
 
     def bind(self, name, label):
-        self.__bind[name] = label
+        if name not in self.__bind:
+            self.__bind[name] = []
+        self.__bind[name].append(label)
 
     #所有bind之后，使用active激活，使初始化时能够显示数字，在bind中直接设置会导致后续设置和开始的重叠
     def active(self):
