@@ -40,16 +40,44 @@
     color: self.select_color if self.state == 'down' else self.default_color
 
 
-<MenuImage@ToggleButtonBehavior+Image>:
+<MenuImage@ToggleButtonBehavior+FloatLayout>:
     idx: 0
     idy: 0
     name: ''
+    text: ''
+    price: 0
+    color: (1, 1, 1, 1) #不同品质不同颜色
+    outline_width: 1
+    canvas:
+        Color:
+            rgba: self.color
+        Line:
+            width: Setting.multiple
+            rounded_rectangle: (self.x - 2 * Setting.multiple, self.y - 2 * Setting.multiple, self.width + 4 * Setting.multiple, self.height + 4 * Setting.multiple, 8 * Setting.multiple)
 
     pos_hint: {'center_x': self.idx / 32 + 0.5, 'center_y': self.idy / 32 + 0.5}
-    size: (Setting.pos_realx, Setting.pos_realx)
+    size: (Setting.pos_real, Setting.pos_real)
     size_hint: (None, None)
-    texture: Texture.next(self.name)
     allow_stretch: True
+
+    Image:
+        texture: Texture.next(root.name)
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        size: (Setting.pos_real, Setting.pos_real)
+        allow_stretch: True
+    Label: #数量
+        text: root.text
+        pos_hint: {'center_x': 0.85, 'center_y': 0.85}
+        font_name: Setting.font_path
+        font_size: 20 * Setting.multiple
+        color: root.color
+        outline_width: root.outline_width
+    Label: #倒计时，价格
+        text: '' if root.price == 0 else str(root.price)
+        pos_hint: {'center_x': 0.5, 'center_y': 0.05}
+        font_size: 12 * Setting.multiple
+        color: root.color
+        outline_width: root.outline_width
 
 
 <MenuParameter@FloatLayout>:
@@ -386,11 +414,6 @@
     page_exit: page_exit
     canvas:
         Color:
-            rgba: (1, 1, 0, 1)
-        Line:
-            width: root.l
-            rounded_rectangle: (Setting.pos_x(root.idx - 4) - Setting.pos_realx / 2 - 1.5 * Setting.multiple, Setting.pos_y(root.idy + 1.5) - Setting.pos_realx / 2 - 1.5 * Setting.multiple, Setting.pos_realx + 3 * Setting.multiple, Setting.pos_realx + 3 * Setting.multiple, 5 * Setting.multiple)
-        Color:
             rgba: (0.96, 0.96, 0.96, 1)
         Line:
             width: root.l
@@ -405,12 +428,13 @@
         idx: root.idx - 4
         idy: root.idy + 1.5
         name: 'ground'
-        size: (Setting.pos_realx + 2, Setting.pos_realx + 2)
+        size: (Setting.pos_realx, Setting.pos_realx)
     MenuImage:
         id: role_image
         idx: root.idx - 4
         idy: root.idy + 1.5
         name: root.name
+        size: (Setting.pos_realx, Setting.pos_realx)
     MenuLabel:
         id: role_label
         idx: root.idx + 1.5
@@ -488,21 +512,32 @@
             root.dialog_end()
 
 
-<MenuItem@FloatLayout>:
-    idx: 0
-    idy: 0
+<MenuItemBoard@GridLayout>:
+    psize: (0, 0)
+    pwidth: self.psize[0]
+    pheight: self.psize[1]
+    space: 10 * Setting.multiple
+    spacing: (self.space, self.space)
+    rows: int((self.pheight - 4 * self.space) / (Setting.pos_real + self.space))
+    cols: int((self.pwidth - 4 * self.space) / (Setting.pos_real + self.space))
+
+    pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+    width: self.cols * Setting.pos_real + (self.cols - 1) * self.space
+    height: self.rows * Setting.pos_real + (self.rows - 1) * self.space
+    size_hint: (None, None)
     canvas:
         Color:
-            rgba: (0.96, 0.96, 0.96, 1)
+            rgba: Setting.rgb(255, 255, 255, 255) #Setting.rgb(118, 77, 57, 255)
         Line:
-            width: 1.5 * Setting.multiple
-            rounded_rectangle: (0.1 * Setting.row_size, 0.1 * Setting.col_size, 0.8 * Setting.row_size, 0.3 * Setting.col_size, Setting.size * Setting.multiple)
+            width: 2 * Setting.multiple
+            rounded_rectangle: (self.space, self.space, self.pwidth - 2 * self.space, self.pheight - 2 * self.space, 2 * self.space) if self.space else (0, 0, 0, 0, 0)
         Color:
-            rgba: (0.96, 0.96, 0.96, 0.1)
+            rgba: Setting.rgb(255, 255, 255, 0) #Setting.rgb(249, 205, 173, 255) #Setting.rgb(147, 224, 255, 255)
         RoundedRectangle:
-            pos: (0.1 * Setting.row_size, 0.1 * Setting.col_size)
-            size: (0.8 * Setting.row_size, 0.3 * Setting.col_size)
-            radius: [Setting.size * Setting.multiple]
+            pos: (self.space, self.space) if self.space else (0, 0)
+            size: (self.pwidth - 2 * self.space, self.pheight - 2 * self.space) if self.space else (0, 0)
+            radius: [2 * self.space] if self.space else [0]
+
 
 
 <MenuManager@ScreenManager>:
@@ -617,8 +652,10 @@
         name: 'mota'
         on_pre_enter:
             root.parent.hero.current = 'hero'
+            root.parent.item.current = 'item'
             root.parent.status.current = 'status'
             root.parent.story.current = 'story'
+            root.parent.message.current = 'message'
         Mota:
             id: mota
             dialog: dialog
@@ -630,7 +667,7 @@
             idy: 128
             opacity: 0
             FloatLayout:
-        #MenuItem:
+        MenuItemBoard:
 
     Screen:
         name: 'setting-base'
@@ -911,31 +948,18 @@
     pos_hint: {}
     disabled: True
 
-<MenuHeroImage@MenuImage>:
-    pos_hint: {}
-    size: (Setting.pos_real, Setting.pos_real)
-
 <MenuHero@ScreenManager>:
     transition: FadeTransition()
     size_hint: (None, None)
 
-    offset: Setting.multiple * 10
     Screen:
         name: 'welcome'
-        canvas:
-            Line:
-                width: root.offset / 3 if root.offset else 1
-                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
-        MenuLabel:
-            text: '测试1'
-            disabled: True
+        MenuItemBoard:
+            psize: root.size
     Screen:
         name: 'hero'
-        canvas:
-            Line:
-                width: root.offset / 3 if root.offset else 1
-                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
-
+        MenuItemBoard:
+            psize: root.size
         GridLayout:
             pos_hint: {'center_x': 0.75, 'center_y': 0.4}
             cols: 2
@@ -961,34 +985,44 @@
                 text: '经验: '
             MenuHeroLabel:
                 init: gmaze.herostate.bind('experience', self)
-            MenuHeroImage:
+
+
+<MenuItem@ScreenManager>:
+    transition: FadeTransition()
+    size_hint: (None, None)
+
+    Screen:
+        name: 'welcome'
+        MenuItemBoard:
+            psize: root.size
+    Screen:
+        name: 'item'
+        MenuItemBoard:
+            psize: root.size
+            MenuImage:
                 name: 'key-yellow'
-            MenuHeroLabel:
                 init: gmaze.herostate.key.bind(MazeBase.Value.Color.yellow, self)
-            MenuHeroImage:
+            MenuImage:
                 name: 'key-blue'
-            MenuHeroLabel:
                 init: gmaze.herostate.key.bind(MazeBase.Value.Color.blue, self)
-            MenuHeroImage:
+            MenuImage:
                 name: 'key-red'
-            MenuHeroLabel:
                 init: gmaze.herostate.key.bind(MazeBase.Value.Color.red, self)
-            MenuHeroImage:
+            MenuImage:
                 name: 'key-green'
-            MenuHeroLabel:
                 init: gmaze.herostate.key.bind(MazeBase.Value.Color.green, self)
-            MenuHeroImage:
+            MenuImage:
                 name: 'item-pickaxe'
-            MenuHeroImage:
+            MenuImage:
                 name: 'item-manual'
                 on_release:
                     root.parent.manager.current = 'monster-manual' if root.parent.manager.current == 'mota' else 'mota'
-            MenuHeroImage:
+            MenuImage:
                 name: 'item-upstair'
                 on_release:
                     root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_up)
                     root.parent.mota.hero.stair = MazeBase.Value.Stair.up
-            MenuHeroImage:
+            MenuImage:
                 name: 'item-downstair'
                 on_release:
                     root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_down)
@@ -1000,39 +1034,49 @@
     size_hint: (None, None)
     statusbar: self.parent.statusbar
 
-    offset: Setting.multiple * 10
     Screen:
         name: 'welcome'
-        canvas:
-            Line:
-                width: root.offset / 3 if root.offset else 1
-                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
-        MenuLabel:
-            text: '测试2'
-            disabled: True
+        MenuItemBoard:
+            psize: root.size
     Screen:
         name: 'story'
-        canvas:
-            Line:
-                width: root.offset / 3 if root.offset else 1
-                rounded_rectangle: (root.offset, root.offset, root.width - 2 * root.offset, root.height - 2 * root.offset, 2 * root.offset) if root.offset else (0, 0, 0, 0, 0)
-        PageLayout:
-            MenuLabel:
-                text: '任务列表'
-                disabled: True
+        MenuItemBoard:
+            psize: root.size
+
+
+<MenuMessage@ScreenManager>:
+    transition: FadeTransition()
+    size_hint: (None, None)
+
+    Screen:
+        name: 'welcome'
+        MenuItemBoard:
+            psize: root.size
+    Screen:
+        name: 'message'
+        MenuItemBoard:
+            psize: root.size
 
 
 <MenuLayout>:
     hero: hero
+    item: item
     manager: manager
     status: status
     story: story
+    message: message
     mota: manager.mota
     statusbar: status.statusbar
+
+    height: (1 + Setting.status_size) * Setting.col_size
     MenuHero:
         id: hero
+        pos: (0, root.height / 2)
+        size: (Setting.offset, root.height / 2)
+    MenuItem:
+        id: item
         pos: (0, 0)
-        size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
+        size: (Setting.offset, root.height / 2)
     MenuManager:
         id: manager
         pos: (Setting.offset, Setting.status_size * Setting.col_size)
@@ -1043,5 +1087,9 @@
         size: (Setting.row_size, Setting.status_size * Setting.col_size)
     MenuStory:
         id: story
+        pos: (Setting.offset + Setting.row_size, root.height / 2)
+        size: (Setting.offset, root.height / 2)
+    MenuMessage:
+        id: message
         pos: (Setting.offset + Setting.row_size, 0)
-        size: (Setting.offset, (1 + Setting.status_size) * Setting.col_size)
+        size: (Setting.offset, root.height / 2)

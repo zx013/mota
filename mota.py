@@ -53,10 +53,9 @@ with open('mota.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
 
 
-class MotaImage(Image): pass
 class MotaLayer(FloatLayout):
     def add(self, i, j, texture=None):
-        image = MotaImage()
+        image = Image(size=(Setting.pos_real, Setting.pos_real), size_hint=(None, None), allow_stretch=True)
         image.texture = texture
         image.size = (Setting.pos_real + 1, Setting.pos_real + 1)
         image.pos = (j * Setting.pos_real, (Setting.col_show - i - 1) * Setting.pos_real)

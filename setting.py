@@ -99,7 +99,7 @@ class Setting:
     base = 10 #Store.load('base', 10)
 
     #迷宫的大小，最小为3，最大不限，正常11，太大影响性能，最好为奇数
-    size = 13 #Store.load('size', 11)
+    size = 11 #Store.load('size', 11)
 
     #放缩倍数
     multiple = 1.0
@@ -112,6 +112,10 @@ class Setting:
 
     #较小的图片
     pos_small = pos_size / 2
+
+    @staticmethod
+    def rgb(*rgb):
+        return tuple(map(lambda x: x / 255, rgb))
 
     #最终大小
     @classproperty

@@ -283,6 +283,8 @@ class Hero:
             elif self.floor == floor - 1: #上楼
                 if MazeBase.Value.Stair.down in stair:
                     return True
+        elif self.maze.is_initial_floor(floor - 1):
+            return True
         return False
 
     @property
