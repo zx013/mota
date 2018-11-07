@@ -7,10 +7,11 @@ from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.animation import Animation
 from kivy.lang import Builder
 
-from setting import Setting
+from setting import Setting, MazeBase
 from cache import Config
 
 from random import random
@@ -20,6 +21,24 @@ with open('menu.kv', 'r', encoding='utf-8') as fp:
 
 
 class MenuLabel(ToggleButtonBehavior, Label): pass
+class MenuImage(ToggleButtonBehavior, FloatLayout):
+    def on_touch_down(self, touch):
+        if not self.collide_point(*touch.pos):
+            return False
+        if not touch.is_double_tap:
+            for image in self.parent.children:
+                image.selected = False
+            self.selected = True
+        else:
+            opened = self.opened
+            for image in self.parent.children:
+                image.opened = False
+                image.exit += 1
+            if not opened:
+                self.enter += 1
+                if self.used:
+                    for k, v in self.attribute.items():
+                        print(k, v)
 
 class MenuWelcomeLabel(MenuLabel):
     def __init__(self, **kwargs):
@@ -51,6 +70,35 @@ class MenuStatusLabel(MenuLabel):
         self.anim = Animation(x=0) + Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=-offset) + Animation(x=0, duration=0)
         self.anim.repeat = True
         self.anim.start(self)
+
+class MenuItemBoard(GridLayout):
+    def __init__(self, **kwargs):
+        super(MenuItemBoard, self).__init__(**kwargs)
+
+class MenuShop(FloatLayout):
+    def __init__(self, **kwargs):
+        super(MenuShop, self).__init__(**kwargs)
+        #python3中似乎是按顺序的
+        self.item_info = {'gem-attack-small': {'number': 10, 'price': 20}, 'gem-attack-big': {'number': 3, 'price': 50}, 'gem-defence-small': {'number': 8, 'price': 15}, 'gem-defence-big': {'number': 5, 'price': 40}, 'sword-silver': {'number': 1, 'price': 150}, 'potion-red': {'number': 20, 'price': 10}, 'key-yellow': {'number': 3, 'price': 20}}
+        self.select = None
+
+    def update(self):
+        for name, info in self.item_info.items():
+            if 'image' not in info:
+                image = MenuImage()
+                self.board.add_widget(image)
+                info['image'] = image
+            else:
+                image = info['image']
+            image.name = name
+            image.number = info.get('number', 1)
+            image.price = info['price']
+            image.used = True
+            image.attribute = MazeBase.get_attribute(name)
+            image.attribute['price'] =info['price']
+
+            if image.number == 0:
+                self.board.remove_widget(image)
 
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):

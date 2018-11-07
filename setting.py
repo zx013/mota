@@ -113,6 +113,7 @@ class Setting:
     #较小的图片
     pos_small = pos_size / 2
 
+    #转换rgb格式
     @staticmethod
     def rgb(*rgb):
         return tuple(map(lambda x: x / 255, rgb))
@@ -301,7 +302,7 @@ class MazeBase:
 
             attack = 33
             defence = 34
-            
+
             sword = 35
             shield = 36
 
@@ -385,3 +386,144 @@ class MazeBase:
         road_normal = 3
         road_corner = 4
         Road = (road_normal, road_corner)
+
+    @staticmethod
+    def get_key(pos_data):
+        pos_type, pos_value = pos_data
+
+        if pos_type == MazeBase.Type.Static.init:
+            pos_key = 'ground'
+        elif pos_type == MazeBase.Type.Static.ground:
+            pos_key = 'ground'
+        elif pos_type == MazeBase.Type.Static.wall:
+            pos_key = 'wall-{:0>2}'.format(pos_value)
+        elif pos_type == MazeBase.Type.Static.stair:
+            if pos_value == MazeBase.Value.Stair.down:
+                pos_key = 'stair-down'
+            elif pos_value == MazeBase.Value.Stair.up:
+                pos_key = 'stair-up'
+        elif pos_type == MazeBase.Type.Static.door:
+            if pos_value == MazeBase.Value.Color.yellow:
+                pos_key = 'door-yellow'
+            elif pos_value == MazeBase.Value.Color.blue:
+                pos_key = 'door-blue'
+            elif pos_value == MazeBase.Value.Color.red:
+                pos_key = 'door-red'
+            elif pos_value == MazeBase.Value.Color.green:
+                pos_key = 'door-green'
+        elif pos_type == MazeBase.Type.Item.key:
+            if pos_value == MazeBase.Value.Color.yellow:
+                pos_key = 'key-yellow'
+            elif pos_value == MazeBase.Value.Color.blue:
+                pos_key = 'key-blue'
+            elif pos_value == MazeBase.Value.Color.red:
+                pos_key = 'key-red'
+            elif pos_value == MazeBase.Value.Color.green:
+                pos_key = 'key-green'
+        elif pos_type == MazeBase.Type.Item.attack:
+            if pos_value == MazeBase.Value.Gem.small:
+                pos_key = 'gem-attack-small'
+            elif pos_value == MazeBase.Value.Gem.big:
+                pos_key = 'gem-attack-big'
+        elif pos_type == MazeBase.Type.Item.defence:
+            if pos_value == MazeBase.Value.Gem.small:
+                pos_key = 'gem-defence-small'
+            elif pos_value == MazeBase.Value.Gem.big:
+                pos_key = 'gem-defence-big'
+        elif pos_type == MazeBase.Type.Item.sword:
+            if pos_value == MazeBase.Value.Weapon.iron:
+                pos_key = 'sword-iron'
+            elif pos_value == MazeBase.Value.Weapon.silver:
+                pos_key = 'sword-silver'
+            elif pos_value == MazeBase.Value.Weapon.stone:
+                pos_key = 'sword-stone'
+            elif pos_value == MazeBase.Value.Weapon.gem:
+                pos_key = 'sword-gem'
+            elif pos_value == MazeBase.Value.Weapon.sacred:
+                pos_key = 'sword-sacred'
+        elif pos_type == MazeBase.Type.Item.shield:
+            if pos_value == MazeBase.Value.Weapon.iron:
+                pos_key = 'shield-iron'
+            elif pos_value == MazeBase.Value.Weapon.silver:
+                pos_key = 'shield-silver'
+            elif pos_value == MazeBase.Value.Weapon.stone:
+                pos_key = 'shield-stone'
+            elif pos_value == MazeBase.Value.Weapon.gem:
+                pos_key = 'shield-gem'
+            elif pos_value == MazeBase.Value.Weapon.sacred:
+                pos_key = 'shield-sacred'
+        elif pos_type == MazeBase.Type.Item.potion:
+            if pos_value == MazeBase.Value.Potion.red:
+                pos_key = 'potion-red'
+            elif pos_value == MazeBase.Value.Potion.blue:
+                pos_key = 'potion-blue'
+            elif pos_value == MazeBase.Value.Potion.yellow:
+                pos_key = 'potion-yellow'
+            elif pos_value == MazeBase.Value.Potion.green:
+                pos_key = 'potion-green'
+        elif pos_type == MazeBase.Type.Item.holy:
+            pos_key = 'holy'
+        elif pos_type == MazeBase.Type.Item.other:
+            pos_key = 'item-{}'.format(pos_value)
+        elif pos_type == MazeBase.Type.Active.monster:
+            pos_key = '-'.join(pos_value)
+        elif pos_type == MazeBase.Type.Active.npc:
+            pos_key = 'npc-{}'.format(pos_value)
+
+        return pos_key
+
+    @staticmethod
+    def get_attribute(pos_key):
+        attribute = {'key': {}}
+
+        if pos_key == 'key-yellow':
+            attribute['key'][MazeBase.Value.Color.yellow] = 1
+        elif pos_key == 'key-blue':
+            attribute['key'][MazeBase.Value.Color.blue] = 1
+        elif pos_key == 'key-red':
+            attribute['key'][MazeBase.Value.Color.red] = 1
+        elif pos_key == 'key-green':
+            attribute['key'][MazeBase.Value.Color.green] = 1
+        elif pos_key == 'gem-attack-small':
+            attribute['attack'] = MazeBase.Value.Gem.small
+        elif pos_key == 'gem-attack-big':
+            attribute['attack'] = MazeBase.Value.Gem.big
+        elif pos_key == 'gem-defence-small':
+            attribute['defence'] = MazeBase.Value.Gem.small
+        elif pos_key == 'gem-defence-big':
+            attribute['defence'] = MazeBase.Value.Gem.big
+        elif pos_key == 'sword-iron':
+            attribute['attack'] = MazeBase.Value.Weapon.iron
+        elif pos_key == 'sword-silver':
+            attribute['attack'] = MazeBase.Value.Weapon.silver
+        elif pos_key == 'sword-stone':
+            attribute['attack'] = MazeBase.Value.Weapon.stone
+        elif pos_key == 'sword-gem':
+            attribute['attack'] = MazeBase.Value.Weapon.gem
+        elif pos_key == 'sword-sacred':
+            attribute['attack'] = MazeBase.Value.Weapon.sacred
+        elif pos_key == 'shield-iron':
+            attribute['defence'] = MazeBase.Value.Weapon.iron
+        elif pos_key == 'shield-silver':
+            attribute['defence'] = MazeBase.Value.Weapon.silver
+        elif pos_key == 'shield-stone':
+            attribute['defence'] = MazeBase.Value.Weapon.stone
+        elif pos_key == 'shield-gem':
+            attribute['defence'] = MazeBase.Value.Weapon.gem
+        elif pos_key == 'shield-sacred':
+            attribute['defence'] = MazeBase.Value.Weapon.sacred
+        elif pos_key == 'potion-red':
+            attribute['health'] = MazeBase.Value.Potion.red
+        elif pos_key == 'potion-blue':
+            attribute['health'] = MazeBase.Value.Potion.blue
+        elif pos_key == 'potion-yellow':
+            attribute['health'] = MazeBase.Value.Potion.yellow
+        elif pos_key == 'potion-green':
+            attribute['health'] = MazeBase.Value.Potion.green
+        elif pos_key == 'holy':
+            attribute['health'] = MazeBase.Type.Item.holy
+        elif pos_key.startswith('item-'):
+            attribute['item'] = pos_key.split('-')[1]
+
+        return attribute
+

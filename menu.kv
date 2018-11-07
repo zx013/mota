@@ -15,6 +15,7 @@
     idy: 0
     text: ''
     fsize: 4
+    outline: False
 
     #调节配置中的size时不影响菜单
     ssize: 0.8 * (Setting.size + 2) * Setting.multiple
@@ -39,15 +40,29 @@
     default_color: (1, 1, 1, 1)
     color: self.select_color if self.state == 'down' else self.default_color
 
+    canvas:
+        Color:
+            rgba: self.color if self.outline else (0, 0, 0, 0)
+        Line:
+            width: 2 * Setting.multiple
+            rounded_rectangle: (self.x, self.y, self.texture_size[0], self.texture_size[1], 8 * Setting.multiple)
 
-<MenuImage@ToggleButtonBehavior+FloatLayout>:
+
+<MenuImage>:
     idx: 0
     idy: 0
     name: ''
     text: ''
-    price: 0
+    number: 1
+    price: -1
     color: (1, 1, 1, 1) #不同品质不同颜色
     outline_width: 1
+    selected: False
+    opened: False #是否打开页面
+    used: False
+    attribute: {}
+    enter: 0
+    exit: 0
     canvas:
         Color:
             rgba: self.color
@@ -65,15 +80,20 @@
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
         size: (Setting.pos_real, Setting.pos_real)
         allow_stretch: True
+    Image:
+        texture: Texture.next('select') if root.selected else Texture.next('empty')
+        pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+        size: (Setting.pos_real, Setting.pos_real)
+        allow_stretch: True
     Label: #数量
-        text: root.text
+        text: root.text if root.text else str(root.number)
         pos_hint: {'center_x': 0.85, 'center_y': 0.85}
         font_name: Setting.font_path
         font_size: 20 * Setting.multiple
         color: root.color
         outline_width: root.outline_width
     Label: #倒计时，价格
-        text: '' if root.price == 0 else str(root.price)
+        text: '' if root.price < 0 else str(root.price)
         pos_hint: {'center_x': 0.5, 'center_y': 0.05}
         font_size: 12 * Setting.multiple
         color: root.color
@@ -512,32 +532,58 @@
             root.dialog_end()
 
 
-<MenuItemBoard@GridLayout>:
+<MenuItemBoard>:
     psize: (0, 0)
+    rsize: (0, 0)
     pwidth: self.psize[0]
     pheight: self.psize[1]
+    rwidth: self.rsize[0]
+    rheight: self.rsize[1]
+
     space: 10 * Setting.multiple
     spacing: (self.space, self.space)
-    rows: int((self.pheight - 4 * self.space) / (Setting.pos_real + self.space))
-    cols: int((self.pwidth - 4 * self.space) / (Setting.pos_real + self.space))
+    rows: int((self.rheight - 4 * self.space) / (Setting.pos_real + self.space))
+    cols: int((self.rwidth - 4 * self.space) / (Setting.pos_real + self.space))
 
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     width: self.cols * Setting.pos_real + (self.cols - 1) * self.space
     height: self.rows * Setting.pos_real + (self.rows - 1) * self.space
     size_hint: (None, None)
+    offset_x: self.pwidth * self.pos_hint['center_x'] - self.rwidth / 2
+    offset_y: self.pheight * self.pos_hint['center_y'] - self.rheight / 2
     canvas:
         Color:
             rgba: Setting.rgb(255, 255, 255, 255) #Setting.rgb(118, 77, 57, 255)
         Line:
             width: 2 * Setting.multiple
-            rounded_rectangle: (self.space, self.space, self.pwidth - 2 * self.space, self.pheight - 2 * self.space, 2 * self.space) if self.space else (0, 0, 0, 0, 0)
+            rounded_rectangle: (self.space + self.offset_x, self.space + self.offset_y, self.rwidth - 2 * self.space, self.rheight - 2 * self.space, 2 * self.space) if self.space else (0, 0, 0, 0, 0)
         Color:
-            rgba: Setting.rgb(255, 255, 255, 0) #Setting.rgb(249, 205, 173, 255) #Setting.rgb(147, 224, 255, 255)
+            rgba: Setting.rgb(255, 255, 255, 255)
+        Line:
+            width: Setting.multiple
+            rounded_rectangle: (self.space + self.offset_x + (self.rwidth - self.width - 3.5 * self.space) / 2, self.space + self.offset_y + (self.rheight - self.height - 3.5 * self.space) / 2, self.width + 1.5 * self.space, self.height + 1.5 * self.space, self.space) if self.space else (0, 0, 0, 0, 0)
+        Color:
+            rgba: Setting.rgb(255, 255, 255, 25) #Setting.rgb(249, 205, 173, 255) #Setting.rgb(147, 224, 255, 255)
         RoundedRectangle:
-            pos: (self.space, self.space) if self.space else (0, 0)
-            size: (self.pwidth - 2 * self.space, self.pheight - 2 * self.space) if self.space else (0, 0)
+            pos: (self.space + self.offset_x, self.space + self.offset_y) if self.space else (0, 0)
+            size: (self.rwidth - 2 * self.space, self.rheight - 2 * self.space) if self.space else (0, 0)
             radius: [2 * self.space] if self.space else [0]
 
+
+<MenuShop>:
+    size: (0, 0)
+    size_hint: (None, None)
+    board: board
+    init: self.update()
+    MenuLabel:
+        text: '商店'
+        pos_hint: {'center_x': 0.5, 'center_y': 0.55}
+        outline: True
+    MenuItemBoard:
+        id: board
+        psize: root.size
+        rsize: (0.9 * root.width, 0.4 * root.height)
+        pos_hint: {'center_x': 0.5, 'center_y': 0.3}
 
 
 <MenuManager@ScreenManager>:
@@ -667,7 +713,8 @@
             idy: 128
             opacity: 0
             FloatLayout:
-        MenuItemBoard:
+        MenuShop:
+            size: root.size
 
     Screen:
         name: 'setting-base'
@@ -956,10 +1003,12 @@
         name: 'welcome'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
     Screen:
         name: 'hero'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
         GridLayout:
             pos_hint: {'center_x': 0.75, 'center_y': 0.4}
             cols: 2
@@ -995,10 +1044,12 @@
         name: 'welcome'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
     Screen:
         name: 'item'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
             MenuImage:
                 name: 'key-yellow'
                 init: gmaze.herostate.key.bind(MazeBase.Value.Color.yellow, self)
@@ -1015,16 +1066,19 @@
                 name: 'item-pickaxe'
             MenuImage:
                 name: 'item-manual'
-                on_release:
-                    root.parent.manager.current = 'monster-manual' if root.parent.manager.current == 'mota' else 'mota'
+                on_enter:
+                    root.parent.manager.current = 'monster-manual'
+                    self.opened = True
+                on_exit:
+                    root.parent.manager.current = 'mota'
             MenuImage:
                 name: 'item-upstair'
-                on_release:
+                on_enter:
                     root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_up)
                     root.parent.mota.hero.stair = MazeBase.Value.Stair.up
             MenuImage:
                 name: 'item-downstair'
-                on_release:
+                on_enter:
                     root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_down)
                     root.parent.mota.hero.stair = MazeBase.Value.Stair.down
 
@@ -1038,10 +1092,12 @@
         name: 'welcome'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
     Screen:
         name: 'story'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
 
 
 <MenuMessage@ScreenManager>:
@@ -1052,10 +1108,12 @@
         name: 'welcome'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
     Screen:
         name: 'message'
         MenuItemBoard:
             psize: root.size
+            rsize: root.size
 
 
 <MenuLayout>:

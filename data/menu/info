@@ -25,3 +25,7 @@ size = 128, 128
 [frame-purplered]
 file = frame-purplered.png
 size = 128, 128
+
+[select]
+file = select.png
+size = 32, 32
