@@ -13,6 +13,7 @@ from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config
+from maze import gmaze
 
 from random import random
 
@@ -37,8 +38,27 @@ class MenuImage(ToggleButtonBehavior, FloatLayout):
             if not opened:
                 self.enter += 1
                 if self.used:
-                    for k, v in self.attribute.items():
-                        print(k, v)
+                    herostate = gmaze.herostate
+                    used = True
+                    for key, data in self.attribute.items():
+                        if key == 'key':
+                            for k, v in data.items():
+                                if herostate.key[k] + v < 0:
+                                    used = False
+                        else:
+                            if getattr(herostate, key) + data < 0:
+                                used = False
+                    if used:
+                        for key, data in self.attribute.items():
+                            if key == 'key':
+                                for k, v in data.items():
+                                    herostate.key[k] += v
+                            else:
+                                setattr(herostate, key, getattr(herostate, key) + data)
+                        self.number -= 1
+                        if self.number == 0:
+                            self.parent.remove_widget(self)
+        return True
 
 class MenuWelcomeLabel(MenuLabel):
     def __init__(self, **kwargs):
@@ -95,10 +115,7 @@ class MenuShop(FloatLayout):
             image.price = info['price']
             image.used = True
             image.attribute = MazeBase.get_attribute(name)
-            image.attribute['price'] =info['price']
-
-            if image.number == 0:
-                self.board.remove_widget(image)
+            image.attribute['gold'] = -info['price']
 
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
