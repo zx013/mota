@@ -91,9 +91,6 @@ class MenuStatusLabel(MenuLabel):
         self.anim.repeat = True
         self.anim.start(self)
 
-class MenuItemBoard(GridLayout):
-    def __init__(self, **kwargs):
-        super(MenuItemBoard, self).__init__(**kwargs)
 
 class MenuShop(FloatLayout):
     window = None
@@ -129,7 +126,7 @@ class MenuShop(FloatLayout):
         if not self.window:
             self.window = self.parent
         self.window.remove_widget(self)
-        
+
 
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):

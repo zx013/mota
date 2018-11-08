@@ -44,7 +44,7 @@
         Color:
             rgba: self.color if self.outline else (0, 0, 0, 0)
         Line:
-            width: 2 * Setting.multiple
+            width: Setting.multiple
             rounded_rectangle: (self.x, self.y, self.texture_size[0], self.texture_size[1], 8 * Setting.multiple)
 
 
@@ -535,7 +535,7 @@
             root.close()
 
 
-<MenuItemBoard>:
+<MenuItemBoard@GridLayout>:
     psize: (0, 0)
     rsize: (0, 0)
     pwidth: self.psize[0]
@@ -560,17 +560,45 @@
         Line:
             width: 2 * Setting.multiple
             rounded_rectangle: (self.space + self.offset_x, self.space + self.offset_y, self.rwidth - 2 * self.space, self.rheight - 2 * self.space, 2 * self.space) if self.space else (0, 0, 0, 0, 0)
-        Color:
-            rgba: Setting.rgb(255, 255, 255, 255)
-        Line:
-            width: Setting.multiple
-            rounded_rectangle: (self.space + self.offset_x + (self.rwidth - self.width - 3.5 * self.space) / 2, self.space + self.offset_y + (self.rheight - self.height - 3.5 * self.space) / 2, self.width + 1.5 * self.space, self.height + 1.5 * self.space, self.space) if self.space else (0, 0, 0, 0, 0)
+        #Color:
+        #    rgba: Setting.rgb(255, 255, 255, 255)
+        #Line:
+        #    width: Setting.multiple
+        #    rounded_rectangle: (self.space + self.offset_x + (self.rwidth - self.width - 3.5 * self.space) / 2, self.space + self.offset_y + (self.rheight - self.height - 3.5 * self.space) / 2, self.width + 1.5 * self.space, self.height + 1.5 * self.space, self.space) if self.space else (0, 0, 0, 0, 0)
         Color:
             rgba: Setting.rgb(255, 255, 255, 25) #Setting.rgb(249, 205, 173, 255) #Setting.rgb(147, 224, 255, 255)
         RoundedRectangle:
             pos: (self.space + self.offset_x, self.space + self.offset_y) if self.space else (0, 0)
             size: (self.rwidth - 2 * self.space, self.rheight - 2 * self.space) if self.space else (0, 0)
             radius: [2 * self.space] if self.space else [0]
+
+
+<MenuInfoLabel@Label>:
+    height: self.texture_size[1] #宽度是固定的
+    size_hint: (None, None)
+    text_size: (self.width - 16 * Setting.multiple, None)
+    font_size: 16 * Setting.multiple
+    font_name: Setting.font_path
+    halign: 'left'
+
+
+<MenuInfoBoard@RecycleView>:
+    viewclass: 'MenuInfoLabel'
+    pos: (16 * Setting.multiple, 24 * Setting.multiple)
+    size: (self.parent.width - 32 * Setting.multiple, self.parent.height - 48 * Setting.multiple)
+    size_hint: (None, None)
+
+    data: []
+    text: ''
+    color: (1, 1, 1, 1)
+    on_text: #设置相同值时不会触发
+        self.data.append({'text': self.text, 'color': self.color})
+
+    RecycleBoxLayout:
+        default_size_hint: (1, None)
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
 
 
 <MenuShop>:
@@ -705,10 +733,14 @@
             root.parent.status.current = 'status'
             root.parent.story.current = 'story'
             root.parent.message.current = 'message'
+            root.parent.info.text = '欢迎来到无尽的魔塔。'
+            root.parent.info.color = (1, 0, 0, 1)
+            root.parent.info.text = '欢迎再次来到无尽的魔塔。'
         Mota:
             id: mota
             dialog: dialog
             shop: shop
+            info: root.parent.info
             statusbar: root.parent.statusbar
         MenuDialog:
             id: dialog
@@ -1016,7 +1048,7 @@
         GridLayout:
             pos_hint: {'center_x': 0.75, 'center_y': 0.4}
             cols: 2
-            row_default_height: 40 * Setting.multiple
+            row_default_height: 32 * Setting.multiple
             row_force_default: True
             MenuHeroLabel:
                 text: '生命: '
@@ -1114,6 +1146,7 @@
 <MenuMessage@ScreenManager>:
     transition: FadeTransition()
     size_hint: (None, None)
+    info: info
 
     Screen:
         name: 'welcome'
@@ -1125,6 +1158,8 @@
         MenuItemBoard:
             psize: root.size
             rsize: root.size
+        MenuInfoBoard:
+            id: info
 
 
 <MenuLayout>:
@@ -1135,6 +1170,7 @@
     story: story
     message: message
     mota: manager.mota
+    info: message.info
     statusbar: status.statusbar
 
     height: (1 + Setting.status_size) * Setting.col_size
