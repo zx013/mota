@@ -67,7 +67,7 @@ class MenuWelcomeLabel(MenuLabel):
         self.text = Setting.status_text
 
         offset = Setting.row_size + self.texture_size[0]
-        anim = Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=0, duration=0)
+        anim = Animation(x=Setting.row_size) + Animation(x=-offset, duration=offset / Setting.status_speed) + Animation(x=Setting.row_size, duration=0)
         anim.repeat = True
         anim.start(self)
 

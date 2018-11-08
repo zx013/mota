@@ -591,8 +591,9 @@
     data: []
     text: ''
     color: (1, 1, 1, 1)
-    on_text: #设置相同值时不会触发
+    on_text:
         self.data.append({'text': self.text, 'color': self.color})
+        self.scroll_y = 0
 
     RecycleBoxLayout:
         default_size_hint: (1, None)
@@ -1160,6 +1161,7 @@
             rsize: root.size
         MenuInfoBoard:
             id: info
+            data: [{'text': str(i) * 50, 'color': (1, 1, 1, 1)} for i in range(10)]
 
 
 <MenuLayout>:
