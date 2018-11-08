@@ -197,7 +197,8 @@ class Mota(FocusBehavior, FloatLayout):
 
         scene = gmaze.story.check(pos) #有剧情则开启对话
         if scene:
-            self.dialog.dialog_start(self.hero.pos, pos, scene)
+            self.dialog.start(self.hero.pos, pos, scene)
+            self.dialog.open()
 
         if pos_type == MazeBase.Type.Static.wall:
             return False

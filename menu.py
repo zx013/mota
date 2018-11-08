@@ -56,7 +56,7 @@ class MenuImage(ToggleButtonBehavior, FloatLayout):
                             else:
                                 setattr(herostate, key, getattr(herostate, key) + data)
                         self.number -= 1
-                        if self.number == 0:
+                        if self.number <= 0:
                             self.parent.remove_widget(self)
         return True
 
@@ -96,26 +96,40 @@ class MenuItemBoard(GridLayout):
         super(MenuItemBoard, self).__init__(**kwargs)
 
 class MenuShop(FloatLayout):
-    def __init__(self, **kwargs):
-        super(MenuShop, self).__init__(**kwargs)
-        #python3中似乎是按顺序的
-        self.item_info = {'gem-attack-small': {'number': 10, 'price': 20}, 'gem-attack-big': {'number': 3, 'price': 50}, 'gem-defence-small': {'number': 8, 'price': 15}, 'gem-defence-big': {'number': 5, 'price': 40}, 'sword-silver': {'number': 1, 'price': 150}, 'potion-red': {'number': 20, 'price': 10}, 'key-yellow': {'number': 3, 'price': 20}}
-        self.select = None
+    window = None
 
     def update(self):
-        for name, info in self.item_info.items():
-            if 'image' not in info:
-                image = MenuImage()
-                self.board.add_widget(image)
-                info['image'] = image
-            else:
-                image = info['image']
-            image.name = name
-            image.number = info.get('number', 1)
-            image.price = info['price']
-            image.used = True
-            image.attribute = MazeBase.get_attribute(name)
-            image.attribute['gold'] = -info['price']
+        self.add('gem-attack-small', 10, 20)
+        self.add('gem-attack-big', 3, 50)
+        self.add('gem-defence-small', 8, 15)
+        self.add('gem-defence-big', 5, 40)
+        self.add('sword-silver', 1, 150)
+        self.add('potion-red', 5, 10)
+        self.add('key-yellow', 3, 20)
+
+    def add(self, name, number, price):
+        image = MenuImage()
+        image.name = name
+        image.number = number
+        image.price = price
+        image.used = True
+        image.attribute = MazeBase.get_attribute(name)
+        image.attribute['gold'] = -price
+        self.board.add_widget(image)
+
+    def on_touch_up(self, touch):
+        return True
+
+    def open(self):
+        if not self.window:
+            self.window = self.parent
+        self.window.add_widget(self)
+
+    def close(self):
+        if not self.window:
+            self.window = self.parent
+        self.window.remove_widget(self)
+        
 
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
@@ -130,38 +144,32 @@ class MenuDialog(FloatLayout):
 
     dialog = []
     person = {}
+    window = None
 
     def on_touch_up(self, touch):
-        if self.mota.operate:
-            return False
         super(MenuDialog, self).on_touch_down(touch)
-        if self.page_prev.collide_point(*touch.pos):
-            return False
-        if self.page_next.collide_point(*touch.pos):
-            return False
-        if self.page_enter.collide_point(*touch.pos):
-            return False
-        if self.page_exit.collide_point(*touch.pos):
-            return False
 
         if self.page < len(self.pages) - 1:
             self.page += 1
             self.show()
         elif not self.update():
-            self.dialog_end()
+            self.close()
         return True
 
-    def dialog_start(self, pos1, pos2, scene):
-        self.mota.operate = False
+    def open(self):
+        if not self.window:
+            self.window = self.parent
+        self.window.add_widget(self)
+
+    def close(self):
+        if not self.window:
+            self.window = self.parent
+        self.window.remove_widget(self)
+
+    def start(self, pos1, pos2, scene):
         self.dialog = list(scene.dialog)
         self.person = {1: (pos1[0], pos1[1] - 3 * (pos2[1] - pos1[1]), pos1[2] - 3 * (pos2[2] - pos1[2])), 2: pos2}
         self.update()
-
-    def dialog_end(self):
-        self.idx = 128
-        self.idy = 128
-        self.opacity = 0
-        self.mota.operate = True
 
     def update(self):
         if len(self.dialog) == 0:
@@ -179,7 +187,6 @@ class MenuDialog(FloatLayout):
         z, x, y = pos
         self.idx = (y - Setting.size / 2) - 0.75
         self.idy = -(x - Setting.size / 2) + 0.75
-        self.opacity = 1
         self.text = text
         self.page = 0
         self.split()

@@ -521,7 +521,7 @@ class MazeBase:
         elif pos_key == 'potion-green':
             attribute['health'] = MazeBase.Value.Potion.green
         elif pos_key == 'holy':
-            attribute['health'] = MazeBase.Type.Item.holy
+            attribute['health'] = 2000
         elif pos_key.startswith('item-'):
             attribute['item'] = pos_key.split('-')[1]
 

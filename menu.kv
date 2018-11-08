@@ -57,12 +57,13 @@
     price: -1
     color: (1, 1, 1, 1) #不同品质不同颜色
     outline_width: 1
-    selected: False
+    static: False
+    selected: False #是否选中
     opened: False #是否打开页面
-    used: False
+    used: False #物品是否能够使用
     attribute: {}
-    enter: 0
-    exit: 0
+    enter: 0 #触发进入页面动作
+    exit: 0 #触发退出页面动作
     canvas:
         Color:
             rgba: self.color
@@ -81,19 +82,19 @@
         size: (Setting.pos_real, Setting.pos_real)
         allow_stretch: True
     Image:
-        texture: Texture.next('select') if root.selected else Texture.next('empty')
+        texture: Texture.next('select') if not root.static and root.selected else Texture.next('empty')
         pos_hint: {'center_x': 0.5, 'center_y': 0.5}
         size: (Setting.pos_real, Setting.pos_real)
         allow_stretch: True
     Label: #数量
-        text: root.text if root.text else str(root.number)
+        text: '' if root.static else root.text if root.text else str(root.number)
         pos_hint: {'center_x': 0.85, 'center_y': 0.85}
         font_name: Setting.font_path
         font_size: 20 * Setting.multiple
         color: root.color
         outline_width: root.outline_width
     Label: #倒计时，价格
-        text: '' if root.price < 0 else str(root.price)
+        text: '' if root.static or root.price < 0 else str(root.price)
         pos_hint: {'center_x': 0.5, 'center_y': 0.05}
         font_size: 12 * Setting.multiple
         color: root.color
@@ -448,12 +449,14 @@
         idx: root.idx - 4
         idy: root.idy + 1.5
         name: 'ground'
+        static: True
         size: (Setting.pos_realx, Setting.pos_realx)
     MenuImage:
         id: role_image
         idx: root.idx - 4
         idy: root.idy + 1.5
         name: root.name
+        static: True
         size: (Setting.pos_realx, Setting.pos_realx)
     MenuLabel:
         id: role_label
@@ -505,7 +508,7 @@
         on_touch_up:
             self.state = 'normal'
         on_release:
-            root.dialog_end() if not root.update() else None
+            root.close() if not root.update() else None
     MenuLabel:
         id: page_next
         idx: root.idx + 4.5
@@ -529,7 +532,7 @@
         on_touch_up:
             self.state = 'normal'
         on_release:
-            root.dialog_end()
+            root.close()
 
 
 <MenuItemBoard>:
@@ -705,16 +708,17 @@
         Mota:
             id: mota
             dialog: dialog
+            shop: shop
             statusbar: root.parent.statusbar
         MenuDialog:
             id: dialog
             mota: mota
-            idx: 128 #地图外
-            idy: 128
-            opacity: 0
-            FloatLayout:
+            init: self.close()
         MenuShop:
+            id: shop
+            mota: mota
             size: root.size
+            init: self.close()
 
     Screen:
         name: 'setting-base'
@@ -1063,14 +1067,19 @@
                 name: 'key-green'
                 init: gmaze.herostate.key.bind(MazeBase.Value.Color.green, self)
             MenuImage:
-                name: 'item-pickaxe'
-            MenuImage:
                 name: 'item-manual'
                 on_enter:
                     root.parent.manager.current = 'monster-manual'
                     self.opened = True
                 on_exit:
                     root.parent.manager.current = 'mota'
+            MenuImage:
+                name: 'shop-blue'
+                on_enter:
+                    root.parent.mota.shop.open()
+                    self.opened = True
+                on_exit:
+                    root.parent.mota.shop.close()
             MenuImage:
                 name: 'item-upstair'
                 on_enter:
@@ -1081,6 +1090,8 @@
                 on_enter:
                     root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_down)
                     root.parent.mota.hero.stair = MazeBase.Value.Stair.down
+            MenuImage:
+                name: 'item-pickaxe'
 
 
 <MenuStory@ScreenManager>:
