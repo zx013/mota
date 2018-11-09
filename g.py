@@ -14,6 +14,9 @@ class Global:
             return None
         self.__dict__[name] = value
 
+if 'gmota' not in dir():
+    gmota = Global()
+
 if 'gmaze' not in dir():
     gmaze = Global()
 

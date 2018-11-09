@@ -45,7 +45,7 @@ from setting import Setting, MazeBase
 from cache import Config, Texture, Music
 from hero import Opacity
 from state import State
-from g import gmaze, ginfo, gstatusbar
+from g import gmota, gmaze, ginfo, gstatusbar
 
 from functools import partial
 
@@ -71,6 +71,8 @@ class Mota(FocusBehavior, FloatLayout):
 
     def __init__(self, **kwargs):
         super(Mota, self).__init__(**kwargs)
+
+        gmota.instance = self
         self.operate = True
         self.step = 0
         #Music.background(init=True)

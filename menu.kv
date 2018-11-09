@@ -6,6 +6,7 @@
 #:import Mota mota.Mota
 #:import Tools tools.Tools
 #:import functools functools
+#:import gmota g.gmota
 #:import gmaze g.gmaze
 #:import ginfo g.ginfo
 
@@ -641,7 +642,6 @@
 
 
 <MenuManager@ScreenManager>:
-    mota: mota
     transition: FadeTransition()
     size_hint: (None, None)
 
@@ -727,7 +727,7 @@
                 self.state = 'normal'
             on_release:
                 root.current = 'mota'
-                mota.start()
+                gmota.start()
         MenuLabel:
             idx: 0
             idy: 0
@@ -737,7 +737,7 @@
                 self.state = 'normal'
             on_release:
                 root.current = 'mota'
-                mota.load()
+                gmota.load()
         MenuLabel:
             idx: 0
             idy: -4.5
@@ -761,16 +761,13 @@
             ginfo.update('欢迎来到无尽的魔塔。', 'warn')
             ginfo.update('欢迎来到无尽的魔塔。', 'secret')
         Mota:
-            id: mota
             dialog: dialog
             shop: shop
         MenuDialog:
             id: dialog
-            mota: mota
             init: self.close()
         MenuShop:
             id: shop
-            mota: mota
             size: root.size
             init: self.close()
 
@@ -1121,20 +1118,20 @@
             MenuImage:
                 name: 'shop-blue'
                 on_enter:
-                    root.parent.mota.shop.open()
+                    gmota.shop.open()
                     self.opened = True
                 on_exit:
-                    root.parent.mota.shop.close()
+                    gmota.shop.close()
             MenuImage:
                 name: 'item-upstair'
                 on_enter:
-                    root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_up)
-                    root.parent.mota.hero.stair = MazeBase.Value.Stair.up
+                    gmota.floorlabel.text = str(gmota.hero.floor_up)
+                    gmota.hero.stair = MazeBase.Value.Stair.up
             MenuImage:
                 name: 'item-downstair'
                 on_enter:
-                    root.parent.mota.floorlabel.text = str(root.parent.mota.hero.floor_down)
-                    root.parent.mota.hero.stair = MazeBase.Value.Stair.down
+                    gmota.floorlabel.text = str(gmota.hero.floor_down)
+                    gmota.hero.stair = MazeBase.Value.Stair.down
             MenuImage:
                 name: 'item-pickaxe'
 
@@ -1175,7 +1172,6 @@
     status: status
     story: story
     message: message
-    mota: manager.mota
 
     height: (1 + Setting.status_size) * Setting.col_size
     MenuHero:

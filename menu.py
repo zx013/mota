@@ -14,7 +14,7 @@ from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config
-from g import gmaze, ginfo, gstatusbar
+from g import gmota, gmaze, ginfo, gstatusbar
 
 from random import random
 
@@ -223,9 +223,9 @@ class MenuDialog(FloatLayout):
         pos = self.person[posd]
         if posd == 1:
             self.role_label.text = '勇 者'
-            self.role_image.name = self.mota.hero.name_show #texture = Texture.next(self.name)
+            self.role_image.name = gmota.hero.name_show #texture = Texture.next(self.name)
         else:
-            key = self.mota.get_key(pos)
+            key = gmota.get_key(pos)
             self.role_label.text = ' '.join(Config.config[key].get('name', '未知'))
             self.role_image.name = key
         z, x, y = pos
