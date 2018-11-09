@@ -136,9 +136,10 @@ class Mota(FocusBehavior, FloatLayout):
         if pos_type == MazeBase.Type.Active.monster:
             monster = gmaze.monster[pos_value[0]][pos_value[1]]
             damage = gmaze.get_damage(gmaze.herostate.attack, gmaze.herostate.defence, pos_value)
-            self.statusbar.text = '{}:    生命: {}  攻击: {}  防御: {}  伤害: {}'.format(name, monster['health'], monster['attack'], monster['defence'], damage)
+            text = '{}:    生命: {}  攻击: {}  防御: {}  伤害: {}'.format(name, monster['health'], monster['attack'], monster['defence'], damage)
         else:
-            self.statusbar.text = ':  '.join((name, help))
+            text = ':  '.join((name, help))
+        self.statusbar.update(text)
         return True
 
     def touch_hold(self, touch, dt):
@@ -192,6 +193,8 @@ class Mota(FocusBehavior, FloatLayout):
             return False
         pos_type = gmaze.get_type(pos)
         pos_value = gmaze.get_value(pos)
+        pos_key = self.get_key(pos)
+        pos_name = Config.config[pos_key].get('name', '未知')
         herobase = gmaze.herobase
         herostate = gmaze.herostate
 
@@ -200,7 +203,9 @@ class Mota(FocusBehavior, FloatLayout):
             self.dialog.start(self.hero.pos, pos, scene)
             self.dialog.open()
 
+        getitem = False
         if pos_type == MazeBase.Type.Static.wall:
+            self.info.update('你面前是一堵墙。')
             return False
         elif pos_type == MazeBase.Type.Static.stair:
             if pos_value == MazeBase.Value.Stair.down:
@@ -212,40 +217,52 @@ class Mota(FocusBehavior, FloatLayout):
             return True
         elif pos_type == MazeBase.Type.Static.door:
             if herostate.key[pos_value] == 0:
+                pos_key = pos_key.replace('door', 'key')
+                pos_name = Config.config[pos_key].get('name', '未知')
+                self.info.update('你没有{}。'.format(pos_name))
                 return False
             herostate.key[pos_value] -= 1
             self.hero.action.add(pos)
             Music.play('opendoor')
+            self.info.update('你打开了{}。'.format(pos_name))
             return False
         elif pos_type == MazeBase.Type.Item.key:
             herostate.key[pos_value] += 1
-            Music.play('getitem')
+            getitem = True
         elif pos_type == MazeBase.Type.Item.attack:
             herostate.attack += herobase.base * pos_value
-            Music.play('getitem')
+            getitem = True
         elif pos_type == MazeBase.Type.Item.defence:
             herostate.defence += herobase.base * pos_value
-            Music.play('getitem')
+            getitem = True
         elif pos_type == MazeBase.Type.Item.potion:
             herostate.health += herobase.base * pos_value
-            Music.play('getitem')
+            getitem = True
         elif pos_type == MazeBase.Type.Item.holy:
             herostate.health += herobase.base * pos_value
-            Music.play('getitem')
+            getitem = True
         elif pos_type == MazeBase.Type.Active.monster:
             monster = gmaze.get_monster(pos_value)
             damage = gmaze.get_damage(herostate.attack, herostate.defence, pos_value)
             if herostate.health <= damage:
+                self.info.update('你打不过这个怪物。')
                 return False
             herostate.health -= damage
             herostate.gold += monster['gold']
             herostate.experience += monster['experience']
             Music.play('blood') #获取剑后使用剑的声音和动画
+            self.info.update('你击败了{}，受到了{}点伤害。'.format(monster['name'], damage))
+            self.info.update('你获得了{}金钱，{}经验'.format(monster['gold'], monster['experience']))
             if pos_value[0] == 'boss':
                 gmaze.kill_boss(pos)
         elif pos_type == MazeBase.Type.Active.npc:
             print('meet npc:', pos_type, pos_value)
+            self.info.update('你遇见了{}。'.format(pos_name))
             return False
+
+        if getitem:
+            Music.play('getitem')            
+            self.info.update('你获得了{}。'.format(pos_name))
 
         herostate.record(pos_type, pos_value)
         gmaze.set_type(pos, MazeBase.Type.Static.ground)

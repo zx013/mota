@@ -8,6 +8,7 @@ from kivy.uix.image import Image
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.recycleview import RecycleView
 from kivy.animation import Animation
 from kivy.lang import Builder
 
@@ -126,6 +127,28 @@ class MenuShop(FloatLayout):
         if not self.window:
             self.window = self.parent
         self.window.remove_widget(self)
+
+
+class MenuInfoBoard(RecycleView):
+    def update(self, text, type='info'):
+        head_pool = {
+            'hint': '提示',
+            'warn': '警告',
+            'secret': '传闻'
+        }
+        head = head_pool.get(type)
+        if head:
+            text = '[{}]{}'.format(head, text)
+        default_color = (1, 1, 1, 1)
+        color_pool = {
+            'info': (1, 1, 1, 1),
+            'hint': (1, 1, 0, 1),
+            'warn': (1, 0, 0, 1),
+            'secret': (1, 0, 1, 1)
+        }
+        color = color_pool.get(type, default_color)
+        self.data.append({'text': text, 'color': color})
+        self.scroll_y = 0
 
 
 class MenuLayout(FloatLayout):

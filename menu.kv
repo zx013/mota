@@ -582,20 +582,15 @@
     halign: 'left'
 
 
-<MenuInfoBoard@RecycleView>:
+<MenuInfoBoard>:
     viewclass: 'MenuInfoLabel'
+    data: []
     pos: (16 * Setting.multiple, 24 * Setting.multiple)
     size: (self.parent.width - 32 * Setting.multiple, self.parent.height - 48 * Setting.multiple)
     size_hint: (None, None)
 
-    data: []
-    text: ''
-    color: (1, 1, 1, 1)
-    on_text:
-        self.data.append({'text': self.text, 'color': self.color})
-        self.scroll_y = 0
-
     RecycleBoxLayout:
+        default_size: (self.parent.width, None)
         default_size_hint: (1, None)
         size_hint_y: None
         height: self.minimum_height
@@ -734,9 +729,10 @@
             root.parent.status.current = 'status'
             root.parent.story.current = 'story'
             root.parent.message.current = 'message'
-            root.parent.info.text = '欢迎来到无尽的魔塔。'
-            root.parent.info.color = (1, 0, 0, 1)
-            root.parent.info.text = '欢迎再次来到无尽的魔塔。'
+            root.parent.info.update('欢迎来到无尽的魔塔。')
+            root.parent.info.update('欢迎来到无尽的魔塔。', 'hint')
+            root.parent.info.update('欢迎来到无尽的魔塔。', 'warn')
+            root.parent.info.update('欢迎来到无尽的魔塔。', 'secret')
         Mota:
             id: mota
             dialog: dialog
@@ -1022,7 +1018,6 @@
             #pos: (0, 0)
             #pos_hint: {}
             text: '长按显示详细信息'
-            on_text: self.update(self.text)
             fsize: 1.6
             disabled: True
 
