@@ -2056,9 +2056,6 @@ class Maze:
 
         return way
 
-global gmaze
-if 'gmaze' not in dir():
-    gmaze = Maze()
 
 if __name__ == '__main__':
     maze = Maze()

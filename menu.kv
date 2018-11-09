@@ -6,7 +6,8 @@
 #:import Mota mota.Mota
 #:import Tools tools.Tools
 #:import functools functools
-#:import gmaze maze.gmaze
+#:import gmaze g.gmaze
+#:import ginfo g.ginfo
 
 
 <MenuLabel@ToggleButtonBehavior+Label>:
@@ -573,6 +574,32 @@
             radius: [2 * self.space] if self.space else [0]
 
 
+<MenuTaskLabel@ToggleButtonBehavior+Label>:
+    height: self.texture_size[1] #宽度是固定的
+    size_hint: (None, None)
+    text_size: (self.width - 16 * Setting.multiple, None)
+    font_size: 16 * Setting.multiple
+    font_name: Setting.font_path
+    halign: 'left'
+    on_release:
+        print(self.text)
+
+
+<MenuTaskBoard>:
+    viewclass: 'MenuTaskLabel'
+    data: []
+    pos: (16 * Setting.multiple, 24 * Setting.multiple)
+    size: (self.parent.width - 32 * Setting.multiple, self.parent.height - 48 * Setting.multiple)
+    size_hint: (None, None)
+
+    RecycleBoxLayout:
+        default_size: (self.parent.width, None)
+        default_size_hint: (1, None)
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+
+
 <MenuInfoLabel@Label>:
     height: self.texture_size[1] #宽度是固定的
     size_hint: (None, None)
@@ -729,16 +756,14 @@
             root.parent.status.current = 'status'
             root.parent.story.current = 'story'
             root.parent.message.current = 'message'
-            root.parent.info.update('欢迎来到无尽的魔塔。')
-            root.parent.info.update('欢迎来到无尽的魔塔。', 'hint')
-            root.parent.info.update('欢迎来到无尽的魔塔。', 'warn')
-            root.parent.info.update('欢迎来到无尽的魔塔。', 'secret')
+            ginfo.update('欢迎来到无尽的魔塔。')
+            ginfo.update('欢迎来到无尽的魔塔。', 'hint')
+            ginfo.update('欢迎来到无尽的魔塔。', 'warn')
+            ginfo.update('欢迎来到无尽的魔塔。', 'secret')
         Mota:
             id: mota
             dialog: dialog
             shop: shop
-            info: root.parent.info
-            statusbar: root.parent.statusbar
         MenuDialog:
             id: dialog
             mota: mota
@@ -1002,7 +1027,6 @@
 <MenuStatus@ScreenManager>:
     transition: FadeTransition()
     size_hint: (None, None)
-    statusbar: statusbar
     Screen:
         name: 'welcome'
         MenuWelcomeLabel:
@@ -1014,7 +1038,6 @@
     Screen:
         name: 'status'
         MenuStatusLabel:
-            id: statusbar
             #pos: (0, 0)
             #pos_hint: {}
             text: '长按显示详细信息'
@@ -1033,9 +1056,6 @@
 
     Screen:
         name: 'welcome'
-        MenuItemBoard:
-            psize: root.size
-            rsize: root.size
     Screen:
         name: 'hero'
         MenuItemBoard:
@@ -1074,9 +1094,6 @@
 
     Screen:
         name: 'welcome'
-        MenuItemBoard:
-            psize: root.size
-            rsize: root.size
     Screen:
         name: 'item'
         MenuItemBoard:
@@ -1125,38 +1142,30 @@
 <MenuStory@ScreenManager>:
     transition: FadeTransition()
     size_hint: (None, None)
-    statusbar: self.parent.statusbar
 
     Screen:
         name: 'welcome'
-        MenuItemBoard:
-            psize: root.size
-            rsize: root.size
     Screen:
         name: 'story'
         MenuItemBoard:
             psize: root.size
             rsize: root.size
+        MenuTaskBoard:
+            data: [{'text': str(i) * 10} for i in range(10)]
 
 
 <MenuMessage@ScreenManager>:
     transition: FadeTransition()
     size_hint: (None, None)
-    info: info
 
     Screen:
         name: 'welcome'
-        MenuItemBoard:
-            psize: root.size
-            rsize: root.size
     Screen:
         name: 'message'
         MenuItemBoard:
             psize: root.size
             rsize: root.size
         MenuInfoBoard:
-            id: info
-            data: [{'text': str(i) * 50, 'color': (1, 1, 1, 1)} for i in range(10)]
 
 
 <MenuLayout>:
@@ -1167,8 +1176,6 @@
     story: story
     message: message
     mota: manager.mota
-    info: message.info
-    statusbar: status.statusbar
 
     height: (1 + Setting.status_size) * Setting.col_size
     MenuHero:

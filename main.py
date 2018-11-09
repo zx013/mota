@@ -62,6 +62,9 @@ else:
 
 
 from menu import MenuLayout
+from maze import Maze
+from g import gmaze
+gmaze.instance = Maze()
 
 class MotaApp(App):
     def build(self):

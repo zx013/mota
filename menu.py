@@ -14,16 +14,37 @@ from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config
-from maze import gmaze
+from g import gmaze, ginfo, gstatusbar
 
 from random import random
 
 with open('menu.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
 
-
 class MenuLabel(ToggleButtonBehavior, Label): pass
 class MenuImage(ToggleButtonBehavior, FloatLayout):
+    def use_item(self):
+        herostate = gmaze.herostate
+        used = True
+        for key, data in self.attribute.items():
+            if key == 'key':
+                for k, v in data.items():
+                    if herostate.key[k] + v < 0:
+                        used = False
+            else:
+                if getattr(herostate, key) + data < 0:
+                    used = False
+        if used:
+            for key, data in self.attribute.items():
+                if key == 'key':
+                    for k, v in data.items():
+                        herostate.key[k] += v
+                else:
+                    setattr(herostate, key, getattr(herostate, key) + data)
+            self.number -= 1
+            if self.number <= 0:
+                self.parent.remove_widget(self)
+
     def on_touch_down(self, touch):
         if not self.collide_point(*touch.pos):
             return False
@@ -31,6 +52,12 @@ class MenuImage(ToggleButtonBehavior, FloatLayout):
             for image in self.parent.children:
                 image.selected = False
             self.selected = True
+
+            key = self.name
+            name = Config.config[key].get('name', '未知')
+            help = Config.config[key].get('help', '未知')
+            text = ':  '.join((name, help))
+            gstatusbar.update(text)
         else:
             opened = self.opened
             for image in self.parent.children:
@@ -39,26 +66,7 @@ class MenuImage(ToggleButtonBehavior, FloatLayout):
             if not opened:
                 self.enter += 1
                 if self.used:
-                    herostate = gmaze.herostate
-                    used = True
-                    for key, data in self.attribute.items():
-                        if key == 'key':
-                            for k, v in data.items():
-                                if herostate.key[k] + v < 0:
-                                    used = False
-                        else:
-                            if getattr(herostate, key) + data < 0:
-                                used = False
-                    if used:
-                        for key, data in self.attribute.items():
-                            if key == 'key':
-                                for k, v in data.items():
-                                    herostate.key[k] += v
-                            else:
-                                setattr(herostate, key, getattr(herostate, key) + data)
-                        self.number -= 1
-                        if self.number <= 0:
-                            self.parent.remove_widget(self)
+                    self.use_item()
         return True
 
 class MenuWelcomeLabel(MenuLabel):
@@ -72,10 +80,13 @@ class MenuWelcomeLabel(MenuLabel):
         anim.repeat = True
         anim.start(self)
 
+
 class MenuStatusLabel(MenuLabel):
     def __init__(self, **kwargs):
         super(MenuStatusLabel, self).__init__(**kwargs)
         self.anim = None
+
+        gstatusbar.instance = self
 
     def update(self, text):
         self.pos = (0, 0)
@@ -129,7 +140,20 @@ class MenuShop(FloatLayout):
         self.window.remove_widget(self)
 
 
+
+class MenuTaskBoard(RecycleView):
+    def insert(self, text):
+        pass
+
+    def delete(self, text):
+        pass
+
+
 class MenuInfoBoard(RecycleView):
+    def __init__(self, **kwargs):
+        super(MenuInfoBoard, self).__init__(**kwargs)
+        ginfo.instance = self
+
     def update(self, text, type='info'):
         head_pool = {
             'hint': '提示',
