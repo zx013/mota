@@ -19,19 +19,6 @@
     outline_color: (0.25, 0.25, 0.25)
 
 
-<StateImage>:
-    idx: 0
-    idy: 0
-    offset: (0, 0)
-    name: ''
-
-    pos_hint: {'center_x': (self.idx * Setting.pos_size + self.offset[0]) * Setting.multiple / self.parent.width + 0.5, 'center_y': (self.idy * Setting.pos_size + self.offset[1]) * Setting.multiple / self.parent.height + 0.5} if self.parent else {}
-    size: (Setting.pos_real, Setting.pos_real)
-    size_hint: (None, None)
-    texture: Texture.next(self.name)
-    allow_stretch: True
-
-
 <State>:
     size: (Setting.row_size, Setting.col_size)
     size_hint: (None, None)

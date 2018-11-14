@@ -9,8 +9,6 @@ gmaze.instance = Maze()
 
 from kivy.uix.label import Label
 from kivy.uix.progressbar import ProgressBar
-from kivy.uix.videoplayer import VideoPlayer
-from threading import Thread
 
 from kivy.lang import Builder
 Builder.load_string('''
@@ -42,13 +40,5 @@ class Init(Label, ProgressBar):
         app.root = app.menu
         Window.add_widget(app.root)
 
-    def progress(self, dt=0):
-        print('step')
-        self.value += 1
-
     def load(self, *args):
-        print('init', args)
         Clock.schedule_once(self.init, 0)
-        
-        #t = Thread(target=self.init)
-        #t.start()

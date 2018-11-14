@@ -54,14 +54,24 @@ with open('mota.kv', 'r', encoding='utf-8') as fp:
 
 
 class MotaLayer(FloatLayout):
-    def add(self, i, j, texture=None):
+    def __init__(self, texture='', **kwargs):
+        super(MotaLayer, self).__init__(**kwargs)
+        self.texture = Texture.next(texture)
+
+    def add(self, i, j):
+        if self.image[i][j]:
+            return self.image[i][j]
         image = Image(size=(Setting.pos_real, Setting.pos_real), size_hint=(None, None), allow_stretch=True)
-        image.texture = texture
+        image.texture = self.texture
         image.size = (Setting.pos_real + 1, Setting.pos_real + 1)
         image.pos = (j * Setting.pos_real, (Setting.col_show - i - 1) * Setting.pos_real)
         self.image[i][j] = image
         self.add_widget(image)
         return image
+
+    def get(self, i, j):
+        self.add(i, j)
+        return self.image[i][j]
 
 class FloorLabel(Label): pass
 
@@ -79,23 +89,47 @@ class Mota(FocusBehavior, FloatLayout):
 
         self.state = State(gmaze.herostate) #状态显示
         self.floorlabel = FloorLabel()
-        self.front = MotaLayer()
+        self.front = MotaLayer('empty')
         self.middle = MotaLayer()
-        self.back = MotaLayer()
+        self.back = MotaLayer('ground')
 
         self.add_widget(self.back)
         self.add_widget(self.middle)
         self.add_widget(self.front)
         self.add_widget(self.floorlabel)
         self.add_widget(self.state)
-        for i in range(Setting.row_show):
-            for j in range(Setting.col_show):
-                self.front.add(i, j, Texture.next('empty'))
-                self.middle.add(i, j)
-                self.back.add(i, j, Texture.next('ground'))
 
         self.isstart = False
+        self.delay = self._delay_load()
+        self.delay_clock = Clock.schedule_interval(self.delay_load, 0)
         Clock.schedule_interval(self.show, Config.step)
+
+    #延迟加载
+    def _delay_load(self):
+        for i in range(Setting.row_show):
+            for j in range(Setting.col_show):
+                self.front.add(i, j)
+                self.middle.add(i, j)
+                self.back.add(i, j)
+                yield i, j
+
+        for i in range(Setting.row_show):
+            for j in range(Setting.col_show):
+                self.state.init_health(i, j)
+                self.state.init_attack(i, j)
+                self.state.init_defence(i, j)
+                self.state.init_damage(i, j)
+                yield
+
+    def delay_load(self, dt):
+        try:
+            result = self.delay.__next__()
+            if result is not None:
+                i, j = result
+                progress = (i * Setting.col_show + j + 1) / (Setting.row_show * Setting.col_show) * 100
+                gstatusbar.update('{:.2f}'.format(progress))
+        except:
+            Clock.unschedule(self.delay_clock)
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         if not self.operate:
@@ -291,15 +325,15 @@ class Mota(FocusBehavior, FloatLayout):
     #人物移动
     def show_hero(self):
         _, x, y = self.hero.old_pos
-        image = self.front.image[x][y]
+        image = self.front.get(x, y)
         image.texture = Texture.next('empty')
 
         _, x, y = self.hero.pos
-        image = self.front.image[x][y]
+        image = self.front.get(x, y)
         image.texture = Texture.next(self.hero.name, 'action', False)
 
         pos_key = self.get_key(self.hero.pos)
-        image = self.middle.image[x][y]
+        image = self.middle.get(x, y)
         image.texture = Texture.next(pos_key, 'dynamic')
 
     #点击移动
@@ -397,7 +431,7 @@ class Mota(FocusBehavior, FloatLayout):
                         static_texture[pos_key] = Texture.next(pos_key, pos_style)
                     texture = static_texture[pos_key]
 
-                pos_image = self.middle.image[i][j]
+                pos_image = self.middle.get(i, j)
                 if texture:
                     pos_image.texture = texture
                 else:
@@ -423,7 +457,7 @@ class Mota(FocusBehavior, FloatLayout):
     def load(self):
         gmaze.load()
         _, x, y = gmaze.maze_info[0]['init']
-        image = self.front.image[x][y]
+        image = self.front.get(x, y)
         image.texture = Texture.next('empty')
         self.hero = gmaze.hero
         self.isstart = True
