@@ -9,12 +9,13 @@ from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.recycleview import RecycleView
+from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.animation import Animation
 from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config
-from g import gmota, gmaze, ginfo, gstatusbar
+from g import gmota, gmaze, ginfo, gstatusbar, glayout
 
 from random import random
 
@@ -175,9 +176,45 @@ class MenuInfoBoard(RecycleView):
         self.scroll_y = 0
 
 
+class MenuScreen(ScreenManager): pass
+
+class MenuHero(MenuScreen): pass
+class MenuItem(MenuScreen): pass
+class MenuManager(MenuScreen): pass
+class MenuStatus(MenuScreen): pass
+class MenuStory(MenuScreen): pass
+class MenuMessage(MenuScreen): pass
+
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
         super(MenuLayout, self).__init__(**kwargs)
+        glayout.instance = self
+
+        self.height = (1 + Setting.status_size) * Setting.col_size
+
+        hero = MenuHero(pos=(0, self.height / 2), size=(Setting.offset, self.height / 2))
+        self.add_widget(hero)
+        self.hero = hero
+
+        item = MenuItem(pos=(0, 0), size=(Setting.offset, self.height / 2))
+        self.add_widget(item)
+        self.item = item
+
+        manager = MenuManager(pos=(Setting.offset, Setting.status_size * Setting.col_size), size=(Setting.row_size, Setting.col_size))
+        self.add_widget(manager)
+        self.manager = manager
+
+        status = MenuStatus(pos=(Setting.offset, 0), size=(Setting.row_size, Setting.status_size * Setting.col_size))
+        self.add_widget(status)
+        self.status = status
+
+        story = MenuStory(pos=(Setting.offset + Setting.row_size, self.height / 2), size=(Setting.offset, self.height / 2))
+        self.add_widget(story)
+        self.story = story
+
+        message = MenuMessage(pos=(Setting.offset + Setting.row_size, 0), size=(Setting.offset, self.height / 2))
+        self.add_widget(message)
+        self.message = message
 
 
 #三行分别为7, 10, 10个中文字符

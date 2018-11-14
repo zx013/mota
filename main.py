@@ -60,19 +60,13 @@ else:
     Setting.status_speed = 50
 #Window.fullscreen = True
 
-
-from menu import MenuLayout
-from maze import Maze
-from g import gmaze
-gmaze.instance = Maze()
+from init import Init
 
 class MotaApp(App):
     def build(self):
+        return Init(app=self)
         #javaclass = autoclass('com.test.JavaClass')
         #print(javaclass().show())
-
-        self.menu = MenuLayout() #MenuManager()
-        return self.menu
 
     def on_start(self):
         pass
