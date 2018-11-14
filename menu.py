@@ -138,6 +138,7 @@ class MenuShop(FloatLayout):
     def close(self):
         if not self.window:
             self.window = self.parent
+            self.parent.shop = self
         self.window.remove_widget(self)
 
 
@@ -176,14 +177,36 @@ class MenuInfoBoard(RecycleView):
         self.scroll_y = 0
 
 
-class MenuScreen(ScreenManager): pass
+import time
+class MenuInit:
+    def __init__(self, **kwargs):
+        tm1 = time.time()
+        super(MenuInit, self).__init__(**kwargs)
+        tm2 = time.time()
+        print('init', self.__class__.__name__, tm2 - tm1)
 
-class MenuHero(MenuScreen): pass
-class MenuItem(MenuScreen): pass
-class MenuManager(MenuScreen): pass
-class MenuStatus(MenuScreen): pass
-class MenuStory(MenuScreen): pass
-class MenuMessage(MenuScreen): pass
+
+class MenuScreen(MenuInit, Screen): pass
+
+class MenuManagerMain(MenuScreen): pass
+class MenuManagerStart(MenuScreen): pass
+class MenuManagerMota(MenuScreen): pass
+class MenuManagerSettingBase(MenuScreen): pass
+class MenuManagerSettingOperate(MenuScreen): pass
+class MenuManagerSettingSound(MenuScreen): pass
+class MenuManagerSettingOther(MenuScreen): pass
+class MenuManagerMonsterManual(MenuScreen): pass
+
+
+class MenuScreenManager(MenuInit, ScreenManager): pass
+
+class MenuHero(MenuScreenManager): pass
+class MenuItem(MenuScreenManager): pass
+class MenuManager(MenuScreenManager): pass
+class MenuStatus(MenuScreenManager): pass
+class MenuStory(MenuScreenManager): pass
+class MenuMessage(MenuScreenManager): pass
+
 
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
@@ -191,7 +214,10 @@ class MenuLayout(FloatLayout):
         glayout.instance = self
 
         self.height = (1 + Setting.status_size) * Setting.col_size
+        self.init_menu()
+        self.init_manager()
 
+    def init_menu(self):
         hero = MenuHero(pos=(0, self.height / 2), size=(Setting.offset, self.height / 2))
         self.add_widget(hero)
         self.hero = hero
@@ -215,6 +241,16 @@ class MenuLayout(FloatLayout):
         message = MenuMessage(pos=(Setting.offset + Setting.row_size, 0), size=(Setting.offset, self.height / 2))
         self.add_widget(message)
         self.message = message
+
+    def init_manager(self):
+        self.manager.add_widget(MenuManagerMain())
+        self.manager.add_widget(MenuManagerStart())
+        self.manager.add_widget(MenuManagerMota())
+        self.manager.add_widget(MenuManagerSettingBase())
+        self.manager.add_widget(MenuManagerSettingOperate())
+        self.manager.add_widget(MenuManagerSettingSound())
+        self.manager.add_widget(MenuManagerSettingOther())
+        self.manager.add_widget(MenuManagerMonsterManual())
 
 
 #三行分别为7, 10, 10个中文字符
@@ -245,6 +281,7 @@ class MenuDialog(FloatLayout):
     def close(self):
         if not self.window:
             self.window = self.parent
+            self.parent.dialog = self
         self.window.remove_widget(self)
 
     def start(self, pos1, pos2, scene):

@@ -644,7 +644,7 @@
         pos_hint: {'center_x': 0.5, 'center_y': 0.3}
 
 
-<MenuManagerMain@Screen>:
+<MenuManagerMain>:
     name: 'main'
     step: Setting.title_width / (len(Setting.title) - 1)
     title_x: [- Setting.title_width / 2 + n * self.step for n, c in enumerate(Setting.title)]
@@ -715,7 +715,7 @@
             EventLoop.exit()
 
 
-<MenuManagerStart@Screen>:
+<MenuManagerStart>:
     name: 'start'
     MenuLabel:
         idx: 0
@@ -748,7 +748,31 @@
             glayout.manager.current = 'main'
 
 
-<MenuManagerSettingBase@Screen>
+<MenuManagerMota>:
+    name: 'mota'
+    on_pre_enter:
+        glayout.hero.current = 'hero'
+        glayout.item.current = 'item'
+        glayout.status.current = 'status'
+        glayout.story.current = 'story'
+        glayout.message.current = 'message'
+        ginfo.update('欢迎来到无尽的魔塔。')
+        ginfo.update('欢迎来到无尽的魔塔。', 'hint')
+        ginfo.update('欢迎来到无尽的魔塔。', 'warn')
+        ginfo.update('欢迎来到无尽的魔塔。', 'secret')
+    Mota:
+        dialog: dialog
+        shop: shop
+    MenuDialog:
+        id: dialog
+        init: self.close()
+    MenuShop:
+        id: shop
+        size: glayout.manager.size
+        init: self.close()
+
+
+<MenuManagerSettingBase>
     name: 'setting-base'
 
     MenuSetting:
@@ -848,7 +872,7 @@
             on_release: Setting.show_damage = not Setting.show_damage
 
 
-<MenuManagerSettingOperate@Screen>:
+<MenuManagerSettingOperate>:
     name: 'setting-operate'
 
     MenuSetting:
@@ -905,7 +929,7 @@
         on_release: Setting.keyboard_wasd = False
 
 
-<MenuManagerSettingSound@Screen>:
+<MenuManagerSettingSound>:
     name: 'setting-sound'
 
     MenuSetting:
@@ -943,7 +967,7 @@
         max: 100
 
 
-<MenuManagerSettingOther@Screen>:
+<MenuManagerSettingOther>:
     name: 'setting-other'
 
     MenuSetting:
@@ -983,7 +1007,7 @@
         disabled: True
 
 
-<MenuManagerMonsterManual@Screen>:
+<MenuManagerMonsterManual>:
     name: 'monster-manual'
     on_pre_enter:
         monster_manual.monster_list = tuple(set(functools.reduce(lambda x, y: x + y, [[pos[1] for pos in row if pos[0] == MazeBase.Type.Active.monster] for row in gmaze.maze[gmaze.herostate.floor]])))
@@ -997,41 +1021,7 @@
         monster_list: ()
 
 
-<MenuManager>:
-    MenuManagerMain:
-    MenuManagerStart:
-
-    Screen:
-        name: 'mota'
-        on_pre_enter:
-            glayout.hero.current = 'hero'
-            glayout.item.current = 'item'
-            glayout.status.current = 'status'
-            glayout.story.current = 'story'
-            glayout.message.current = 'message'
-            ginfo.update('欢迎来到无尽的魔塔。')
-            ginfo.update('欢迎来到无尽的魔塔。', 'hint')
-            ginfo.update('欢迎来到无尽的魔塔。', 'warn')
-            ginfo.update('欢迎来到无尽的魔塔。', 'secret')
-        Mota:
-            dialog: dialog
-            shop: shop
-        MenuDialog:
-            id: dialog
-            init: self.close()
-        MenuShop:
-            id: shop
-            size: root.size
-            init: self.close()
-
-    MenuManagerSettingBase:
-    MenuManagerSettingOperate:
-    MenuManagerSettingSound:
-    MenuManagerSettingOther:
-    MenuManagerMonsterManual:
-
-
-<MenuScreen>:
+<MenuScreenManager>:
     transition: FadeTransition()
     size_hint: (None, None)
 

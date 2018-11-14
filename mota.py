@@ -71,8 +71,8 @@ class Mota(FocusBehavior, FloatLayout):
 
     def __init__(self, **kwargs):
         super(Mota, self).__init__(**kwargs)
-
         gmota.instance = self
+
         self.operate = True
         self.step = 0
         #Music.background(init=True)
@@ -263,7 +263,7 @@ class Mota(FocusBehavior, FloatLayout):
             return False
 
         if getitem:
-            Music.play('getitem')            
+            Music.play('getitem')
             ginfo.update('你获得了{}。'.format(pos_name))
 
         herostate.record(pos_type, pos_value)
