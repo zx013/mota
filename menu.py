@@ -164,7 +164,7 @@ class MenuInfoBoard(RecycleView):
         }
         head = head_pool.get(type)
         if head:
-            text = '[{}]{}'.format(head, text)
+            text = '[{}] {}'.format(head, text)
         default_color = (1, 1, 1, 1)
         color_pool = {
             'info': (1, 1, 1, 1),

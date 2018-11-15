@@ -31,7 +31,7 @@
 
     #字体
     font_size: self.fsize * self.ssize
-    font_name: Setting.font_path
+    font_name: Setting.font_path_01
 
     #是否被选中，初始化状态
     selected: False
@@ -92,7 +92,7 @@
     Label: #数量
         text: '' if root.static else root.text if root.text else str(root.number)
         pos_hint: {'center_x': 0.85, 'center_y': 0.85}
-        font_name: Setting.font_path
+        font_name: Setting.font_path_01
         font_size: 20 * Setting.multiple
         color: root.color
         outline_width: root.outline_width
@@ -550,8 +550,8 @@
 
     space: 10 * Setting.multiple
     spacing: (self.space, self.space)
-    rows: int((self.rheight - 4 * self.space) / (Setting.pos_real + self.space))
-    cols: int((self.rwidth - 4 * self.space) / (Setting.pos_real + self.space))
+    rows: int((self.rheight - 2 * self.space) / (Setting.pos_real + self.space))
+    cols: int((self.rwidth - 2 * self.space) / (Setting.pos_real + self.space))
 
     pos_hint: {'center_x': 0.5, 'center_y': 0.5}
     width: self.cols * Setting.pos_real + (self.cols - 1) * self.space
@@ -563,8 +563,8 @@
         Color:
             rgba: Setting.rgb(255, 255, 255, 255) #Setting.rgb(118, 77, 57, 255)
         Line:
-            width: 2 * Setting.multiple
-            rounded_rectangle: (self.space + self.offset_x, self.space + self.offset_y, self.rwidth - 2 * self.space, self.rheight - 2 * self.space, 2 * self.space) if self.space else (0, 0, 0, 0, 0)
+            width: 1.5 * Setting.multiple
+            rounded_rectangle: (0.5 * self.space + self.offset_x, 0.5 * self.space + self.offset_y, self.rwidth - self.space, self.rheight - self.space, 2 * self.space) if self.space else (0, 0, 0, 0, 0)
         #Color:
         #    rgba: Setting.rgb(255, 255, 255, 255)
         #Line:
@@ -573,8 +573,8 @@
         Color:
             rgba: Setting.rgb(255, 255, 255, 25) #Setting.rgb(249, 205, 173, 255) #Setting.rgb(147, 224, 255, 255)
         RoundedRectangle:
-            pos: (self.space + self.offset_x, self.space + self.offset_y) if self.space else (0, 0)
-            size: (self.rwidth - 2 * self.space, self.rheight - 2 * self.space) if self.space else (0, 0)
+            pos: (0.5 * self.space + self.offset_x, 0.5 * self.space + self.offset_y) if self.space else (0, 0)
+            size: (self.rwidth - self.space, self.rheight - self.space) if self.space else (0, 0)
             radius: [2 * self.space] if self.space else [0]
 
 
@@ -582,8 +582,8 @@
     height: self.texture_size[1] #宽度是固定的
     size_hint: (None, None)
     text_size: (self.width - 16 * Setting.multiple, None)
-    font_size: 16 * Setting.multiple
-    font_name: Setting.font_path
+    font_size: 12 * Setting.multiple
+    font_name: Setting.font_path_02
     halign: 'left'
     on_release:
         print(self.text)
@@ -592,8 +592,8 @@
 <MenuTaskBoard>:
     viewclass: 'MenuTaskLabel'
     data: []
-    pos: (16 * Setting.multiple, 24 * Setting.multiple)
-    size: (self.parent.width - 32 * Setting.multiple, self.parent.height - 48 * Setting.multiple)
+    pos: (8 * Setting.multiple, 20 * Setting.multiple)
+    size: (self.parent.width - 16 * Setting.multiple, self.parent.height - 40 * Setting.multiple)
     size_hint: (None, None)
 
     RecycleBoxLayout:
@@ -608,16 +608,16 @@
     height: self.texture_size[1] #宽度是固定的
     size_hint: (None, None)
     text_size: (self.width - 16 * Setting.multiple, None)
-    font_size: 16 * Setting.multiple
-    font_name: Setting.font_path
+    font_size: 12 * Setting.multiple
+    font_name: Setting.font_path_02
     halign: 'left'
 
 
 <MenuInfoBoard>:
     viewclass: 'MenuInfoLabel'
     data: []
-    pos: (16 * Setting.multiple, 24 * Setting.multiple)
-    size: (self.parent.width - 32 * Setting.multiple, self.parent.height - 48 * Setting.multiple)
+    pos: (8 * Setting.multiple, 20 * Setting.multiple)
+    size: (self.parent.width - 16 * Setting.multiple, self.parent.height - 40 * Setting.multiple)
     size_hint: (None, None)
 
     RecycleBoxLayout:

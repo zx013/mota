@@ -24,15 +24,20 @@ from setting import Setting #必须先加载setting，这样multiple就可以最
 from kivy.config import Config
 
 
-Setting.offset = int(0.5 * Setting.row_size)
+Setting.offset = int(0.46 * Setting.row_size)
 if platform == 'android':
     from jnius import autoclass, cast
     PythonActivity = autoclass('org.renpy.android.PythonActivity')
     CurrentActivity = cast('android.app.Activity', PythonActivity.mActivity)
     #CurrentActivity.removeLoadingScreen()
     display = CurrentActivity.getWindowManager().getDefaultDisplay()
-    height = display.getHeight()
-    width = display.getWidth()
+
+    DisplayMetrics = autoclass('android.util.DisplayMetrics')
+    metrics = DisplayMetrics()
+    display.getRealMetrics(metrics)
+    height = metrics.heightPixels
+    width  = metrics.widthPixels
+
     height, width = width, height #手机默认横屏
     Setting.multiple = width / (Setting.row_show * Setting.pos_size) / (1 + Setting.status_size)
     #Setting.rotation = 270

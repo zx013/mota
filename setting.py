@@ -60,7 +60,9 @@ class Setting:
     icon_path = os.path.join('data', 'icon.ico')
 
     #字体路径
-    font_path = os.path.join('data', 'font.ttf')
+    font_path_01 = os.path.join('data', 'font', 'font-01.ttf')
+    font_path_02 = os.path.join('data', 'font', 'font-02.ttf')
+    font_path = font_path_01
 
     #难度，very-hard, hard, normal, easy, very-easy
     #难度决定了蒙特卡洛模拟的次数，剩余的血量和初始的钥匙

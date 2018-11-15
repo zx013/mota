@@ -288,7 +288,7 @@ class Mota(FocusBehavior, FloatLayout):
             herostate.experience += monster['experience']
             Music.play('blood') #获取剑后使用剑的声音和动画
             ginfo.update('你击败了{}，受到了{}点伤害。'.format(monster['name'], damage))
-            ginfo.update('你获得了{}金钱，{}经验'.format(monster['gold'], monster['experience']))
+            ginfo.update('你获得了{}金钱，{}经验。'.format(monster['gold'], monster['experience']))
             if pos_value[0] == 'boss':
                 gmaze.kill_boss(pos)
         elif pos_type == MazeBase.Type.Active.npc:
