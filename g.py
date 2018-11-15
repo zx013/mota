@@ -26,5 +26,8 @@ if 'ginfo' not in dir():
 if 'gstatusbar' not in dir():
     gstatusbar = Global()
 
+if 'gprogress' not in dir():
+    gprogress = Global()
+
 if 'glayout' not in dir():
     glayout = Global()

@@ -45,7 +45,7 @@ from setting import Setting, MazeBase
 from cache import Config, Texture, Music
 from hero import Opacity
 from state import State
-from g import gmota, gmaze, ginfo, gstatusbar
+from g import gmota, gmaze, ginfo, gstatusbar, gprogress, glayout
 
 from functools import partial
 
@@ -101,7 +101,7 @@ class Mota(FocusBehavior, FloatLayout):
 
         self.isstart = False
         self.delay = self._delay_load()
-        self.delay_clock = Clock.schedule_interval(self.delay_load, 0)
+        Clock.schedule_once(self.delay_load)
         Clock.schedule_interval(self.show, Config.step)
 
     #延迟加载
@@ -127,9 +127,11 @@ class Mota(FocusBehavior, FloatLayout):
             if result is not None:
                 i, j = result
                 progress = (i * Setting.col_show + j + 1) / (Setting.row_show * Setting.col_show) * 100
-                gstatusbar.update('{:.2f}'.format(progress))
+                glayout.progress.value = progress
+                #print(gprogress.instance, glayout.progress)
+            Clock.schedule_once(self.delay_load)
         except:
-            Clock.unschedule(self.delay_clock)
+            pass
 
     def keyboard_on_key_down(self, window, keycode, text, modifiers):
         if not self.operate:

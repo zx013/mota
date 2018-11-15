@@ -11,11 +11,12 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.animation import Animation
+from kivy.clock import Clock
 from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config
-from g import gmota, gmaze, ginfo, gstatusbar, glayout
+from g import gmota, gmaze, ginfo, gstatusbar, gprogress, glayout
 
 from random import random
 
@@ -200,12 +201,32 @@ class MenuManagerMonsterManual(MenuScreen): pass
 
 class MenuScreenManager(MenuInit, ScreenManager): pass
 
-class MenuHero(MenuScreenManager): pass
-class MenuItem(MenuScreenManager): pass
-class MenuManager(MenuScreenManager): pass
-class MenuStatus(MenuScreenManager): pass
-class MenuStory(MenuScreenManager): pass
-class MenuMessage(MenuScreenManager): pass
+class MenuHero(MenuScreenManager): pass #英雄属性
+class MenuItem(MenuScreenManager): pass #物品栏
+class MenuManager(MenuScreenManager): pass #主界面
+class MenuStatus(MenuScreenManager): pass #状态栏
+class MenuStory(MenuScreenManager): pass #任务栏
+class MenuMessage(MenuScreenManager): pass #消息栏
+class MenuProgress(MenuScreenManager): #进度条
+    def __init__(self, **kwargs):
+        super(MenuProgress, self).__init__(**kwargs)
+        gprogress.instance = self
+
+    def init(self):
+        self.ready = False
+        self.opacity = 1
+
+    def finish(self):
+        self.ready = True
+        Clock.schedule_once(self.fade, 0.1)
+
+    def fade(self, dt):
+        self.opacity -= 0.05
+        if self.opacity > 0:
+            Clock.schedule_once(self.fade, 0.1)
+        else:
+            self.value = -1
+            self.opacity = 0
 
 
 class MenuLayout(FloatLayout):
@@ -241,6 +262,10 @@ class MenuLayout(FloatLayout):
         message = MenuMessage(pos=(Setting.offset + Setting.row_size, 0), size=(Setting.offset, self.height / 2))
         self.add_widget(message)
         self.message = message
+
+        progress = MenuProgress(pos=(Setting.offset, Setting.status_size * Setting.col_size), size=(Setting.row_size, Setting.col_size))
+        self.add_widget(progress)
+        self.progress = progress
 
     def init_manager(self):
         self.manager.add_widget(MenuManagerMain())

@@ -24,7 +24,7 @@ from setting import Setting #必须先加载setting，这样multiple就可以最
 from kivy.config import Config
 
 
-Setting.offset = int(0.46 * Setting.row_size)
+Setting.offset = int(0.5 * Setting.row_size)
 if platform == 'android':
     from jnius import autoclass, cast
     PythonActivity = autoclass('org.renpy.android.PythonActivity')

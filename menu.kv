@@ -1,5 +1,6 @@
 #:kivy 1.10
 #:import EventLoop kivy.base.EventLoop
+#:import NoTransition kivy.uix.screenmanager.NoTransition
 #:import FadeTransition kivy.uix.screenmanager.FadeTransition
 #:import Store setting.Store
 #:import Setting setting.Setting
@@ -1026,14 +1027,14 @@
     size_hint: (None, None)
 
 <MenuStatus>:
-    #Screen:
-    #    name: 'welcome'
-    #    MenuWelcomeLabel:
-    #        #pos: (Setting.row_size, 0)
-    #        pos_hint: {}
-    #        text: Setting.status_text
-    #        fsize: 1.6
-    #        disabled: True
+    Screen:
+        name: 'welcome'
+        MenuWelcomeLabel:
+            #pos: (Setting.row_size, 0)
+            pos_hint: {}
+            text: Setting.status_text
+            fsize: 1.6
+            disabled: True
     Screen:
         name: 'status'
         MenuStatusLabel:
@@ -1153,3 +1154,39 @@
             psize: root.size
             rsize: root.size
         MenuInfoBoard:
+
+
+<MenuProgress>:
+    ready: False
+    value: -1
+    progress: 0 if self.value < 0 else 100 if self.value > 100 else int(self.value)
+    opacity: 1
+    on_progress:
+        self.init() if self.progress == 0 else None
+        self.finish() if self.progress == 100 else None
+    Screen:
+        name: 'progress'
+
+        background_color: (1, 0, 0, 0)
+        Label:
+            canvas:
+                Color:
+                    rgba: Setting.rgb(255, 255, 255, 127)
+                Line:
+                    width: 3 * Setting.multiple
+                    circle: (root.width, 0, 50 * Setting.multiple)
+                Color:
+                    rgba: Setting.rgb(255, 255, 255, 255) #Setting.rgb(250, 227, 113, 255)
+                Line:
+                    width: 3 * Setting.multiple
+                    circle: (root.width, 0, 50 * Setting.multiple, 270, 270 + root.progress * 90 / 100) if root.progress else (0, 0, 0)
+            text: str(int(root.progress)) if root.progress >= 0 else ''
+            pos: (root.width - self.width, 0)
+            size: self.texture_size
+            size_hint: (None, None)
+            font_size: 32 * Setting.multiple
+            font_name: Setting.font_path_01
+            bold: True
+            halign: 'right'
+            color: Setting.rgb(255, 255, 255, 128 + root.progress * 127 / 100)
+            opacity: root.opacity
