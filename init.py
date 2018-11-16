@@ -17,21 +17,13 @@ Builder.load_string('''
     on_texture_size:
         print(self.text)
         self.load() if self.text == 'init' else None
-        #self.value += 10
-    #source: 'data/init.mpg'
-    #state: 'play'
-    #Label:
-    #    text: 'init'
-    #    on_texture_size:
-    #        self.parent.load()
-    #        #self.parent.remove_widget(self)
 ''')
 
+#android不生效，原因不明
 class Init(Label, ProgressBar):
     def __init__(self, app=None, **kwargs):
         super(Init, self).__init__(**kwargs)
         self.app = app
-        #Clock.schedule_interval(self.progress, 0.1)
 
     def init(self, dt=0):
         app = self.app

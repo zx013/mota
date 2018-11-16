@@ -207,25 +207,38 @@ class MenuManager(MenuScreenManager): pass #主界面
 class MenuStatus(MenuScreenManager): pass #状态栏
 class MenuStory(MenuScreenManager): pass #任务栏
 class MenuMessage(MenuScreenManager): pass #消息栏
+
+
 class MenuProgress(MenuScreenManager): #进度条
     def __init__(self, **kwargs):
         super(MenuProgress, self).__init__(**kwargs)
         gprogress.instance = self
 
-    def init(self):
-        self.ready = False
-        self.opacity = 1
+    def show(self, task):
+        self.name = task
 
-    def finish(self):
-        self.ready = True
-        Clock.schedule_once(self.fade, 0.1)
+    def update(self, task, value):
+        self.value[task] = value
+        progress = 0 if value < 0 else 100 if value > 100 else int(value)
+
+        if progress == 0:
+            self.ready[task] = False
+            self.opacity = 1
+        elif progress == 100:
+            self.ready[task] = True
+            Clock.schedule_once(self.fade, 0.1)
+
+        if self.name == task:
+            self.progress = progress
+
+    def isready(self, task):
+        return self.ready[task]
 
     def fade(self, dt):
         self.opacity -= 0.05
         if self.opacity > 0:
             Clock.schedule_once(self.fade, 0.1)
         else:
-            self.value = -1
             self.opacity = 0
 
 

@@ -100,6 +100,7 @@ class Mota(FocusBehavior, FloatLayout):
         self.add_widget(self.state)
 
         self.isstart = False
+        gprogress.show('start')
         self.delay = self._delay_load()
         Clock.schedule_once(self.delay_load)
         Clock.schedule_interval(self.show, Config.step)
@@ -127,8 +128,7 @@ class Mota(FocusBehavior, FloatLayout):
             if result is not None:
                 i, j = result
                 progress = (i * Setting.col_show + j + 1) / (Setting.row_show * Setting.col_show) * 100
-                glayout.progress.value = progress
-                #print(gprogress.instance, glayout.progress)
+                gprogress.update('start', progress)
             Clock.schedule_once(self.delay_load)
         except:
             pass

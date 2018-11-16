@@ -1157,13 +1157,11 @@
 
 
 <MenuProgress>:
-    ready: False
-    value: -1
-    progress: 0 if self.value < 0 else 100 if self.value > 100 else int(self.value)
+    name: ''
+    value: {}
+    ready: {}
+    progress: 0
     opacity: 1
-    on_progress:
-        self.init() if self.progress == 0 else None
-        self.finish() if self.progress == 100 else None
     Screen:
         name: 'progress'
 
@@ -1173,11 +1171,13 @@
                 Color:
                     rgba: Setting.rgb(255, 255, 255, 127)
                 Line:
+                    cap: 'none'
                     width: 3 * Setting.multiple
-                    circle: (root.width, 0, 50 * Setting.multiple)
+                    circle: (root.width, 0, 50 * Setting.multiple, 270, 360)
                 Color:
                     rgba: Setting.rgb(255, 255, 255, 255) #Setting.rgb(250, 227, 113, 255)
                 Line:
+                    cap: 'none'
                     width: 3 * Setting.multiple
                     circle: (root.width, 0, 50 * Setting.multiple, 270, 270 + root.progress * 90 / 100) if root.progress else (0, 0, 0)
             text: str(int(root.progress)) if root.progress >= 0 else ''

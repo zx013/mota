@@ -10,9 +10,11 @@ class Global:
         return attr
 
     def __setattr__(self, name, value):
-        if self.__dict__.get(name):
-            return None
-        self.__dict__[name] = value
+        if name == 'instance':
+            if self.instance is None:
+                self.__dict__[name] = value
+        else:
+            setattr(self.instance, name, value)
 
 if 'gmota' not in dir():
     gmota = Global()
