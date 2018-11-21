@@ -55,12 +55,12 @@ class Story:
             else:
                 self.add_task(s)
 
-    def del_scene(self, scene):
+    def del_scene(self, scene, immediate=False):
         for s in Tools.object_list(scene):
             if s.isdialog():
-                self.del_dialog(s)
+                self.del_dialog(s, immediate)
             else:
-                self.del_task(s)
+                self.del_task(s, immediate)
 
     def next_scene(self, scene):
         task = scene.run()
@@ -84,9 +84,9 @@ class Story:
                 self.task[pos] = []
             self.task[pos].append(s)
 
-    def del_dialog(self, scene):
+    def del_dialog(self, scene, immediate=False):
         for s in Tools.object_list(scene):
-            gtask.remove(s.task_id)
+            gtask.remove(s.task_id, immediate)
 
             pos = s.pos
             if s in self.task[pos]:
@@ -109,9 +109,9 @@ class Story:
                     self.state[name] = {}
                 self.state[name][s.task_id] = {'name': name_list, 'op': op, 'scene': s}
 
-    def del_task(self, scene):
+    def del_task(self, scene, immediate=False):
         for s in Tools.object_list(scene):
-            gtask.remove(s.task_id)
+            gtask.remove(s.task_id, immediate)
             for task in self.state.values():
                 if s.task_id in task:
                     del task[s.task_id]
@@ -129,7 +129,7 @@ class Story:
             for b in Tools.object_list(bscene):
                 f.backward.append(b)
                 b.forward.append(f)
-                self.del_scene(b)
+                self.del_scene(b, immediate=True)
 
     def check_state(self, state, name):
         if name not in self.state:

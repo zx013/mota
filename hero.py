@@ -91,8 +91,6 @@ class HeroStateDict(dict):
 #实时状态，bind将状态绑定到label上，可以实时显示
 class HeroState:
     __bind = {}
-    __task = {}
-    __task_id = 0
     disable = ['schedule', 'progress', 'floor']
     statis = {}
     statis_increase = {} #增加量

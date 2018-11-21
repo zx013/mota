@@ -579,22 +579,20 @@
             radius: [2 * self.space] if self.space else [0]
 
 
-<MenuTaskLabel@ToggleButtonBehavior+Label>:
+<MenuTaskLabel>:
     task_id: ''
     info: ''
     achieve: 0
     goal: 0
+    opacity: 1
     text: '{} ({}/{})'.format(self.info, self.achieve, self.goal) if self.goal != 0 else self.info
-    color: (1, 1, 1, 1) if self.goal == 0 else (1, 1, 0, 1) if self.achieve >= self.goal else (1, 1, 1, 0.5)
+    color: (1, 1, 1, 1) if self.goal == 0 else (1, 1, 0, 1) if self.achieve >= self.goal else (1, 1, 1, 1)
     height: self.texture_size[1] #宽度是固定的
     size_hint: (None, None)
     text_size: (self.width - 16 * Setting.multiple, None)
     font_size: 20 * Setting.multiple
     font_name: Setting.font_path
     halign: 'left'
-    on_release:
-        self.achieve += 1
-        print(self.text)
 
 
 <MenuTaskBoard>:

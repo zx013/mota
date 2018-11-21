@@ -7,7 +7,6 @@ from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.animation import Animation
@@ -18,6 +17,7 @@ from setting import Setting, MazeBase
 from cache import Config
 from g import gmota, gmaze, gtask, ginfo, gstatusbar, gprogress, glayout
 
+from functools import partial
 from random import random
 from uuid import uuid1
 
@@ -144,11 +144,15 @@ class MenuShop(FloatLayout):
         self.window.remove_widget(self)
 
 
+class MenuTaskLabel(ToggleButtonBehavior, Label):
+    pass
+
 
 class MenuTaskBoard(RecycleView):
     def __init__(self, **kwargs):
         super(MenuTaskBoard, self).__init__(**kwargs)
         gtask.instance = self
+        self.rset = set()
 
     def find(self, task_id):
         for data in self.data:
@@ -158,8 +162,10 @@ class MenuTaskBoard(RecycleView):
 
     def insert(self):
         task_id = str(uuid1())
-        self.data.insert(0, {'task_id': task_id, 'info': ''})
+        data = {'task_id': task_id, 'info': '', 'opacity': 0}
+        self.data.insert(0, data)
         self.scroll_y = 1
+        Clock.schedule_once(partial(self.bloom, data), 0.05)
         return task_id
 
     def update(self, task_id, info, goal=0):
@@ -178,11 +184,35 @@ class MenuTaskBoard(RecycleView):
         data['achieve'] = achieve
         self.refresh_from_data()
 
-    def remove(self, task_id):
+    def remove(self, task_id, immediate=False):
         data = self.find(task_id)
         if data is None:
             return None
-        self.data.remove(data)
+
+        self.rset.add(task_id)
+        if immediate:
+            self.data.remove(data)
+            self.rset.remove(task_id)
+        else:
+            Clock.schedule_once(partial(self.fade, data), 0.05)
+
+    def bloom(self, data, dt):
+        data['opacity'] += 0.05
+        if data['opacity'] < 1:
+            Clock.schedule_once(partial(self.bloom, data), 0.05)
+        else:
+            data['opacity'] = 1
+        self.refresh_from_data()
+
+    def fade(self, data, dt):
+        data['opacity'] -= 0.05
+        if data['opacity'] > 0:
+            Clock.schedule_once(partial(self.fade, data), 0.05)
+        else:
+            data['opacity'] = 1
+            self.data.remove(data)
+            self.rset.remove(data['task_id'])
+        self.refresh_from_data()
 
 
 class MenuInfoBoard(RecycleView):
