@@ -4,6 +4,7 @@
 """
 from setting import MazeBase, MazeSetting
 from cache import Config, Music
+from g import gmaze
 
 #每一个level的基础数值
 class HeroBase:
@@ -90,6 +91,8 @@ class HeroStateDict(dict):
 #实时状态，bind将状态绑定到label上，可以实时显示
 class HeroState:
     __bind = {}
+    __task = {}
+    __task_id = 0
     disable = ['schedule', 'progress', 'floor']
     statis = {}
     statis_increase = {} #增加量
@@ -157,12 +160,16 @@ class HeroState:
                 label.text = text
                 if name == 'health':
                     label.color = color
-    
+
         elif name == 'wall':
             color = self.get_color(value)
             for key, label in self.__bind.items():
                 label.color = color.get(key, color['color'])
             self.key.set_color(color['key'])
+
+        if gmaze.story:
+            gmaze.story.check_state(self, name)
+
 
     #可以加入缓存
     def get_color(self, wall):
@@ -198,6 +205,7 @@ class HeroState:
                 progress = 100
         self.progress = progress
 
+    #将属性和标签绑定起来，属性改变时调整标签显示
     def bind(self, name, label):
         if name not in self.__bind:
             self.__bind[name] = []

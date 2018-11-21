@@ -236,7 +236,7 @@ class Mota(FocusBehavior, FloatLayout):
         herobase = gmaze.herobase
         herostate = gmaze.herostate
 
-        scene = gmaze.story.check(pos) #有剧情则开启对话
+        scene = gmaze.story.check_pos(pos) #有剧情则开启对话
         if scene:
             self.dialog.start(self.hero.pos, pos, scene)
             self.dialog.open()

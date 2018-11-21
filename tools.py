@@ -67,3 +67,10 @@ class Tools:
             if number > 0:
                 yield previous, element
             previous = element
+
+    #将参数变成list
+    @staticmethod
+    def object_list(ob):
+        if not isinstance(ob, tuple) and not isinstance(ob, list):
+            ob = [ob]
+        return ob

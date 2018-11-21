@@ -16,9 +16,10 @@ from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config
-from g import gmota, gmaze, ginfo, gstatusbar, gprogress, glayout
+from g import gmota, gmaze, gtask, ginfo, gstatusbar, gprogress, glayout
 
 from random import random
+from uuid import uuid1
 
 with open('menu.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
@@ -145,11 +146,43 @@ class MenuShop(FloatLayout):
 
 
 class MenuTaskBoard(RecycleView):
-    def insert(self, text):
-        pass
+    def __init__(self, **kwargs):
+        super(MenuTaskBoard, self).__init__(**kwargs)
+        gtask.instance = self
 
-    def delete(self, text):
-        pass
+    def find(self, task_id):
+        for data in self.data:
+            if task_id == data['task_id']:
+                return data
+        return None
+
+    def insert(self):
+        task_id = str(uuid1())
+        self.data.insert(0, {'task_id': task_id, 'info': ''})
+        self.scroll_y = 1
+        return task_id
+
+    def update(self, task_id, info, goal=0):
+        data = self.find(task_id)
+        if data is None:
+            return None
+        data['info'] = info
+        data['goal'] = goal
+        data['achieve'] = 0
+        self.refresh_from_data()
+
+    def achieve(self, task_id, achieve):
+        data = self.find(task_id)
+        if data is None:
+            return None
+        data['achieve'] = achieve
+        self.refresh_from_data()
+
+    def remove(self, task_id):
+        data = self.find(task_id)
+        if data is None:
+            return None
+        self.data.remove(data)
 
 
 class MenuInfoBoard(RecycleView):
@@ -159,6 +192,7 @@ class MenuInfoBoard(RecycleView):
 
     def update(self, text, type='info'):
         head_pool = {
+            'system': '系统',
             'hint': '提示',
             'warn': '警告',
             'secret': '传闻'
@@ -169,6 +203,7 @@ class MenuInfoBoard(RecycleView):
         default_color = (1, 1, 1, 1)
         color_pool = {
             'info': (1, 1, 1, 1),
+            'system': (1, 1, 1, 1),
             'hint': (1, 1, 0, 1),
             'warn': (1, 0, 0, 1),
             'secret': (1, 0, 1, 1)
@@ -312,6 +347,7 @@ class MenuDialog(FloatLayout):
         return True
 
     def open(self):
+        gmota.operate = False
         if not self.window:
             self.window = self.parent
         self.window.add_widget(self)
@@ -321,6 +357,7 @@ class MenuDialog(FloatLayout):
             self.window = self.parent
             self.parent.dialog = self
         self.window.remove_widget(self)
+        gmota.operate = True
 
     def start(self, pos1, pos2, scene):
         self.dialog = list(scene.dialog)

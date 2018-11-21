@@ -1766,31 +1766,49 @@ class Maze:
             self.set_type(pos, MazeBase.Type.Static.wall)
             self.set_value(pos, MazeBase.Value.Wall.magma)
 
+        pos_list = []
+        for i in range(0, middle - 2):
+            pos_list += [(floor, MazeSetting.rows - i - 1, middle - i - 1), (floor, MazeSetting.rows - i - 1, middle + i + 1)]
+        for pos in pos_list:
+            self.set_type(pos, MazeBase.Type.Item.attack)
+            self.set_value(pos, MazeBase.Value.Gem.small)
+
+        pos_list = []
+        for i in range(0, middle - 2):
+            pos_list += [(floor, MazeSetting.rows - i - 4, middle - i - 1), (floor, MazeSetting.rows - i - 4, middle + i + 1)]
+        for pos in pos_list:
+            self.set_type(pos, MazeBase.Type.Item.defence)
+            self.set_value(pos, MazeBase.Value.Gem.small)
+
         pos = (floor, 1, 1)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, 'wisdom')
-        self.story.add_scene(pos, dialog=[(1, '你好！'), (2, '欢迎进入无尽的魔塔。')], repeat=True)
-        scene1 = self.story.add_scene(pos, name='寻找智者', dialog=[(1, '智慧老人，我应该怎么办？'), (2, '去找仙子问问。')])
+        self.story.create_scene(pos=pos, dialog=[(1, '你好！'), (2, '欢迎进入无尽的魔塔。')], repeat=True)
+        scene1 = self.story.create_scene(pos=pos, name='寻找智者', dialog=[(1, '智慧老人，我应该怎么办？'), (2, '去找仙子问问。')])
 
         pos = (floor, 1, MazeSetting.cols)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, 'trader')
-        self.story.add_scene(pos, dialog=[(1, '你为什么在这里？'), (2, '你可以在我这里购买东西。')], repeat=True)
-        scene2 = self.story.add_scene(pos, name='寻找商人', dialog=[(1, '请问有什么可以买的？'), (2, '那边有个小偷。')])
-        scene5 = self.story.add_scene(pos, name='再见商人', dialog=[(1, '为什么又是你？'), (2, '没有钱你就得死。')])
+        self.story.create_scene(pos=pos, dialog=[(1, '你为什么在这里？'), (2, '你可以在我这里购买东西。')], repeat=True)
+        scene2 = self.story.create_scene(pos=pos, name='寻找商人', dialog=[(1, '请问有什么可以买的？'), (2, '那边有个小偷。')])
+        scene5 = self.story.create_scene(pos=pos, name='再见商人', dialog=[(1, '为什么又是你？'), (2, '没有钱你就得死。')])
 
         pos = (floor, MazeSetting.rows, 1)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, 'thief')
-        self.story.add_scene(pos, dialog=[(1, '我为什么在这里？'), (2, '又多了一个送死的勇者。')], repeat=True)
-        scene3 = self.story.add_scene(pos, name='寻找小偷', dialog=[(1, '这里是怎么了？'), (2, '问智慧老人吧。')])
+        self.story.create_scene(pos=pos, dialog=[(1, '我为什么在这里？'), (2, '又多了一个送死的勇者。')], repeat=True)
+        scene3 = self.story.create_scene(pos=pos, name='寻找小偷', dialog=[(1, '这里是怎么了？'), (2, '问智慧老人吧。')])
 
         pos = (floor, MazeSetting.rows, MazeSetting.cols)
         self.set_type(pos, MazeBase.Type.Active.npc)
         self.set_value(pos, 'fairy')
-        self.story.add_scene(pos, dialog=[(1, '又见到你了，小精灵。'), (2, '神圣十字架在魔塔的深处，给我神圣十字架，我可以增强你的能力。')], repeat=True)
-        scene4 = self.story.add_scene(pos, name='寻找精灵', dialog=[(1, '我该如何出去？'), (2, '那个商人知道答案。')])
+        self.story.create_scene(pos=pos, dialog=[(1, '又见到你了，小精灵。'), (2, '神圣十字架在魔塔的深处，给我神圣十字架，我可以增强你的能力。')], repeat=True)
+        scene4 = self.story.create_scene(pos=pos, name='寻找精灵', dialog=[(1, '我该如何出去？'), (2, '那个商人知道答案。')])
 
+        scene_attack = self.story.create_scene(name='提升攻击', task=['attack', lambda x, y: x >= y + 3])
+        scene_defence = self.story.create_scene(name='提升防御', task=['defence', lambda x, y: x >= y + 3])
+        self.story.connect(scene_attack, scene_defence)
+        self.story.connect(scene_defence, scene2)
         self.story.connect(scene2, scene3)
         self.story.connect(scene3, scene1)
         self.story.connect(scene1, scene4)

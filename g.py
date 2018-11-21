@@ -22,6 +22,9 @@ if 'gmota' not in dir():
 if 'gmaze' not in dir():
     gmaze = Global()
 
+if 'gtask' not in dir():
+    gtask = Global()
+    
 if 'ginfo' not in dir():
     ginfo = Global()
 
