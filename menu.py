@@ -152,7 +152,6 @@ class MenuTaskBoard(RecycleView):
     def __init__(self, **kwargs):
         super(MenuTaskBoard, self).__init__(**kwargs)
         gtask.instance = self
-        self.rset = set()
 
     def find(self, task_id):
         for data in self.data:
@@ -189,10 +188,8 @@ class MenuTaskBoard(RecycleView):
         if data is None:
             return None
 
-        self.rset.add(task_id)
         if immediate:
             self.data.remove(data)
-            self.rset.remove(task_id)
         else:
             Clock.schedule_once(partial(self.fade, data), 0.05)
 
@@ -211,7 +208,6 @@ class MenuTaskBoard(RecycleView):
         else:
             data['opacity'] = 1
             self.data.remove(data)
-            self.rset.remove(data['task_id'])
         self.refresh_from_data()
 
 
