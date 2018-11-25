@@ -1194,3 +1194,16 @@
             halign: 'right'
             color: Setting.rgb(255, 255, 255, 128 + root.progress * 127 / 100)
             opacity: root.opacity
+
+
+<MenuBack>:
+    light: 0
+    texture: Texture.next('init')
+    y: (self.texture.height / self.texture.width * self.width - self.height) / 2
+    allow_stretch: False
+    canvas.before:
+        Color:
+            rgba: (1, 1, 1, self.light)
+        Rectangle:
+            pos: (0, 0)
+            size: self.size

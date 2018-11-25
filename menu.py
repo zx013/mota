@@ -3,23 +3,28 @@
 """
 @author: zx013
 """
+from kivy.core.window import Window
 from kivy.uix.label import Label
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ToggleButtonBehavior
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.graphics import Line
+from kivy.graphics import Color
 from kivy.animation import Animation
 from kivy.clock import Clock
 from kivy.lang import Builder
 
 from setting import Setting, MazeBase
 from cache import Config
+from tools import Tools
 from g import gmota, gmaze, gtask, ginfo, gstatusbar, gprogress, glayout
 
 from functools import partial
 from random import random
 from uuid import uuid1
+from math import sqrt, degrees, acos
 
 with open('menu.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
@@ -303,6 +308,77 @@ class MenuProgress(MenuScreenManager): #进度条
             self.opacity = 0
 
 
+class MenuBack(Image):
+    def __init__(self, **kwargs):
+        super(MenuBack, self).__init__(**kwargs)
+        self.size = Window.size
+        self.lightning()
+
+    def line_length(self, sx, sy, ex, ey):
+        return sqrt((sx - ex) ** 2 + (sy - ey) ** 2)
+
+    def get_line(self, sx, sy, ex, ey):
+        offset = self.line_length(sx, sy, ex, ey) / 2
+        if offset < 10:
+            return [(sx, sy, ex, ey)]
+        mx = (sx + ex) / 2
+        my = (sy + ey) / 2
+        mx += (random() - 0.5) * offset
+        my += (random() - 0.5) * offset
+        result = self.get_line(sx, sy, mx, my)
+        result += self.get_line(mx, my, ex, ey)
+        return result
+
+    def get_points(self, line):
+        points = []
+        for sx, sy, ex, ey in line:
+            points += [sx, sy]
+        points += [ex, ey]
+        return points
+
+    def lightning(self):
+        Clock.schedule_once(self._lightning, 5 + 2 * random())
+
+    def _lightning(self, dt):
+        self.canvas.after.clear()
+        with self.canvas.after:
+            self.light_color = Color(rgba=(1, 1, 1, 1))
+            sx = (0.25 + 0.5 * random()) * self.width
+            sy = self.height
+            ex = (0.25 + 0.5 * random()) * self.width
+            ey = 0
+            line = self.get_line(sx, sy, ex, ey)
+            Line(points=self.get_points(line), width=1.5)
+            for ppoint, point in Tools.iter_previous(line):
+                psx, psy, pex, pey = ppoint
+                sx, sy, ex, ey = point
+                if pey - psy > 0:
+                    continue
+                a = self.line_length(psx, psy, pex, pey)
+                b = self.line_length(pex, pey, ex, ey)
+                c = self.line_length(psx, psy, ex, ey)
+                d = degrees(acos((a ** 2 + b ** 2 - c ** 2) / (2 * a * b)))
+                if d > 120:
+                    continue
+                ny = (0.25 + 0.5 * random()) * pey
+                nx = sx + (random() - 0.5) * pey
+                line = self.get_line(sx, sy, nx, ny)
+                Line(points=self.get_points(line), width=1)
+
+        self.light_down()
+        Clock.schedule_once(self._lightning, 10 + 4 * random())
+
+    def _light_down(self, dt):
+        self.light = self.light * 0.95 - 0.001
+        self.light_color.rgba = (1, 1, 1, self.light * 1.1)
+        if self.light > 0:
+            Clock.schedule_once(self._light_down, 0.05)
+
+    def light_down(self):
+        self.light = 1
+        Clock.schedule_once(self._light_down, 0.05)
+
+
 class MenuLayout(FloatLayout):
     def __init__(self, **kwargs):
         super(MenuLayout, self).__init__(**kwargs)
@@ -313,6 +389,10 @@ class MenuLayout(FloatLayout):
         self.init_manager()
 
     def init_menu(self):
+        back = MenuBack()
+        self.add_widget(back)
+        self.back = back
+
         hero = MenuHero(pos=(0, self.height / 2), size=(Setting.offset, self.height / 2))
         self.add_widget(hero)
         self.hero = hero
