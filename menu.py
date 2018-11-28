@@ -166,26 +166,30 @@ class MenuTaskBoard(RecycleView):
 
     def insert(self):
         task_id = str(uuid1())
-        data = {'task_id': task_id, 'info': '', 'opacity': 0}
+        data = {'task_id': task_id, 'info': '', 'opacity': 0, 'isnew': True}
         self.data.insert(0, data)
         self.scroll_y = 1
-        Clock.schedule_once(partial(self.bloom, data), 0.05)
+        self.bloom(data)
         return task_id
 
-    def update(self, task_id, info, goal=0):
+    def _update(self, data, info, help='', goal=0):
+        data['info'] = info
+        data['help'] = help
+        data['goal'] = goal
+        data['achieve'] = 0
+
+    def update(self, task_id, info, help='', goal=0):
         data = self.find(task_id)
         if data is None:
             return None
-        data['info'] = info
-        data['goal'] = goal
-        data['achieve'] = 0
-        self.refresh_from_data()
+        self.switch(data, partial(self._update, data, info, help, goal))
 
     def achieve(self, task_id, achieve):
         data = self.find(task_id)
         if data is None:
             return None
         data['achieve'] = achieve
+        data['isnew'] = False
         self.refresh_from_data()
 
     def remove(self, task_id, immediate=False):
@@ -196,23 +200,49 @@ class MenuTaskBoard(RecycleView):
         if immediate:
             self.data.remove(data)
         else:
-            Clock.schedule_once(partial(self.fade, data), 0.05)
+            self.fade(data)
 
-    def bloom(self, data, dt):
+    #逐渐显示
+    def bloom(self, data):
+        Clock.schedule_once(partial(self._bloom, data), 0.05)
+
+    def _bloom(self, data, dt):
         data['opacity'] += 0.05
         if data['opacity'] < 1:
-            Clock.schedule_once(partial(self.bloom, data), 0.05)
+            Clock.schedule_once(partial(self._bloom, data), 0.05)
         else:
             data['opacity'] = 1
         self.refresh_from_data()
 
-    def fade(self, data, dt):
+    #逐渐隐藏
+    def fade(self, data):
+        Clock.schedule_once(partial(self._fade, data), 0.05)
+
+    def _fade(self, data, dt):
         data['opacity'] -= 0.05
         if data['opacity'] > 0:
-            Clock.schedule_once(partial(self.fade, data), 0.05)
+            Clock.schedule_once(partial(self._fade, data), 0.05)
         else:
             data['opacity'] = 1
             self.data.remove(data)
+        self.refresh_from_data()
+
+    def switch(self, data, update):
+        data['opacity'] = 1
+        Clock.schedule_once(partial(self._switch, data, update, True), 1)
+
+    def _switch(self, data, update, down, dt):
+        if down:
+            data['opacity'] -= 0.1
+            if data['opacity'] <= 0:
+                down = False
+                update()
+                #data['isnew'] = False
+            Clock.schedule_once(partial(self._switch, data, update, down), 0.05)
+        else:
+            data['opacity'] += 0.1
+            if data['opacity'] < 1:
+                Clock.schedule_once(partial(self._switch, data, update, down), 0.05)
         self.refresh_from_data()
 
 

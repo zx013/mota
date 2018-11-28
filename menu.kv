@@ -9,6 +9,7 @@
 #:import functools functools
 #:import gmota g.gmota
 #:import gmaze g.gmaze
+#:import gstatusbar g.gstatusbar
 #:import ginfo g.ginfo
 #:import glayout g.glayout
 
@@ -584,15 +585,20 @@
     info: ''
     achieve: 0
     goal: 0
+    help: ''
+    isnew: False
     opacity: 1
     text: '{} ({}/{})'.format(self.info, self.achieve, self.goal) if self.goal != 0 else self.info
-    color: (1, 1, 1, 1) if self.goal == 0 else (1, 1, 0, 1) if self.achieve >= self.goal else (1, 1, 1, 1)
+    color: (1, 0.5, 0, 1) if self.isnew else (1, 1, 1, 1) if self.goal == 0 else (1, 1, 0, 1) if self.achieve >= self.goal else (1, 1, 1, 1)
     height: self.texture_size[1] #宽度是固定的
     size_hint: (None, None)
     text_size: (self.width - 16 * Setting.multiple, None)
     font_size: 20 * Setting.multiple
     font_name: Setting.font_path
     halign: 'left'
+    on_release:
+        self.isnew = False
+        gstatusbar.update(self.help)
 
 
 <MenuTaskBoard>:

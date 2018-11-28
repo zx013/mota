@@ -45,7 +45,7 @@ from setting import Setting, MazeBase
 from cache import Config, Texture, Music
 from hero import Opacity
 from state import State
-from g import gmota, gmaze, ginfo, gstatusbar, gprogress, glayout
+from g import gmota, gmaze, ginfo, gstatusbar, gprogress
 
 from functools import partial
 
