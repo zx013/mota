@@ -4,6 +4,7 @@
 """
 from tools import Tools
 from g import gmaze, gtask
+import operator
 import random
 
 class Scene:
@@ -111,23 +112,53 @@ class Story:
         for s in Tools.object_list(scene):
             gtask.remove(s.task_id, immediate)
 
+    def create_task(self, task):
+        op_dict = {
+            '<=': operator.le,
+            '<': operator.lt,
+            '>=': operator.ge,
+            '>': operator.gt,
+            '==': operator.eq,
+            '!=': operator.ne
+        }
+        task = task.replace(' ', '')
+        for ops in op_dict.keys():
+            if ops in task:
+                name, goal = task.split(ops)
+                if goal.isdigit():
+                    goal = int(goal)
+                else:
+                    return None
+                break
+        else:
+            return None
+
+        op = op_dict.get(ops)
+        func = lambda x, y: op(x, y + goal)
+        return name, func, goal
+
     def add_task(self, scene, task_id=None):
         for s in Tools.object_list(scene):
-            name_list, op, goal = s.task
-            name_list = Tools.object_list(name_list)
+            name_list = []
+            op_list = []
+            for task in Tools.object_list(s.task)[::-1]:
+                name, op, goal = self.create_task(task)
+                if name not in name_list:
+                    name_list.insert(0, name)
+                op_list.insert(0, (name, op))
 
             if task_id is None:
                 s.task_id = gtask.insert()
             else:
                 s.task_id = task_id
-            s.attr = [getattr(gmaze.herostate, name) for name in name_list]
+            s.attr = dict([(name, getattr(gmaze.herostate, name)) for name in name_list])
             s.goal = goal
             gtask.update(s.task_id, s.name, s.help, s.goal)
 
             for name in name_list:
                 if name not in self.state:
                     self.state[name] = {}
-                self.state[name][s.task_id] = {'name': name_list, 'op': op, 'scene': s}
+                self.state[name][s.task_id] = {'name': name_list, 'op': op_list, 'scene': s}
 
     def clean_task(self, scene):
         for s in Tools.object_list(scene):
@@ -151,10 +182,13 @@ class Story:
             return None
         for task in list(self.state[name].values()):
             scene = task['scene']
-            attr = [getattr(state, name) for name in task['name']]
-            if name in task['name']:
-                gtask.achieve(scene.task_id, attr[0] - scene.attr[0])
-            if task['op'](*attr, *scene.attr):
+            attr = dict([(name, getattr(gmaze.herostate, name)) for name in task['name']])
+            if name == task['name'][0]:
+                gtask.achieve(scene.task_id, attr[name] - scene.attr[name])
+            for name, op in task['op']:
+                if not op(attr[name], scene.attr[name]):
+                    break
+            else:
                 self.next_scene(scene)
                 return scene
         return None
