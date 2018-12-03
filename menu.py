@@ -172,17 +172,17 @@ class MenuTaskBoard(RecycleView):
         self.bloom(data)
         return task_id
 
-    def _update(self, data, info, help='', goal=0):
+    def _update(self, data, info, help='', goal=0, achieve=0):
         data['info'] = info
         data['help'] = help
         data['goal'] = goal
-        data['achieve'] = 0
+        data['achieve'] = achieve
 
-    def update(self, task_id, info, help='', goal=0):
+    def update(self, task_id, info, help='', goal=0, achieve=0):
         data = self.find(task_id)
         if data is None:
             return None
-        self.switch(data, partial(self._update, data, info, help, goal))
+        self.switch(data, partial(self._update, data, info, help, goal, achieve))
 
     def achieve(self, task_id, achieve):
         data = self.find(task_id)

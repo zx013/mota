@@ -2,13 +2,15 @@
 """
 @author: zx013
 """
+from setting import MazeBase
+from cache import Config
 from tools import Tools
 from g import gmaze, gtask
 import operator
 import random
 
 class Scene:
-    def __init__(self, name='未知', help='', pos=(0, 0, 0), dialog=[], task=[], repeat=False):
+    def __init__(self, name='', help='', pos=(0, 0, 0), dialog=[], task=[], repeat=False):
         self.active = False #是否激活过对话
         self.name = name
         self.help = help
@@ -87,6 +89,14 @@ class Story:
                 self.repeat[pos] = []
             self.repeat[pos].append(s)
 
+    def create_dialog_name(self, pos):
+        pos_data = gmaze.get_data(pos)
+        pos_key = MazeBase.get_key(pos_data)
+        pos_name = Config.config[pos_key].get('name', '未知')
+        floor = pos[0]
+        name = '找到{}层的{}'.format(floor, pos_name)
+        return name
+
     def add_dialog(self, scene, task_id=None):
         for s in Tools.object_list(scene):
             if task_id is None:
@@ -112,8 +122,52 @@ class Story:
         for s in Tools.object_list(scene):
             gtask.remove(s.task_id, immediate)
 
+    def split_task(self, task, ops):
+        name, goal = task.split(ops)
+        goal = int(goal) if goal.isdigit() else 0
+        return name, goal
+
+    def create_task_name(self, name, ops, goal):
+        name_dict = {
+            'health': ('生命', '恢复', '损失'),
+            'attack': ('攻击', '提高', '降低'),
+            'defence': ('防御', '提高', '降低'),
+            'gold': ('金钱', '获得', '消耗'),
+            'experience': ('经验', '获得', '消耗'),
+        }
+        task_name, task_add, task_del = name_dict.get(name)
+        if ops == '+':
+            name = '{}{}{}'.format(task_add, goal, task_name)
+        elif ops == '-':
+            name = '{}{}{}'.format(task_del, goal, task_name)
+        elif ops == '*':
+            name = '{}{}倍的{}'.format(task_add, goal, task_name)
+        elif ops == '/':
+            name = '{}{}倍的{}'.format(task_del, goal, task_name)
+        elif ops == '<=':
+            name = '{}降低至{}'.format(task_name, goal)
+        elif ops == '<':
+            name = '{}低于{}'.format(task_name, goal)
+        elif ops == '>=':
+            name = '{}到达{}'.format(task_name, goal)
+        elif ops == '>':
+            name = '{}超过{}'.format(task_name, goal)
+        elif ops == '==':
+            name = '{}恰好为{}'.format(task_name, goal)
+        elif ops == '!=':
+            name = '{}不为{}'.format(task_name, goal)
+        else:
+            name = ''
+        return name
+
     def create_task(self, task):
-        op_dict = {
+        operate_dict = {
+            '+': operator.add,
+            '-': operator.sub,
+            '*': operator.mul,
+            '/': operator.floordiv
+        } #乘除的显示上应该需要另外的逻辑
+        compare_dict = {
             '<=': operator.le,
             '<': operator.lt,
             '>=': operator.ge,
@@ -122,27 +176,39 @@ class Story:
             '!=': operator.ne
         }
         task = task.replace(' ', '')
-        for ops in op_dict.keys():
-            if ops in task:
-                name, goal = task.split(ops)
-                if goal.isdigit():
-                    goal = int(goal)
-                else:
-                    return None
-                break
-        else:
-            return None
 
-        op = op_dict.get(ops)
-        func = lambda x, y: op(x, y + goal)
-        return name, func, goal
+        for ops in compare_dict.keys():
+            if ops not in task:
+                continue
+            name, goal = self.split_task(task, ops)
+            op = compare_dict.get(ops)
+            func = lambda x, y: op(x, goal)
+            return name, func, ops, goal, True
+
+        for ops in operate_dict.keys():
+            if ops not in task:
+                continue
+            if '+' in task:
+                name, goal = self.split_task(task, '+')
+                func = lambda x, y: x >= y + goal
+            elif '-' in task:
+                name, goal = self.split_task(task, '-')
+                func = lambda x, y: x <= y - goal
+            elif '*' in task:
+                name, goal = self.split_task(task, '*')
+                func = lambda x, y: x >= y * goal
+            elif '/' in task:
+                name, goal = self.split_task(task, '/')
+                func = lambda x, y: x <= y / goal
+            return name, func, ops, goal, False
+        return None
 
     def add_task(self, scene, task_id=None):
         for s in Tools.object_list(scene):
             name_list = []
             op_list = []
             for task in Tools.object_list(s.task)[::-1]:
-                name, op, goal = self.create_task(task)
+                name, op, ops, goal, achieve = self.create_task(task)
                 if name not in name_list:
                     name_list.insert(0, name)
                 op_list.insert(0, (name, op))
@@ -151,9 +217,16 @@ class Story:
                 s.task_id = gtask.insert()
             else:
                 s.task_id = task_id
+            if not s.name:
+                s.name = self.create_task_name(name, ops, goal)
             s.attr = dict([(name, getattr(gmaze.herostate, name)) for name in name_list])
             s.goal = goal
-            gtask.update(s.task_id, s.name, s.help, s.goal)
+            if achieve:
+                achieve = s.attr[name]
+                s.attr[name] = 0
+            else:
+                achieve = 0
+            gtask.update(s.task_id, s.name, s.help, s.goal, achieve)
 
             for name in name_list:
                 if name not in self.state:
@@ -169,6 +242,12 @@ class Story:
     def del_task(self, scene, immediate=False):
         for s in Tools.object_list(scene):
             gtask.remove(s.task_id, immediate)
+
+    def add_challenge(self):
+        self.create_scene(task='health >= 1000')
+
+    def del_challenge(self):
+        pass
 
     def connect(self, fscene, bscene):
         for f in Tools.object_list(fscene):

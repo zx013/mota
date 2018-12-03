@@ -1,0 +1,89 @@
+#:kivy 1.10
+#:import Setting setting.Setting
+
+<Challenge>:
+    name: '测试一下'
+    level: 0
+    mlevel: 5
+    achieve: 36243
+    goal: 100000
+    percent: self.achieve / self.goal if self.level != self.mlevel else 1
+    width: self.parent.child_width if self.parent.child_width else 0
+    height: self.parent.child_height if self.parent.child_height else 0
+    size_hint: (None, None)
+    color: (1, 1 - self.level / (2 * self.mlevel), 1 - self.level / self.mlevel, 1)
+    canvas:
+        Color:
+            rgba: (1, 1, 0, 1)
+        Line:
+            width: 1
+            rounded_rectangle: (self.x, self.y, self.width, self.height, 20)
+        Color:
+            rgba: self.color if self.color else (1, 1, 1, 1)
+        Line:
+            cap: 'none'
+            width: 2
+            circle: (self.x + 0.5 * self.height, self.y + 0.5 * self.height, 0.3 * self.height)
+    Label:
+        pos: (root.x + 0.2 * root.height, root.y + 0.2 * root.height)
+        size: (0.6 * root.height, 0.6 * root.height)
+        size_hint: (None, None)
+        text: str(root.level)
+        font_size: 50 * Setting.multiple
+        color: root.color
+    Label:
+        pos: (root.x + root.height, root.y + 0.6 * root.height)
+        size: self.texture_size
+        size_hint: (None, None)
+        text: root.name
+        font_size: 24 * Setting.multiple
+        font_name: Setting.font_path
+    Label:
+        offset: 0.4 * (root.width - root.height - self.width)
+        pos: (root.x + root.height + self.offset, root.y + 0.5 * root.height - 1.25 * self.height)
+        size: self.texture_size
+        size_hint: (None, None)
+        text: '{}/{}'.format(root.achieve, root.goal) if root.level != root.mlevel else 'Max/Max'
+        font_size: 16 * Setting.multiple
+        canvas.before:
+            Color:
+                rgba: (0.6, 0.6, 0.6, 1)
+            Line:
+                width: 2 * Setting.multiple
+                rounded_rectangle: (self.x - self.offset, self.y, self.width + 2 * self.offset, self.height, self.height / 2) if self.offset else (0, 0, 0, 0, 0)
+            Color:
+                rgba: (0, 0.3, 0, 1)
+            RoundedRectangle:
+                pos: (self.x - self.offset + 2 * Setting.multiple, self.y + 2 * Setting.multiple) if self.offset else (0, 0)
+                size: ((self.width + 2 * self.offset) * root.percent - 4 * Setting.multiple, self.height - 4 * Setting.multiple) if self.offset else (0, 0)
+                radius: [self.height / 2 - 2 * Setting.multiple]
+        
+
+<MenuChallenge>:
+    rows: 4
+    cols: 3
+    wspace: 10 * Setting.multiple
+    hspace: 10 * Setting.multiple
+    spacing: (self.wspace, self.hspace)
+    edge: 20 * Setting.multiple
+    pos: (self.edge, -self.edge)
+    child_width: (self.width - 2 * self.edge + self.wspace) / self.cols - self.wspace
+    child_height: (self.height - 2 * self.edge + self.hspace) / self.rows - self.hspace
+    Challenge:
+        level: 0
+    Challenge:
+        level: 1
+    Challenge:
+        level: 2
+    Challenge:
+        level: 3
+    Challenge:
+        level: 4
+    Challenge:
+        level: 5
+    Challenge:
+    Challenge:
+    Challenge:
+    Challenge:
+    Challenge:
+    Challenge:

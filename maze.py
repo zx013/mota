@@ -1805,8 +1805,8 @@ class Maze:
         self.story.create_scene(pos=pos, dialog=[(1, '又见到你了，小精灵。'), (2, '神圣十字架在魔塔的深处，给我神圣十字架，我可以增强你的能力。')], repeat=True)
         scene4 = self.story.create_scene(pos=pos, name='寻找精灵', dialog=[(1, '我该如何出去？'), (2, '那个商人知道答案。')])
 
-        scene_attack = self.story.create_scene(name='提升攻击', task='attack >= 2')
-        scene_defence = self.story.create_scene(name='提升防御', task='defence >= 3')
+        scene_attack = self.story.create_scene(task='attack >= 12')
+        scene_defence = self.story.create_scene(task='defence + 3')
         self.story.connect(scene_attack, scene_defence)
         self.story.connect(scene_defence, scene2)
         self.story.connect(scene2, scene3)
@@ -1814,7 +1814,7 @@ class Maze:
         self.story.connect(scene1, scene4)
         self.story.connect(scene4, scene5)
 
-        self.story.create_scene(name='提升生命', task='health >= 100')
+        self.story.create_scene(task='health + 100')
 
 
     def set_boss(self):
