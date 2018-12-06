@@ -1,18 +1,12 @@
 # -*- coding: utf-8 -*-
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.recyclegridlayout import RecycleGridLayout
+from zxlib.pageview import PageView
+
 from kivy.lang import Builder
 with open('challenge.kv', 'r', encoding='utf-8') as fp:
     Builder.load_string(fp.read())
 
-class Challenge(FloatLayout):
+class ChallengeMenu(PageView):
     pass
-
-class MenuChallenge(GridLayout):
-    def __init__(self, **kwargs):
-        super(MenuChallenge, self).__init__(**kwargs)
-
 
 if __name__ == '__main__':
     from kivy.app import App
@@ -20,7 +14,9 @@ if __name__ == '__main__':
 
     class TestApp(App):
         def build(self):
-            mc = MenuChallenge()
+            mc = ChallengeMenu()
+            for i in range(30):
+                mc.data.append({'level': int(i / 8), 'mlevel': 3, 'achieve': 3 * i, 'goal': 100})
             #mc.add_widget(Challenge())
             return mc
 
